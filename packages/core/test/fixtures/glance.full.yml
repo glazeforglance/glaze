@@ -1,0 +1,142 @@
+# Glance config used by the Glaze test suite.
+# Every key and token in this file is fake.
+
+server:
+  port: 8080            # aligned trailing comment
+  proxied: true
+  assets-path: /app/assets
+
+auth:
+  secret-key: ${GLANCE_SECRET_KEY}
+  users:
+    sean:
+      password-hash: ${SEAN_PASSWORD_HASH}
+
+document:
+  head: |
+    <script src="/assets/design.js" defer></script>
+
+theme:
+  background-color: 220 15 6
+  primary-color: 38 90 63
+  custom-css-file: /assets/custom.css
+
+pages:
+  # The landing page.
+  - name: Home
+    slug: home
+    width: wide
+    head-widgets:
+      - type: search   # search bar above all columns
+        search-engine: duckduckgo
+        bangs:
+          - title: YouTube
+            shortcut: "!yt"
+            url: https://www.youtube.com/results?search_query={QUERY}
+
+    columns:
+      - size: small
+        widgets:
+          - type: clock
+            hour-format: 24h
+            timezones:
+              - timezone: Europe/Amsterdam
+                label: Thuis
+
+          - type: custom-api
+            title: Weer
+            cache: 15m
+            url: https://api.open-meteo.com/v1/forecast?latitude=52.37&longitude=4.89&current=temperature_2m
+            template: |
+              {{ $temp := .JSON.Float "current.temperature_2m" }}
+              <div class="weather">
+                <span class="size-h1">{{ printf "%.0f" $temp }}°</span>
+              </div>
+
+      - size: full
+        widgets:
+          # Sonarr upcoming episodes, as tabs.
+          - type: group
+            widgets:
+              - &sonarr
+                type: custom-api
+                title: Alles
+                url: http://sonarr:8989/api/v3/calendar?includeSeries=true
+                headers:
+                  X-Api-Key: ${SONARR_API_KEY}
+                template: |
+                  <ul class="list list-gap-10">
+                  {{ range .JSON.Array "" }}
+                    <li>{{ .String "series.title" }} · S{{ .Int "seasonNumber" }}E{{ .Int "episodeNumber" }}</li>
+                  {{ end }}
+                  </ul>
+              - <<: *sonarr
+                title: Series
+                parameters:
+                  tags: 1
+              - <<: *sonarr
+                title: "Anime"
+                parameters:
+                  tags: 2
+
+          - type: split-column
+            max-columns: 2
+            widgets:
+              - type: hacker-news
+                limit: 10
+              - type: lobsters   # second half of the split
+                limit: 10
+
+          - $include: widgets/immich.yml
+
+      - size: small
+        widgets:
+          - type: bookmarks
+            groups:
+              - title: Media
+                links:
+                  - { title: Sonarr, url: "https://sonarr.example.test" }
+                  - { title: Radarr, url: "https://radarr.example.test" }
+
+  # Server status.
+  - name: Server
+    slug: server
+    columns:
+      - size: full
+        widgets:
+          - type: monitor
+            cache: 1m
+            title: Diensten
+            sites:
+              - title: Immich
+                url: https://immich.example.test
+                check-url: http://immich:2283/api/server/ping
+              - title: Komga
+                url: https://komga.example.test   # behind the tunnel
+
+          - type: docker-containers
+            hide-by-default: false
+
+      - size: small
+        widgets:
+          - type: server-stats
+            servers:
+              - type: local
+                name: ZimaOS
+
+  - name: Lab
+    width: slim
+    columns:
+      - size: full
+        widgets:
+          - type: rss
+            limit: 5
+            feeds: [ { url: "https://selfh.st/rss/" } ]   # flow style on purpose
+
+      - size: small
+        widgets:
+          - type: releases
+            repositories:
+              - glanceapp/glance
+              - immich-app/immich
+            token: ${GITHUB_TOKEN}

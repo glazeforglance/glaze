@@ -1,0 +1,40 @@
+# ── Dependencies ──
+node_modules/
+
+# ── Build output ──
+dist/
+build/
+*.tsbuildinfo
+
+# ── Environment & secrets ──
+.env
+.env.*
+!.env.example
+
+# ── Local test config (your own glance.yml with real API keys) ──
+.dev/
+
+# ── Logs ──
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# ── Test & coverage ──
+coverage/
+playwright-report/
+test-results/
+
+# ── Caches ──
+.cache/
+.vite/
+
+# ── Editors ──
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+
+# ── OS files ──
+.DS_Store
+Thumbs.db
+desktop.ini

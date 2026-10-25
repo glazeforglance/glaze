@@ -1,0 +1,25 @@
+{
+	"name": "glaze",
+	"version": "0.0.0",
+	"description": "A visual editor for Glance dashboards",
+	"private": true,
+	"type": "module",
+	"license": "MIT",
+	"author": "Sean Klinge",
+	"scripts": {
+		"dev": "pnpm --parallel --filter \"./apps/*\" dev",
+		"test": "pnpm -r --if-present test",
+		"typecheck": "pnpm -r --if-present typecheck"
+	},
+	"devEngines": {
+		"packageManager": {
+			"name": "pnpm",
+			"version": "12.15.0",
+			"onFail": "download"
+		}
+	},
+	"packageManager": "pnpm@12.15.0",
+	"devDependencies": {
+		"@biomejs/biome": "^2.6.3"
+	}
+}
