@@ -78,3 +78,44 @@ export function SearchIcon({ className = "size-4" }: IconProps) {
 		</svg>
 	);
 }
+
+export function CopyIcon({ className = "size-3.5" }: IconProps) {
+	return (
+		<svg viewBox="0 0 16 16" className={className} aria-hidden="true">
+			<rect x="5" y="5" width="8.5" height="8.5" rx="1.8" {...STROKE} />
+			<path
+				d="M10.5 5V3.8A1.8 1.8 0 0 0 8.7 2H3.8A1.8 1.8 0 0 0 2 3.8v4.9a1.8 1.8 0 0 0 1.8 1.8H5"
+				{...STROKE}
+			/>
+		</svg>
+	);
+}
+
+export function TrashIcon({ className = "size-3.5" }: IconProps) {
+	return (
+		<svg viewBox="0 0 16 16" className={className} aria-hidden="true">
+			<path
+				d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8.2c.1.8.7 1.3 1.5 1.3h2.8c.8 0 1.4-.5 1.5-1.3l.6-8.2"
+				{...STROKE}
+			/>
+		</svg>
+	);
+}
+
+export function MoreIcon({ className = "size-4" }: IconProps) {
+	return (
+		<svg viewBox="0 0 16 16" className={className} aria-hidden="true">
+			{[3.5, 8, 12.5].map((x) => (
+				<circle key={x} cx={x} cy="8" r="1.3" fill="currentColor" />
+			))}
+		</svg>
+	);
+}
+
+export function CheckIcon({ className = "size-3.5" }: IconProps) {
+	return (
+		<svg viewBox="0 0 16 16" className={className} aria-hidden="true">
+			<path d="m3.5 8.5 3 3 6-7" {...STROKE} />
+		</svg>
+	);
+}

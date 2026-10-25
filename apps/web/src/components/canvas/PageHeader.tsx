@@ -1,5 +1,7 @@
 import type { PageNode } from "@glaze/core";
+import { useEditor } from "../../store/editor-store.ts";
 import { Button } from "../ui/Button.tsx";
+import { PlusIcon } from "../ui/icons.tsx";
 
 export interface PageHeaderProps {
 	readonly page: PageNode;
@@ -12,6 +14,7 @@ export interface PageHeaderProps {
  */
 export function PageHeader({ page }: PageHeaderProps) {
 	const count = page.columns.length;
+	const addColumn = useEditor((state) => state.addColumn);
 	return (
 		<div className="mb-6 flex flex-wrap items-center gap-3">
 			<h1 className="text-2xl font-bold">{page.name ?? "Untitled page"}</h1>
@@ -21,8 +24,14 @@ export function PageHeader({ page }: PageHeaderProps) {
 				{page.width ? ` · ${page.width}` : ""}
 			</p>
 			<div className="ml-auto flex gap-2">
-				<Button unavailable="Coming soon">Add column</Button>
-				<Button unavailable="Coming soon">Page settings</Button>
+				{/* New columns are small; core refuses a 4th column (3rd on a slim page) with a notice. */}
+				<Button onClick={() => addColumn("small")}>
+					<PlusIcon />
+					Add column
+				</Button>
+				<Button unavailable="Page settings arrive in phase 3">
+					Page settings
+				</Button>
 			</div>
 		</div>
 	);

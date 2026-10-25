@@ -1,7 +1,8 @@
 import type { ColumnNode } from "@glaze/core";
 import type { WidgetList as WidgetListModel } from "../../lib/drop-target.ts";
 import { Button } from "../ui/Button.tsx";
-import { ChevronDownIcon, PlusIcon } from "../ui/icons.tsx";
+import { PlusIcon } from "../ui/icons.tsx";
+import { ColumnSizeMenu } from "./ColumnSizeMenu.tsx";
 import { WidgetList } from "./WidgetList.tsx";
 
 export interface ColumnCardProps {
@@ -27,11 +28,7 @@ export function ColumnCard({ column, list }: ColumnCardProps) {
 		>
 			<header className="flex items-center justify-between px-1 pb-1">
 				<h2 className="font-mono text-xs text-muted">{list.label}</h2>
-				{/* Becomes a dropdown to switch small/full in step 2d. */}
-				<span className="inline-flex items-center gap-1 rounded-[6px] border border-line px-1.5 py-0.5 font-mono text-[11px] text-muted">
-					{column.size ?? "?"}
-					<ChevronDownIcon className="size-2.5" />
-				</span>
+				<ColumnSizeMenu column={column} label={list.label} />
 			</header>
 			<WidgetList
 				list={list}

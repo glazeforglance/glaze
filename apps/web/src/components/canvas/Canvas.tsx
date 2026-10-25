@@ -12,6 +12,8 @@ import { PageHeader } from "./PageHeader.tsx";
 export function Canvas() {
 	const page = useEditor(selectCurrentPage);
 	const selectWidget = useEditor((state) => state.selectWidget);
+	const selectedWidgetId = useEditor((state) => state.selectedWidgetId);
+	const removeWidget = useEditor((state) => state.removeWidget);
 
 	if (!page) {
 		return (
@@ -30,6 +32,14 @@ export function Canvas() {
 			// Clicking empty canvas clears the selection, like most design tools.
 			onClick={(event) => {
 				if (event.target === event.currentTarget) selectWidget(null);
+			}}
+			// Delete removes the selected widget while focus is anywhere on the canvas,
+			// except in a text field, where Delete edits text.
+			onKeyDown={(event) => {
+				if (event.key !== "Delete" || selectedWidgetId === null) return;
+				if (isTextField(event.target)) return;
+				event.preventDefault();
+				removeWidget(selectedWidgetId);
 			}}
 		>
 			<PageHeader page={page} />
@@ -55,5 +65,14 @@ export function Canvas() {
 				</>
 			)}
 		</main>
+	);
+}
+
+function isTextField(target: EventTarget): boolean {
+	return (
+		target instanceof HTMLInputElement ||
+		target instanceof HTMLTextAreaElement ||
+		target instanceof HTMLSelectElement ||
+		(target instanceof HTMLElement && target.isContentEditable)
 	);
 }

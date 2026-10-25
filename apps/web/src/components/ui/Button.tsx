@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes, MouseEvent } from "react";
 
-type Variant = "primary" | "secondary" | "ghost" | "dashed";
+type Variant = "primary" | "secondary" | "ghost" | "dashed" | "danger";
 
 const VARIANTS: Record<Variant, string> = {
 	primary:
@@ -8,6 +8,8 @@ const VARIANTS: Record<Variant, string> = {
 	secondary:
 		"bg-card text-text border border-line hover:border-line-strong hover:bg-card-hover",
 	ghost: "text-muted hover:text-text hover:bg-card",
+	danger:
+		"bg-danger/15 text-danger font-semibold border border-danger/50 hover:bg-danger/25",
 	dashed:
 		"text-muted border border-dashed border-line-strong hover:text-text hover:border-faint w-full",
 };

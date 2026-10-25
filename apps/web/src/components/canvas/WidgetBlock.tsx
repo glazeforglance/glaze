@@ -8,6 +8,7 @@ import { useEditor } from "../../store/editor-store.ts";
 import { Badge } from "../ui/Badge.tsx";
 import { GripIcon } from "../ui/icons.tsx";
 import { NestedWidgets } from "./NestedWidgets.tsx";
+import { WidgetActions } from "./WidgetActions.tsx";
 
 /** Event listeners and ARIA attributes dnd-kit puts on the drag handle (the grip button). */
 export interface GripProps {
@@ -69,7 +70,7 @@ export function WidgetBlock({
 					<GripIcon className="size-3.5" />
 				</button>
 			)}
-			<div className="min-w-0 flex-1">
+			<div className="relative min-w-0 flex-1">
 				{/* The select button is a sibling of the children, never their parent: buttons can't be nested. */}
 				<button
 					type="button"
@@ -77,9 +78,9 @@ export function WidgetBlock({
 					onClick={() => selectWidget(widget.id)}
 					className={`flex w-full cursor-pointer items-center gap-2.5 rounded-md text-left ${
 						nested
-							? "min-h-11 px-2.5 py-1.5"
-							: `min-h-14 py-2 pr-3 ${grip ? "pl-1" : "pl-3"}`
-					}`}
+							? "min-h-11 py-1.5 pl-2.5"
+							: `min-h-14 py-2 ${grip ? "pl-1" : "pl-3"}`
+					} ${selected ? "pr-20" : "pr-3"}`}
 				>
 					<Badge text={abbr} tone={tone} size={nested ? "sm" : "md"} />
 					<span className="min-w-0">
@@ -93,6 +94,7 @@ export function WidgetBlock({
 						</span>
 					</span>
 				</button>
+				{selected && <WidgetActions widgetId={widget.id} title={title} />}
 				{widget.children.length > 0 && <NestedWidgets parent={widget} />}
 			</div>
 		</div>

@@ -3,6 +3,7 @@ import { Logo } from "./Logo.tsx";
 import { PageTabs } from "./PageTabs.tsx";
 import { PublishButton } from "./PublishButton.tsx";
 import { UndoButton } from "./UndoButton.tsx";
+import { UnsavedIndicator } from "./UnsavedIndicator.tsx";
 import { ViewSwitch } from "./ViewSwitch.tsx";
 
 /**
@@ -20,6 +21,7 @@ export function TopBar() {
 			<div className="ml-auto flex items-center gap-2.5">
 				<ViewSwitch />
 				<UndoButton />
+				<UnsavedIndicator />
 				<PublishButton />
 			</div>
 		</header>

@@ -88,3 +88,16 @@ export function widgetDisplay(widget: WidgetNode): WidgetDisplay {
 	const entry = catalogEntry(widget.type);
 	return { title: widget.title ?? entry.label, abbr: entry.abbr, tone };
 }
+
+/**
+ * Picks a name for a new page that no page has yet: "New page", "New page 2", …
+ * @param pages - The existing pages.
+ * @returns An unused name.
+ */
+export function nextPageName(pages: readonly PageNode[]): string {
+	const taken = new Set(pages.map((page) => page.name));
+	if (!taken.has("New page")) return "New page";
+	let number = 2;
+	while (taken.has(`New page ${number}`)) number += 1;
+	return `New page ${number}`;
+}
