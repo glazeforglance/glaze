@@ -536,8 +536,33 @@ export function insertSeqItem(
 }
 
 /**
+ * Returns the source text of one list item (with its leading comment lines),
+ * shifted to column 0 so it starts with `- `.
+ * @param src - Current source.
+ * @param yaml - `src`, parsed.
+ * @param seqPath - Path of the list.
+ * @param index - Item to read.
+ * @returns The item text, or `null` when the item doesn't exist or the list is flow style.
+ */
+export function readSeqItem(
+	src: string,
+	yaml: ParsedYaml,
+	seqPath: YamlPath,
+	index: number,
+): string | null {
+	const node = getNodeAt(yaml, seqPath);
+	if (!isSeq(node)) return null;
+	const layout = seqLayout(src, node);
+	if (!layout.ok) return null;
+	const span = layout.value.spans[index];
+	if (!span) return null;
+	return dedent(src.slice(span.start, span.contentEnd), layout.value.col);
+}
+
+/**
  * Removes item `index` from the list at `seqPath`, together with the blank
- * lines that separated it from its neighbours. Comments above it are kept.
+ * lines that separated it from its neighbours and the comment lines directly
+ * above it (they describe the item).
  * @param src - Current source.
  * @param yaml - `src`, parsed.
  * @param seqPath - Path of the list.

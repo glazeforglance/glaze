@@ -9,6 +9,7 @@ export {
 export { validateLayout } from "./layout.ts";
 export { getModel } from "./model.ts";
 export { addPage, movePage, removePage, renamePage } from "./pages.ts";
+export { getNodeSource } from "./source.ts";
 export { err, ok, type Result } from "./result.ts";
 export type {
 	ColumnNode,
