@@ -40,7 +40,7 @@ export function loadDotEnv(root: string): boolean {
  * server finds the file no matter which folder it was started from.
  * @param env - Environment variables, usually `process.env`.
  * @param root - Directory that relative paths are resolved from.
- * @returns The settings, or a message when `PORT` is not a valid port number.
+ * @returns The settings, or a message when `GLAZE_PORT` is not a valid port number.
  */
 export function readServerEnv(
 	env: Readonly<Record<string, string | undefined>>,
@@ -48,10 +48,12 @@ export function readServerEnv(
 ): Result<ServerEnv, string> {
 	const rawPath = env.GLAZE_CONFIG_PATH?.trim() || DEFAULT_CONFIG_PATH;
 	const configPath = isAbsolute(rawPath) ? rawPath : resolve(root, rawPath);
-	const rawPort = env.PORT?.trim();
+	const rawPort = env.GLAZE_PORT?.trim();
 	const port = rawPort ? Number(rawPort) : DEFAULT_PORT;
 	if (!Number.isInteger(port) || port < 1 || port > 65535) {
-		return err(`PORT must be a number between 1 and 65535, got "${rawPort}"`);
+		return err(
+			`GLAZE_PORT must be a number between 1 and 65535, got "${rawPort}"`,
+		);
 	}
 	return ok({ configPath, port });
 }

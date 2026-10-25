@@ -26,9 +26,14 @@ describe("readServerEnv", () => {
 	});
 
 	it("rejects an invalid port", () => {
-		expect(readServerEnv({ PORT: "abc" }, ROOT).ok).toBe(false);
-		expect(readServerEnv({ PORT: "70000" }, ROOT).ok).toBe(false);
-		const port = readServerEnv({ PORT: "9000" }, ROOT);
+		expect(readServerEnv({ GLAZE_PORT: "abc" }, ROOT).ok).toBe(false);
+		expect(readServerEnv({ GLAZE_PORT: "70000" }, ROOT).ok).toBe(false);
+		const port = readServerEnv({ GLAZE_PORT: "9000" }, ROOT);
 		expect(port.ok && port.value.port).toBe(9000);
+	});
+
+	it("ignores a generic PORT set by other tools", () => {
+		const result = readServerEnv({ PORT: "5173" }, ROOT);
+		expect(result.ok && result.value.port).toBe(8090);
 	});
 });
