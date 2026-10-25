@@ -1,4 +1,4 @@
-import { isSeq } from "yaml";
+import { isNode, isSeq } from "yaml";
 import type { GlazeDocument } from "./document.ts";
 import { checkListPath, finishEdit, moveItem, splitItemPath } from "./edit.ts";
 import { err, type Result } from "./result.ts";
@@ -78,6 +78,45 @@ export function removeWidget(
 	const removed = removeSeqItem(doc.source, doc.yaml, seq, index);
 	if (!removed.ok) return removed;
 	return finishEdit(doc, removed.value.source, { kind: "remove", seq, index });
+}
+
+/**
+ * Inserts a copy of a widget right after it. The copy is written from the
+ * widget's values (merge keys resolved), not copied as text: a text copy would
+ * define its `&anchor` a second time, and aliases further down the file would
+ * then silently point at the copy. Comments inside the widget are not copied.
+ * @param doc - The document to edit.
+ * @param widgetPath - Path of the widget to copy.
+ * @returns The new document, or why the widget couldn't be copied.
+ */
+export function duplicateWidget(
+	doc: GlazeDocument,
+	widgetPath: YamlPath,
+): Result<GlazeDocument, EditError> {
+	const item = splitItemPath(widgetPath, WIDGET_LISTS);
+	if (!item.ok) return item;
+	const { seq, index } = item.value;
+	const node = getNodeAt(doc.yaml, widgetPath);
+	const value: unknown = isNode(node) ? node.toJS(doc.yaml) : undefined;
+	if (typeof value !== "object" || value === null || Array.isArray(value)) {
+		return err(
+			editError("not-found", `No widget at ${JSON.stringify(widgetPath)}`),
+		);
+	}
+	const eol = doc.source.includes("\r\n") ? "\r\n" : "\n";
+	const source = insertSeqItem(
+		doc.source,
+		doc.yaml,
+		seq,
+		index + 1,
+		renderItem(value, eol),
+	);
+	if (!source.ok) return source;
+	return finishEdit(doc, source.value, {
+		kind: "insert",
+		seq,
+		index: index + 1,
+	});
 }
 
 /**

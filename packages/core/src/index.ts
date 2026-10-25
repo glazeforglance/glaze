@@ -25,6 +25,7 @@ export type {
 } from "./types.ts";
 export {
 	addWidget,
+	duplicateWidget,
 	moveWidget,
 	removeWidget,
 	removeWidgetOption,

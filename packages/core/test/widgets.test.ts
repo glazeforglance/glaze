@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
 	addWidget,
+	duplicateWidget,
 	getModel,
 	moveWidget,
 	removeWidget,
@@ -398,5 +399,62 @@ describe("removeWidgetOption", () => {
 		expect(
 			unwrapErr(removeWidgetOption(doc, [...GROUP, "widgets", 1], "url")).code,
 		).toBe("option-not-found");
+	});
+});
+
+describe("duplicateWidget", () => {
+	it("inserts a copy right after the widget, merge keys resolved", () => {
+		const next = unwrap(duplicateWidget(doc, [...GROUP, "widgets", 1]));
+		const added = [
+			"              - type: custom-api",
+			"                title: Series",
+			"                url: http://sonarr:8989/api/v3/calendar?includeSeries=true",
+			"                headers:",
+			"                  X-Api-Key: ${SONARR_API_KEY}",
+			"                template: |",
+			'                  <ul class="list list-gap-10">',
+			'                  {{ range .JSON.Array "" }}',
+			'                    <li>{{ .String "series.title" }} · S{{ .Int "seasonNumber" }}E{{ .Int "episodeNumber" }}</li>',
+			"                  {{ end }}",
+			"                  </ul>",
+			"                parameters:",
+			"                  tags: 1",
+		];
+		expectLineChanges(source, serializeConfig(next), { removed: [], added });
+		const tabs = getModel(next)[0]?.columns[1]?.widgets[0]?.children;
+		expect(tabs?.map((tab) => tab.title)).toEqual([
+			"Alles",
+			"Series",
+			"Series",
+			"Anime",
+		]);
+		// The copy doesn't redefine the anchor, so the alias after it still points at the original.
+		expect(serializeConfig(next).match(/&sonarr/g)).toHaveLength(1);
+	});
+
+	it("keeps the list's blank-line style", () => {
+		const next = serializeConfig(unwrap(duplicateWidget(doc, CLOCK)));
+		expect(next).toContain(
+			"                label: Thuis\n\n          - type: clock\n            hour-format: 24h\n",
+		);
+	});
+
+	it("gives the copy a new id and keeps the original's", () => {
+		const before = getModel(doc)[0]?.columns[0]?.widgets;
+		const after = getModel(unwrap(duplicateWidget(doc, CLOCK)))[0]?.columns[0]
+			?.widgets;
+		expect(after?.[0]?.id).toBe(before?.[0]?.id);
+		expect(after?.[2]?.id).toBe(before?.[1]?.id);
+		expect(after?.[1]?.id).not.toBe(before?.[0]?.id);
+	});
+
+	it("rejects paths that are not widgets", () => {
+		expect(unwrapErr(duplicateWidget(doc, [...HOME, "columns", 0])).code).toBe(
+			"invalid-path",
+		);
+		expect(
+			unwrapErr(duplicateWidget(doc, [...HOME, "columns", 0, "widgets", 9]))
+				.code,
+		).toBe("not-found");
 	});
 });
