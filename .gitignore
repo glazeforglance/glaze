@@ -13,6 +13,7 @@ build/
 
 # ── Local test config (your own glance.yml with real API keys) ──
 .dev/
+.claude/
 
 # ── Logs ──
 *.log
