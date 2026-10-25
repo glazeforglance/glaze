@@ -1,5 +1,5 @@
 import type { WidgetNode } from "@glaze/core";
-import { badgeToneFor, catalogEntry } from "../../lib/widget-catalog.ts";
+import { widgetDisplay } from "../../lib/model.ts";
 import { Badge } from "../ui/Badge.tsx";
 
 export interface InspectorHeaderProps {
@@ -12,20 +12,14 @@ export interface InspectorHeaderProps {
  * @returns The header element.
  */
 export function InspectorHeader({ widget }: InspectorHeaderProps) {
-	const entry = catalogEntry(widget.type);
-	const isInclude = widget.include !== null;
+	const { title, abbr, tone } = widgetDisplay(widget);
 	return (
 		<header className="mb-4 flex items-center gap-3">
-			<Badge
-				text={isInclude ? "IN" : entry.abbr}
-				tone={badgeToneFor(widget.type)}
-			/>
+			<Badge text={abbr} tone={tone} />
 			<div className="min-w-0">
-				<h2 className="truncate text-lg font-bold">
-					{isInclude ? "Include" : (widget.title ?? entry.label)}
-				</h2>
+				<h2 className="truncate text-lg font-bold">{title}</h2>
 				<p className="truncate font-mono text-xs text-muted">
-					{isInclude
+					{widget.include !== null
 						? `$include: ${widget.include}`
 						: `type: ${widget.type ?? "?"}`}
 				</p>

@@ -1,0 +1,36 @@
+import { DndContext, DragOverlay, MeasuringStrategy } from "@dnd-kit/core";
+import { type ReactNode, useMemo } from "react";
+import { useEditorDnd } from "../../hooks/use-editor-dnd.ts";
+import { listsOfPage } from "../../lib/drop-target.ts";
+import { selectCurrentPage, useEditor } from "../../store/editor-store.ts";
+import { DragPreview } from "./DragPreview.tsx";
+import { DragStateContext } from "./drag-state.ts";
+
+export interface EditorDndContextProps {
+	readonly children: ReactNode;
+}
+
+/**
+ * Wraps the library and the canvas so widgets can be dragged between them.
+ * @param props - The editor areas that take part in drag & drop.
+ * @returns The drag & drop context with its drag preview.
+ */
+export function EditorDndContext({ children }: EditorDndContextProps) {
+	const page = useEditor(selectCurrentPage);
+	const lists = useMemo(() => (page ? listsOfPage(page) : []), [page]);
+	const { state, dndProps } = useEditorDnd(lists);
+
+	return (
+		<DndContext
+			{...dndProps}
+			// The drop indicator pushes widgets down, so drop areas must be re-measured during the drag.
+			measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
+		>
+			<DragStateContext value={state}>{children}</DragStateContext>
+			{/* No drop animation: the widget is re-rendered in its new place right away. */}
+			<DragOverlay dropAnimation={null}>
+				{state.active ? <DragPreview drag={state.active} /> : null}
+			</DragOverlay>
+		</DndContext>
+	);
+}

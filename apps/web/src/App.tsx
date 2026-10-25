@@ -1,4 +1,5 @@
 import { Canvas } from "./components/canvas/Canvas.tsx";
+import { EditorDndContext } from "./components/dnd/EditorDndContext.tsx";
 import { Inspector } from "./components/inspector/Inspector.tsx";
 import { WidgetLibrary } from "./components/library/WidgetLibrary.tsx";
 import { TopBar } from "./components/top-bar/TopBar.tsx";
@@ -37,8 +38,10 @@ export function App() {
 		<div className="flex h-full flex-col">
 			<TopBar />
 			<div className="flex min-h-0 flex-1">
-				<WidgetLibrary />
-				<Canvas />
+				<EditorDndContext>
+					<WidgetLibrary />
+					<Canvas />
+				</EditorDndContext>
 				<Inspector />
 			</div>
 		</div>

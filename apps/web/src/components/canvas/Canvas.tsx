@@ -1,5 +1,7 @@
+import { listsOfPage } from "../../lib/drop-target.ts";
 import { selectCurrentPage, useEditor } from "../../store/editor-store.ts";
 import { ColumnCard } from "./ColumnCard.tsx";
+import { EditNotice } from "./EditNotice.tsx";
 import { HeadWidgets } from "./HeadWidgets.tsx";
 import { PageHeader } from "./PageHeader.tsx";
 
@@ -19,6 +21,8 @@ export function Canvas() {
 		);
 	}
 
+	const [headList, ...columnLists] = listsOfPage(page);
+
 	return (
 		<main
 			aria-label={`Page ${page.name ?? ""}`}
@@ -29,6 +33,7 @@ export function Canvas() {
 			}}
 		>
 			<PageHeader page={page} />
+			<EditNotice />
 			{page.include !== null ? (
 				<p className="text-sm text-muted">
 					This page comes from <code className="font-mono">{page.include}</code>{" "}
@@ -36,11 +41,16 @@ export function Canvas() {
 				</p>
 			) : (
 				<>
-					<HeadWidgets widgets={page.headWidgets} />
+					{headList && (
+						<HeadWidgets widgets={page.headWidgets} list={headList} />
+					)}
 					<div className="flex items-start gap-4">
-						{page.columns.map((column, index) => (
-							<ColumnCard key={column.id} column={column} index={index} />
-						))}
+						{page.columns.map((column, index) => {
+							const list = columnLists[index];
+							return list ? (
+								<ColumnCard key={column.id} column={column} list={list} />
+							) : null;
+						})}
 					</div>
 				</>
 			)}
