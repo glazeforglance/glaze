@@ -13,22 +13,80 @@ const STROKE = {
 	strokeLinejoin: "round",
 } as const;
 
-/** The Glaze logo mark: an eye in a rounded square, like a glance. */
+/**
+ * The Glaze logo: a Glance column plus widgets, with the edited one in amber.
+ * Same artwork as `docs/brand/glaze-logo.svg`; its colors are fixed on purpose
+ * so the logo looks identical everywhere, independent of `currentColor`.
+ */
 export function GlazeMark({ className = "size-7" }: IconProps) {
 	return (
-		<svg viewBox="0 0 28 28" className={className} aria-hidden="true">
+		<svg
+			viewBox="0 0 64 64"
+			fill="none"
+			className={className}
+			aria-hidden="true"
+		>
+			<rect width="64" height="64" rx="14" fill="#151519" />
 			<rect
-				x="1"
-				y="1"
-				width="26"
-				height="26"
-				rx="8"
-				fill="none"
-				stroke="currentColor"
+				x="10"
+				y="14"
+				width="16"
+				height="36"
+				rx="4"
+				fill="#1F1F28"
+				stroke="#232832"
 				strokeWidth="2"
 			/>
-			<path d="M7 15c2-4 4.5-6 7-6s5 2 7 6" {...STROKE} strokeWidth={2} />
-			<circle cx="14" cy="15" r="2.6" fill="currentColor" />
+			<line
+				x1="14"
+				y1="19"
+				x2="22"
+				y2="19"
+				stroke="#6CB6FF"
+				strokeWidth="2.5"
+				strokeLinecap="round"
+			/>
+			<rect
+				x="30"
+				y="37"
+				width="24"
+				height="13"
+				rx="4"
+				fill="#1F1F28"
+				stroke="#D9C38C"
+				strokeWidth="2"
+				strokeOpacity="0.5"
+			/>
+			<rect
+				x="30"
+				y="12"
+				width="24"
+				height="21"
+				rx="4.5"
+				fill="#1F1F28"
+				stroke="#F5B54A"
+				strokeWidth="3"
+			/>
+			<circle cx="36" cy="19" r="2.2" fill="#5BD08F" />
+			<line
+				x1="41"
+				y1="19"
+				x2="49"
+				y2="19"
+				stroke="#E6E8EC"
+				strokeWidth="2"
+				strokeLinecap="round"
+			/>
+			<circle cx="36" cy="26" r="2.2" fill="#5BD08F" />
+			<line
+				x1="41"
+				y1="26"
+				x2="47"
+				y2="26"
+				stroke="#A3ABB8"
+				strokeWidth="2"
+				strokeLinecap="round"
+			/>
 		</svg>
 	);
 }

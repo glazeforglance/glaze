@@ -46,7 +46,7 @@ function LoginForm({ notice }: LoginFormProps) {
 			aria-describedby={notice ? `${id}-notice` : undefined}
 		>
 			<div className="flex flex-col items-center gap-3 text-center">
-				<GlazeMark className="size-11 text-accent" />
+				<GlazeMark className="size-11" />
 				<h1 className="text-xl font-bold tracking-tight">Log in to Glaze</h1>
 				{notice && (
 					<p id={`${id}-notice`} className="text-sm text-muted">

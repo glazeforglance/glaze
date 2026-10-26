@@ -32,7 +32,7 @@ function Editor() {
 	if (status !== "ready") {
 		return (
 			<div className="flex h-full flex-col items-center justify-center gap-4 px-6 text-center">
-				<GlazeMark className="size-10 text-accent" />
+				<GlazeMark className="size-10" />
 				{status === "loading" ? (
 					<p role="status" className="text-muted">
 						Loading glance.yml…
@@ -82,7 +82,7 @@ export function App() {
 	if (status === "checking") {
 		return (
 			<div className="flex h-full flex-col items-center justify-center gap-4">
-				<GlazeMark className="size-10 text-accent" />
+				<GlazeMark className="size-10" />
 				<p role="status" className="text-muted">
 					Starting Glaze…
 				</p>
@@ -92,7 +92,7 @@ export function App() {
 	if (status === "error") {
 		return (
 			<div className="flex h-full flex-col items-center justify-center gap-4 px-6 text-center">
-				<GlazeMark className="size-10 text-accent" />
+				<GlazeMark className="size-10" />
 				<div role="alert" className="max-w-xl">
 					<p className="font-semibold">Can't reach Glaze</p>
 					<p className="mt-1 font-mono text-sm text-danger">{error}</p>

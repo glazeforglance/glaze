@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="docs/brand/glaze-logo.svg" alt="Glaze logo" width="96">
+
 # Glaze
 
 **A visual editor for [Glance](https://github.com/glanceapp/glance) dashboards.**
@@ -140,6 +142,7 @@ x-casaos:
     - amd64
     - arm64
   main: glaze
+  icon: https://raw.githubusercontent.com/KlingeSean/glaze-for-glance/main/docs/brand/glaze-logo-512.png
   title:
     en_us: Glaze
   description:
