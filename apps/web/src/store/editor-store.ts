@@ -8,16 +8,22 @@ import {
 	type EditError,
 	type GlazeDocument,
 	getModel,
+	insertWidgetListItem,
 	movePage,
 	moveWidget,
+	moveWidgetListItem,
 	type PageNode,
 	parseConfig,
 	type Result,
 	removeColumn,
 	removePage,
 	removeWidget,
+	removeWidgetOption,
+	removeWidgetValue,
 	renamePage,
 	setColumnSize,
+	setWidgetOption,
+	setWidgetValue,
 	type WidgetInput,
 	type YamlPath,
 } from "@glaze/core";
@@ -94,6 +100,33 @@ export interface EditorActions {
 	duplicateWidget(widgetId: string): void;
 	/** Removes a widget of the current page. */
 	removeWidget(widgetId: string): void;
+
+	/*
+	 * Option edits for the inspector. Each returns whether the edit was applied,
+	 * so a form field can reset itself when it was refused.
+	 */
+	/** Sets a top-level option; on an inherited option this writes an override. */
+	setWidgetOption(widgetId: string, key: string, value: unknown): boolean;
+	/** Removes a top-level option the widget sets itself. */
+	removeWidgetOption(widgetId: string, key: string): boolean;
+	/** Sets a value below an option, e.g. `["sites", 2, "url"]`. */
+	setWidgetValue(widgetId: string, subPath: YamlPath, value: unknown): boolean;
+	/** Removes a key or list item below an option. */
+	removeWidgetValue(widgetId: string, subPath: YamlPath): boolean;
+	/** Adds an item to a list option; defaults to the end. */
+	insertWidgetListItem(
+		widgetId: string,
+		listSubPath: YamlPath,
+		value: unknown,
+		index?: number,
+	): boolean;
+	/** Moves an item within a list option (`toIndex` counted without the item). */
+	moveWidgetListItem(
+		widgetId: string,
+		listSubPath: YamlPath,
+		fromIndex: number,
+		toIndex: number,
+	): boolean;
 }
 
 export type EditorStore = EditorState & EditorActions;
@@ -136,19 +169,21 @@ export function createEditorStore(): StoreApi<EditorStore> {
 		/**
 		 * Runs one core edit. On success: new document and model, marked dirty,
 		 * selection from `selectAfter`. On failure: only a notice; the document
-		 * stays exactly as it was.
+		 * stays exactly as it was. Returns whether the edit was applied.
 		 */
 		const runEdit = (
 			edit: (doc: GlazeDocument) => Result<GlazeDocument, EditError>,
 			selectAfter: (pages: readonly PageNode[]) => Selection = () => ({}),
-		): void => {
+		): boolean => {
 			const { doc } = get();
-			if (!doc) return;
+			if (!doc) return false;
 			const result = edit(doc);
 			if (!result.ok) {
 				set({ notice: result.error.message });
-				return;
+				return false;
 			}
+			// No-op edits (e.g. a move to the same index) return the same document.
+			if (result.value === doc) return true;
 			const pages = getModel(result.value);
 			set({
 				doc: result.value,
@@ -157,6 +192,20 @@ export function createEditorStore(): StoreApi<EditorStore> {
 				notice: null,
 				...selectAfter(pages),
 			});
+			return true;
+		};
+
+		/** Runs an option edit on a widget of the current page. Option edits keep widget ids. */
+		const editWidget = (
+			widgetId: string,
+			edit: (
+				doc: GlazeDocument,
+				path: YamlPath,
+			) => Result<GlazeDocument, EditError>,
+		): boolean => {
+			const widget = widgetOnPage(widgetId);
+			if (!widget) return false;
+			return runEdit((doc) => edit(doc, widget.path));
 		};
 
 		const pageById = (pageId: string): PageNode | null =>
@@ -334,6 +383,34 @@ export function createEditorStore(): StoreApi<EditorStore> {
 					() => ({ selectedWidgetId: null }),
 				);
 			},
+
+			setWidgetOption: (widgetId, key, value) =>
+				editWidget(widgetId, (doc, path) =>
+					setWidgetOption(doc, path, key, value),
+				),
+
+			removeWidgetOption: (widgetId, key) =>
+				editWidget(widgetId, (doc, path) => removeWidgetOption(doc, path, key)),
+
+			setWidgetValue: (widgetId, subPath, value) =>
+				editWidget(widgetId, (doc, path) =>
+					setWidgetValue(doc, path, subPath, value),
+				),
+
+			removeWidgetValue: (widgetId, subPath) =>
+				editWidget(widgetId, (doc, path) =>
+					removeWidgetValue(doc, path, subPath),
+				),
+
+			insertWidgetListItem: (widgetId, listSubPath, value, index) =>
+				editWidget(widgetId, (doc, path) =>
+					insertWidgetListItem(doc, path, listSubPath, value, index),
+				),
+
+			moveWidgetListItem: (widgetId, listSubPath, fromIndex, toIndex) =>
+				editWidget(widgetId, (doc, path) =>
+					moveWidgetListItem(doc, path, listSubPath, fromIndex, toIndex),
+				),
 		};
 	});
 }

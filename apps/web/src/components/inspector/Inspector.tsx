@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { WidgetForm } from "../../forms/WidgetForm.tsx";
 import { findWidget } from "../../lib/model.ts";
 import { selectCurrentPage, useEditor } from "../../store/editor-store.ts";
 import { InspectorHeader } from "./InspectorHeader.tsx";
@@ -35,15 +36,17 @@ export function Inspector() {
 						aria-labelledby={`inspector-tab-${tab}`}
 						className="pt-4"
 					>
-						{tab === "settings" && (
-							<p className="text-sm text-muted">Forms arrive in phase 3.</p>
+						{tab === "yaml" ? (
+							<YamlView widget={widget} />
+						) : (
+							// Keyed by id: a new widget gets a fresh form, an edit keeps this one.
+							<WidgetForm
+								key={widget.id}
+								widget={widget}
+								tab={tab}
+								onShowYaml={() => setTab("yaml")}
+							/>
 						)}
-						{tab === "style" && (
-							<p className="text-sm text-muted">
-								Style options arrive in phase 3.
-							</p>
-						)}
-						{tab === "yaml" && <YamlView widget={widget} />}
 					</div>
 				</>
 			)}
