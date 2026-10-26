@@ -27,6 +27,8 @@ export interface MenuProps {
 	readonly triggerClassName?: string;
 	/** Which edge of the trigger the menu lines up with. */
 	readonly align?: "left" | "right";
+	/** Non-interactive text above the items, e.g. who is signed in. */
+	readonly header?: ReactNode;
 }
 
 /**
@@ -41,6 +43,7 @@ export function Menu({
 	items,
 	triggerClassName = "",
 	align = "left",
+	header,
 }: MenuProps) {
 	const [open, setOpen] = useState(false);
 	const triggerRef = useRef<HTMLButtonElement>(null);
@@ -117,6 +120,14 @@ export function Menu({
 						align === "right" ? "right-0" : "left-0"
 					}`}
 				>
+					{header !== undefined && (
+						<li
+							role="presentation"
+							className="mb-1 border-b border-line px-2.5 pt-1.5 pb-2 text-xs text-muted"
+						>
+							{header}
+						</li>
+					)}
 					{items.map((item) => (
 						<li key={item.label} role="none">
 							<button

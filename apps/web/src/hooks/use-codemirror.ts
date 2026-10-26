@@ -13,6 +13,7 @@ import {
 	setSelectionHighlight,
 } from "../lib/codemirror/selection-highlight.ts";
 import { minimalChange } from "../lib/codemirror/text-sync.ts";
+import { cspNonce } from "../lib/csp.ts";
 import {
 	glazeEditorTheme,
 	glazeHighlightStyle,
@@ -107,6 +108,8 @@ export function useCodeMirror(options: CodeMirrorOptions): {
 					syntaxHighlighting(glazeHighlightStyle),
 					lintGutter(),
 					selectionHighlightField,
+					// Lets CodeMirror's <style> elements pass the CSP (see lib/csp.ts).
+					EditorView.cspNonce.of(cspNonce()),
 					EditorView.contentAttributes.of({ "aria-label": `${label} source` }),
 					EditorView.updateListener.of((update) => {
 						const external = update.transactions.some(

@@ -34,6 +34,36 @@ function messageOf(body: unknown, fallback: string): string {
 	return message === undefined ? fallback : String(message);
 }
 
+/** Waits until the user has logged in again; set by the auth store. */
+type UnauthorizedHandler = () => Promise<void>;
+
+let onUnauthorized: UnauthorizedHandler | null = null;
+
+/**
+ * Sets what happens when the API answers 401 (the session expired or was
+ * ended): the handler shows the login overlay and resolves once the user is
+ * logged in again. The request is then sent again, so the original action
+ * (a publish, a validation) finishes and nothing in the editor is lost.
+ * @param handler - The handler, or `null` to remove it.
+ */
+export function setUnauthorizedHandler(
+	handler: UnauthorizedHandler | null,
+): void {
+	onUnauthorized = handler;
+}
+
+/**
+ * `fetch`, but a 401 waits for a new login and then retries. Bodies are
+ * always strings here, so sending the same `init` twice is safe.
+ * Throws like `fetch` (network errors, aborts).
+ */
+async function send(url: string, init: RequestInit = {}): Promise<Response> {
+	const response = await fetch(url, init);
+	if (response.status !== 401 || onUnauthorized === null) return response;
+	await onUnauthorized();
+	return send(url, init);
+}
+
 /** Fetches JSON; turns network failures and non-2xx answers into an `ApiError`. */
 async function requestJson(
 	url: string,
@@ -41,7 +71,7 @@ async function requestJson(
 ): Promise<Result<unknown, ApiError>> {
 	let response: Response;
 	try {
-		response = await fetch(url, init);
+		response = await send(url, init);
 	} catch (error) {
 		// An abort is the caller's own doing; report it as such so it can be ignored.
 		const aborted =
@@ -200,7 +230,7 @@ export async function putConfig(
 ): Promise<Result<Published, PublishError>> {
 	let response: Response;
 	try {
-		response = await fetch(
+		response = await send(
 			"/api/config",
 			jsonInit(
 				"PUT",
@@ -358,4 +388,110 @@ export async function fetchSettings(): Promise<Result<Settings, ApiError>> {
 		glanceUrl: typeof glanceUrl === "string" ? glanceUrl : null,
 		glanceValidation: field(result.value, "glanceValidation") === true,
 	});
+}
+
+/** The login state, as `GET /api/auth/session` reports it. */
+export interface Session {
+	readonly authenticated: boolean;
+	readonly user: string | null;
+	/** `GLAZE_AUTH=off` on the server (development only). */
+	readonly authDisabled: boolean;
+}
+
+function sessionOf(body: unknown): Session {
+	const user = field(body, "user");
+	return {
+		authenticated: field(body, "authenticated") === true,
+		user: typeof user === "string" ? user : null,
+		authDisabled: field(body, "authDisabled") === true,
+	};
+}
+
+// The auth routes use plain `fetch`: their 401 means "wrong password", not
+// "show the login overlay".
+
+/**
+ * Asks the server whether this browser has a valid session.
+ * @returns The session state, or why the server couldn't be asked.
+ */
+export async function fetchSession(): Promise<Result<Session, ApiError>> {
+	try {
+		const response = await fetch("/api/auth/session", { cache: "no-store" });
+		const body: unknown = await response.json().catch(() => null);
+		if (!response.ok) {
+			return err({
+				status: response.status,
+				message: messageOf(body, `The API answered ${response.status}`),
+			});
+		}
+		return ok(sessionOf(body));
+	} catch {
+		return err({ status: null, message: UNREACHABLE });
+	}
+}
+
+/** Why logging in failed. */
+export interface LoginError {
+	readonly kind: "invalid" | "rate-limited" | "network" | "server";
+	readonly message: string;
+	/** Seconds to wait, for `rate-limited`. */
+	readonly retryAfter?: number;
+}
+
+/**
+ * Logs in; the server sets the session cookie.
+ * @param username - The admin username.
+ * @param password - The password.
+ * @returns The new session, or why it failed.
+ */
+export async function login(
+	username: string,
+	password: string,
+): Promise<Result<Session, LoginError>> {
+	let response: Response;
+	try {
+		response = await fetch(
+			"/api/auth/login",
+			jsonInit("POST", { username, password }),
+		);
+	} catch {
+		return err({ kind: "network", message: UNREACHABLE });
+	}
+	const body: unknown = await response.json().catch(() => null);
+	if (response.ok) return ok(sessionOf(body));
+	if (response.status === 401) {
+		return err({ kind: "invalid", message: "Wrong username or password." });
+	}
+	if (response.status === 429) {
+		const seconds = Number(response.headers.get("Retry-After"));
+		const retryAfter = Number.isFinite(seconds) && seconds > 0 ? seconds : 60;
+		const minutes = Math.ceil(retryAfter / 60);
+		return err({
+			kind: "rate-limited",
+			retryAfter,
+			message: `Too many failed attempts. Try again in ${minutes} minute${minutes === 1 ? "" : "s"}.`,
+		});
+	}
+	return err({
+		kind: "server",
+		message: messageOf(body, `The API answered ${response.status}`),
+	});
+}
+
+/**
+ * Ends the session; the server clears the cookie.
+ * @returns Nothing, or why the server couldn't be reached.
+ */
+export async function logout(): Promise<Result<void, ApiError>> {
+	try {
+		const response = await fetch("/api/auth/logout", jsonInit("POST", {}));
+		return response.ok
+			? ok(undefined)
+			: err({
+					status: response.status,
+					message: `The API answered ${response.status}`,
+				});
+	} catch {
+		return err({ status: null, message: UNREACHABLE });
+	}
 }

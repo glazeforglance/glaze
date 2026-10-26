@@ -1,13 +1,16 @@
+import { AuthOffBadge } from "./AuthOffBadge.tsx";
 import { FileBadge } from "./FileBadge.tsx";
 import { Logo } from "./Logo.tsx";
 import { PageTabs } from "./PageTabs.tsx";
 import { PublishButton } from "./PublishButton.tsx";
 import { UndoButton } from "./UndoButton.tsx";
 import { UnsavedIndicator } from "./UnsavedIndicator.tsx";
+import { UserMenu } from "./UserMenu.tsx";
 import { ViewSwitch } from "./ViewSwitch.tsx";
 
 /**
- * The bar at the top: logo and file, page tabs, view switch, undo and Publish.
+ * The bar at the top: logo and file, page tabs, view switch, undo, Publish
+ * and the user menu (or the "Auth off" badge).
  * @returns The header element.
  */
 export function TopBar() {
@@ -16,6 +19,7 @@ export function TopBar() {
 			<div className="flex items-center gap-2.5">
 				<Logo />
 				<FileBadge />
+				<AuthOffBadge />
 			</div>
 			<PageTabs />
 			<div className="ml-auto flex items-center gap-2.5">
@@ -23,6 +27,7 @@ export function TopBar() {
 				<UndoButton />
 				<UnsavedIndicator />
 				<PublishButton />
+				<UserMenu />
 			</div>
 		</header>
 	);

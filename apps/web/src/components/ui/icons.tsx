@@ -158,3 +158,16 @@ export function SplitIcon({ className = "size-4" }: IconProps) {
 		</svg>
 	);
 }
+
+/** A person: the user menu. */
+export function UserIcon({ className = "size-4" }: IconProps) {
+	return (
+		<svg viewBox="0 0 16 16" className={className} aria-hidden="true">
+			<circle cx="8" cy="5.5" r="2.75" {...STROKE} />
+			<path
+				d="M2.75 13.5c.9-2.4 2.9-3.75 5.25-3.75s4.35 1.35 5.25 3.75"
+				{...STROKE}
+			/>
+		</svg>
+	);
+}
