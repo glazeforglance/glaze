@@ -1,0 +1,41 @@
+# Glance + Glaze sharing one config folder. Copy next to your config:
+#
+#   .
+#   ├─ compose.yml      (this file)
+#   ├─ glaze.env        (GLAZE_ADMIN_PASSWORD_HASH, see below)
+#   └─ config/
+#      └─ glance.yml
+#
+# Create the password hash once:
+#   docker run --rm -it ghcr.io/klingesean/glaze:latest hash-password
+# and put it in glaze.env, in single quotes (the hash contains $ signs):
+#   GLAZE_ADMIN_PASSWORD_HASH='scrypt$32768$8$1$...$...'
+
+services:
+  glance:
+    image: glanceapp/glance:v0.8.7
+    restart: unless-stopped
+    volumes:
+      # Glance reads /app/config/glance.yml.
+      - ./config:/app/config
+    ports:
+      - "8080:8080"
+
+  glaze:
+    image: ghcr.io/klingesean/glaze:latest
+    restart: unless-stopped
+    # Glaze runs as uid 1000. If ./config belongs to another user, either
+    # `chown -R 1000:1000 ./config`, or run Glaze as that user here:
+    # user: "1000:1000"
+    volumes:
+      # Mount the folder, not the single file: Glaze writes a temp file next
+      # to glance.yml and renames it, and keeps its secret in .glaze/.
+      - ./config:/config
+    ports:
+      - "8090:8090"
+    env_file: glaze.env
+    environment:
+      # Where your *browser* reaches Glance, for the live preview.
+      GLANCE_URL: http://localhost:8080
+      # Behind a reverse proxy or Cloudflare Tunnel:
+      # GLAZE_TRUST_PROXY: "true"

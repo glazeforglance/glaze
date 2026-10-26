@@ -1,0 +1,15 @@
+# Only the sources the image build needs; never local configs or secrets.
+**/node_modules
+**/dist
+.dev
+.env
+.env.*
+!.env.example
+**/*.env
+.git
+.github
+.claude
+**/coverage
+**/*.log
+**/*.tsbuildinfo
+docs/design
