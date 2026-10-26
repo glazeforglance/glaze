@@ -76,7 +76,27 @@ These facts come from the Glance v0.8.7 source (`github.com/glanceapp/glance`). 
 - Variables in the config: `${ENV_VAR}`, `${secret:name}` (Docker secrets), `${readFileFromEnv:VAR}`.
 - Includes: `$include: path/to/file.yml` (also `!include:`). Useful for one file per page.
 - **Glance reloads the config automatically** when a file changes (`fsnotify`), so Glaze never needs to restart Glance.
-- Glance CLI: `config:validate`, `config:print`, `secret:make`, `password:hash`, `sensors:print`, `mountpoint:info`, `diagnose`.
+- Glance CLI: `config:validate`, `config:print`, `secret:make`, `password:hash`, `sensors:print`, `mountpoint:info`, `diagnose`. The config path is set with `--config <path>` (default `glance.yml`); `config:validate` resolves `$include`s relative to that file.
+- Glance sends no `X-Frame-Options` or CSP `frame-ancestors` header, so it can be shown in an iframe.
+
+**Theme** (`theme:` in `config.go` / `theme.go`)
+
+- `background-color`, `primary-color`, `positive-color`, `negative-color`: HSL strings like `"240 13 14"` (hue 0–360, saturation and lightness 0–100).
+- `light` (bool), `contrast-multiplier`, `text-saturation-multiplier` (floats).
+- `custom-css-file`: a stylesheet Glance loads on every page (usually under `server.assets-path`, served at `/assets/`).
+- `presets`: named extra themes with the same fields; Glance shows a theme switcher when presets exist.
+- Glance's own CSS uses variables such as `--border-radius`, `--font-size-base`, `--widget-gap` and `--widget-content-padding`, which a custom CSS file can override.
+
+**Widget size**
+
+- Glance has **no width or height option per widget.** A widget always fills its column's width, and its height follows its content.
+- Side by side is only possible with `split-column` (`max-columns` ≥ 2).
+- Each widget renders as `.widget` > `.widget-header` + `.widget-content`, and `css-class` is added to the widget's root element. Height can therefore only be controlled with custom CSS via `css-class`.
+
+**`custom-api` templates**
+
+- The response is available as `.JSON` with helpers `.JSON.String "path"`, `.Int`, `.Float`, `.Bool`, `.Array`, `.Exists`, `.Get` (gjson paths).
+- The template is Go `html/template`; it can use Glance's utility classes (`list`, `size-h3`, `color-highlight`, `color-positive`, …) so it looks native.
 
 **Users in Glance**
 
@@ -103,7 +123,6 @@ These facts come from the Glance v0.8.7 source (`github.com/glanceapp/glance`). 
 ### v0.2
 
 - All widgets, with forms generated automatically from the Glance source (§8).
-- Theme editor: colors (HSL) with preview, plus presets.
 - Library of custom CSS presets (for example a "dark cards" style).
 - "Edit page" button in Glance via `document.head`.
 - Undo/redo and a version history (`.glaze/history/`).
@@ -113,6 +132,51 @@ These facts come from the Glance v0.8.7 source (`github.com/glanceapp/glance`). 
 - Multiple users with their own layout (§7).
 - Templates ("Calm", "Homelab", "Media").
 - Secrets management: keys as `${VAR}` in a `.env` file, never as plain text in the YAML.
+
+### Extras (final phase)
+
+Three bigger tools that build on the editor. Each one still compiles down to plain Glance config (YAML + one CSS file), so principle 3 holds: nothing Glaze makes needs Glaze to keep working.
+
+**1. Widget size: width and height inside a column**
+
+Glance has no size options per widget (§4), so Glaze translates sizes into things Glance does understand:
+
+- **Width** → `split-column`. Dragging a widget's right edge snaps to *full / ½ / ⅓* of the column. Glaze then wraps the widget and its neighbour(s) in a `split-column` with the matching `max-columns`, or unwraps it again when the widget goes back to full width. The canvas shows the snap points while dragging.
+- **Height** → `css-class` + generated CSS. Dragging the bottom edge snaps to *auto / S / M / L / XL* (or a custom px value in the inspector). Glaze adds a class such as `glaze-h-320` to the widget's `css-class` (keeping any classes that were already there) and writes the rule to a **Glaze-managed CSS file** (`assets/glaze.css`, linked through `theme.custom-css-file` or appended to an existing custom CSS file between `/* glaze:start */ … /* glaze:end */` markers):
+  ```css
+  .glaze-h-320 .widget-content { height: 320px; overflow-y: auto; }
+  ```
+- Rules: no resizing inside `group` (tabs share one height), `split-column` keeps Glance's limits, and unused generated classes are cleaned up on Publish.
+- The inspector's Style tab gets the same controls (width segmented control, height select + px input) for keyboard users.
+
+**2. Widget builder**
+
+A separate screen for making your own widgets on top of `custom-api`, with the same layout as the editor:
+
+- **Left:** a library of blocks: text, heading, value + label (stat), list / repeat, image, link, badge / status dot, progress bar, two-column row, divider.
+- **Center:** a canvas with the widget at real column width (`small` / `full` toggle), filled with data from a sample response.
+- **Right:** an inspector with three tabs:
+  - **Data:** `url`, `method`, `headers`, `parameters`, `body` and `subrequests`. Secrets are entered as `${ENV_VAR}`. A "Fetch sample" button lets the Glaze server do the request (admin only, with a timeout, because this is a server-side request) and shows the JSON in a tree explorer.
+  - **Block:** binds a block field to a JSON path by clicking in the explorer (for example `.JSON.String "data.0.title"`). It also has formatting options (number, relative time via `toRelativeTime`, …) and a condition ("only show if …").
+  - **Template:** the generated Go template, read-only. "Detach" turns it into a hand-edited template, after which the visual builder is switched off for that widget.
+- **Output:** a normal `custom-api` widget in `glance.yml`. The block tree is saved in `.glaze/widgets/<id>.json`, and the YAML gets a `# glaze-widget: <id>` comment, so the widget can be opened in the builder again. If the template in the YAML was changed by hand since then, the builder warns before overwriting it.
+- **Preview:** the builder renders its own block tree in TypeScript against the sample JSON, rather than running Go templates. Because Glaze generates the template, the two stay in sync, and tests check that every block produces the expected template. The real result is visible in the live preview after Publish.
+- Saved widgets appear in the editor's library under **"My widgets"**. This is the basis for the recipe marketplace later on.
+
+**3. Theme editor**
+
+Like the theme generators of daisyUI or shadcn/ui, but for Glance's theme options:
+
+- **Left:** preset list (the `theme` itself plus every entry in `theme.presets`), with buttons for new, duplicate, rename and delete, and a few built-in starter themes.
+- **Center:** a live preview of a sample Glance page (header, nav, a few typical widgets in two columns) that updates as you drag. It is drawn with Glaze's own components using the same variables, because Glance's CSS is AGPL and isn't copied into Glaze. After Publish, the real Glance in the preview iframe shows the actual result. A dark/light toggle and a desktop/phone toggle are included.
+- **Right:** controls:
+  - Color pickers for background / primary / positive / negative. They show HSL sliders plus a hex input, and Glaze converts to Glance's `"h s l"` format.
+  - Toggle for `light`, sliders for `contrast-multiplier` and `text-saturation-multiplier`.
+  - "Generate from one color": pick a primary color and get a matching background and status colors.
+  - Contrast check (WCAG AA) on text vs. background and primary vs. background, with a warning.
+  - Extras written to the Glaze-managed CSS file: corner radius (`--border-radius`), base font size (`--font-size-base`), widget gap (`--widget-gap`), font family (web font via `@import`).
+- **Import / export:** paste a `theme:` YAML block, or copy the current theme as YAML/CSS to share.
+- Every change goes through `@glaze/core` edits on the `theme:` map, so comments and other keys survive.
 
 ### Later / ideas
 
@@ -132,6 +196,9 @@ These facts come from the Glance v0.8.7 source (`github.com/glanceapp/glance`). 
 2. **Code + live preview:** the YAML editor on the left with file tabs (`glance.yml`, `custom.css`, `design.js`), syntax highlighting and inline errors ("unknown option `stlye`: did you mean `style`? [Fix]"). Live preview on the right with a desktop/phone toggle. Clicking a widget in the preview jumps to it in the code.
 3. **Users:** list of users with role, visible pages and the status of their Glance instance. Detail panel with username, password, a checkbox per page, a starting template and "Edit layout".
 4. **Button in Glance:** an "Edit page" pill next to the status label, with a tooltip. Opens Glaze directly on that page.
+5. **Widget size (in the editor):** a selected widget gets resize handles on its right and bottom edges. While dragging, snap lines show ½ / ⅓ width and S–XL height, with a small label ("½ · 320px").
+6. **Widget builder:** same three-panel layout as the editor (block library, canvas, inspector with Data / Block / Template tabs) plus a JSON explorer under the Data tab. Top bar: widget name, column-width toggle, "Fetch sample", **Save** and "Add to page".
+7. **Theme editor:** preset list on the left, a sample Glance page in the middle, and color pickers + sliders on the right. Top bar: dark/light and desktop/phone toggles, Import, Export and **Publish**.
 
 **Visual style**
 
@@ -261,7 +328,8 @@ A script (`scripts/generate-widget-schemas.ts`) reads the Glance Go source (`int
 | 3     | Inspector + forms for 10 widgets                              | Monitor/bookmarks fully editable without YAML               | ✅ done |
 | 4     | Code view + live preview + validation                         | Errors show up on the right line                            |         |
 | 5     | Auth, Docker image, README → **v0.1 release**                 | Installable next to Glance                                  |         |
-| 6+    | Themes, "Edit page" button, generated schemas, multiple users | See §5                                                      |         |
+| 6     | "Edit page" button, generated schemas, multiple users         | See §5 (v0.2 / v0.3)                                        |         |
+| 7     | Extras: widget size, widget builder, theme editor             | A resized widget, a builder widget and a theme all survive a round-trip and render in real Glance | |
 
 ---
 
@@ -271,3 +339,6 @@ A script (`scripts/generate-widget-schemas.ts`) reads the Glance Go source (`int
 2. Multiple users: build route A (one Glance per user), or first try a pull request for route B in Glance?
 3. Publish straight to `glance.yml`, or first to a draft (`glance.draft.yml`) with "Publish" as a separate step? (The design assumes draft + Publish.)
 4. Use `$include` to put every page in its own file (clearer, fewer conflicts)?
+5. Widget size: when a widget becomes ½ width but has no neighbour to share the row with, should Glaze leave empty space (a `split-column` with one widget) or refuse the resize?
+6. Glaze-managed CSS: always a separate `assets/glaze.css`, or a marked block inside the user's existing custom CSS file? Glance accepts only one `custom-css-file`, so a separate file means adding an `@import` to the existing one.
+7. Widget builder preview: is a TypeScript renderer of our own block tree enough, or do we want a "render in Glance" preview (e.g. a hidden scratch page) for hand-edited templates?
