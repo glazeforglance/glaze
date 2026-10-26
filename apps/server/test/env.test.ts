@@ -1,6 +1,11 @@
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_WEB_DIST, readServerEnv } from "../src/env.ts";
+import {
+	DEFAULT_WEB_DIST,
+	type ReadTextFile,
+	readServerEnv,
+} from "../src/env.ts";
+import { MANGLED_HASH_HINT } from "../src/password.ts";
 
 const ROOT = resolve("/repo");
 // A well-formed fake hash (salt "saltsalt", hash of 16 bytes); not a real password.
@@ -181,6 +186,131 @@ describe("readServerEnv auth", () => {
 	it("rejects unknown GLAZE_AUTH values", () => {
 		expect(readServerEnv({ ...BASE, GLAZE_AUTH: "maybe" }, ROOT).ok).toBe(
 			false,
+		);
+	});
+});
+
+/** A fake file system for `_FILE` tests: no real files needed. */
+function files(contents: Record<string, string>): ReadTextFile {
+	return (path) => {
+		const key = path.replaceAll("\\", "/");
+		const match = Object.entries(contents).find(([name]) => key.endsWith(name));
+		if (!match) {
+			throw Object.assign(new Error("ENOENT: no such file"), {
+				code: "ENOENT",
+			});
+		}
+		return match[1];
+	};
+}
+
+describe("readServerEnv _FILE variants", () => {
+	it("reads GLAZE_ADMIN_PASSWORD_HASH_FILE and trims the newline", () => {
+		const result = readServerEnv(
+			{ GLAZE_ADMIN_PASSWORD_HASH_FILE: "/run/secrets/glaze_hash" },
+			ROOT,
+			files({ "/run/secrets/glaze_hash": `${HASH}\n` }),
+		);
+		expect(result.ok && result.value.auth).toMatchObject({
+			mode: "on",
+			passwordHash: HASH,
+		});
+	});
+
+	it("reads GLAZE_ADMIN_PASSWORD_FILE and GLAZE_SECRET_FILE", () => {
+		const secret = "f".repeat(40);
+		const result = readServerEnv(
+			{
+				GLAZE_ADMIN_PASSWORD_FILE: "secrets/password.txt",
+				GLAZE_SECRET_FILE: "secrets/secret.txt",
+			},
+			ROOT,
+			files({
+				"secrets/password.txt": "  long file password \r\n",
+				"secrets/secret.txt": `${secret}\n`,
+			}),
+		);
+		expect(result.ok && result.value.auth).toMatchObject({
+			plainPassword: "long file password",
+			secret,
+		});
+	});
+
+	it("resolves relative _FILE paths from the root", () => {
+		const seen: string[] = [];
+		readServerEnv(
+			{ GLAZE_ADMIN_PASSWORD_HASH_FILE: "hash.txt" },
+			ROOT,
+			(path) => {
+				seen.push(path);
+				return HASH;
+			},
+		);
+		expect(seen).toEqual([resolve(ROOT, "hash.txt")]);
+	});
+
+	it.each([
+		"GLAZE_ADMIN_PASSWORD",
+		"GLAZE_ADMIN_PASSWORD_HASH",
+		"GLAZE_SECRET",
+	])("refuses %s together with %s_FILE", (name) => {
+		const result = readServerEnv(
+			{
+				...BASE,
+				[name]: name === "GLAZE_SECRET" ? "s".repeat(32) : HASH,
+				[`${name}_FILE`]: "/x",
+			},
+			ROOT,
+			files({ "/x": HASH }),
+		);
+		expect(result.ok).toBe(false);
+		expect(!result.ok && result.error).toBe(
+			`Both ${name} and ${name}_FILE are set. Use one of them.`,
+		);
+	});
+
+	it("names the path of a missing file, but nothing of its contents", () => {
+		const result = readServerEnv(
+			{ GLAZE_ADMIN_PASSWORD_HASH_FILE: "/run/secrets/missing" },
+			ROOT,
+			files({}),
+		);
+		expect(result.ok).toBe(false);
+		expect(!result.ok && result.error).toMatch(
+			/GLAZE_ADMIN_PASSWORD_HASH_FILE/,
+		);
+		expect(!result.ok && result.error).toMatch(/missing/);
+		expect(!result.ok && result.error).toMatch(/ENOENT/);
+	});
+
+	it("refuses an empty file", () => {
+		const result = readServerEnv(
+			{ GLAZE_ADMIN_PASSWORD_HASH_FILE: "/empty" },
+			ROOT,
+			files({ "/empty": " \n" }),
+		);
+		expect(!result.ok && result.error).toMatch(/is empty/);
+	});
+
+	it("validates a hash from a file like any other, without echoing it", () => {
+		const result = readServerEnv(
+			{ GLAZE_ADMIN_PASSWORD_HASH_FILE: "/h" },
+			ROOT,
+			files({ "/h": "scrypt$32768$8$1===" }),
+		);
+		expect(!result.ok && result.error).toContain(MANGLED_HASH_HINT);
+		expect(!result.ok && result.error).not.toContain("===");
+	});
+});
+
+describe("readServerEnv with a mangled hash", () => {
+	it("explains what Compose did to a v0.1.0 hash", () => {
+		const result = readServerEnv(
+			{ GLAZE_ADMIN_PASSWORD_HASH: "scrypt$32768$8$1===" },
+			ROOT,
+		);
+		expect(!result.ok && result.error).toBe(
+			`GLAZE_ADMIN_PASSWORD_HASH is invalid: ${MANGLED_HASH_HINT}`,
 		);
 	});
 });

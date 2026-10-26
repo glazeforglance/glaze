@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { err, ok, type Result } from "@glaze/core";
@@ -23,7 +24,8 @@ const DEFAULT_USERNAME = "admin";
 const NO_PASSWORD = `No admin password is set. Create a hash with
   pnpm --filter server hash-password        (from a checkout)
   docker run --rm -it ghcr.io/klingesean/glaze hash-password   (Docker)
-and set GLAZE_ADMIN_PASSWORD_HASH to it (in .env or your compose file).`;
+and set GLAZE_ADMIN_PASSWORD_HASH to it (in .env or your compose file),
+or put it in a file and set GLAZE_ADMIN_PASSWORD_HASH_FILE to that file's path.`;
 
 /** How the admin logs in, as configured. */
 export type AuthEnv =
@@ -64,6 +66,61 @@ export interface ServerEnv {
 	readonly production: boolean;
 	/** Things to tell the admin at startup, without any secret values. */
 	readonly warnings: readonly string[];
+}
+
+/** Reads a file as text; replaceable in tests. */
+export type ReadTextFile = (path: string) => string;
+
+const readTextFile: ReadTextFile = (path) => readFileSync(path, "utf8");
+
+/** Secrets that can also come from a file (`<NAME>_FILE`, the Docker secrets convention). */
+export const FILE_VARIABLES = [
+	"GLAZE_ADMIN_PASSWORD",
+	"GLAZE_ADMIN_PASSWORD_HASH",
+	"GLAZE_SECRET",
+] as const;
+
+function errorCode(error: unknown): string {
+	return error instanceof Error && "code" in error
+		? String(error.code)
+		: "unknown error";
+}
+
+/**
+ * Replaces each `<NAME>_FILE` from `FILE_VARIABLES` with `<NAME>`, set to the
+ * file's contents (trimmed). Lets Docker secrets (`/run/secrets/…`) or any
+ * mounted file hold a password, so it never appears in a compose file.
+ * Messages name the variable and path, never the contents.
+ * @param env - Environment variables.
+ * @param root - Directory that relative file paths are resolved from.
+ * @param read - Reads a file; only replaced in tests.
+ * @returns The environment with the file values filled in, or why a file couldn't be used.
+ */
+export function resolveFileVariables(
+	env: Readonly<Record<string, string | undefined>>,
+	root: string,
+	read: ReadTextFile = readTextFile,
+): Result<Readonly<Record<string, string | undefined>>, string> {
+	const resolved: Record<string, string | undefined> = { ...env };
+	for (const name of FILE_VARIABLES) {
+		const file = env[`${name}_FILE`]?.trim();
+		if (!file) continue;
+		if (env[name]) {
+			return err(`Both ${name} and ${name}_FILE are set. Use one of them.`);
+		}
+		const path = isAbsolute(file) ? file : resolve(root, file);
+		let value: string;
+		try {
+			value = read(path).trim();
+		} catch (error) {
+			return err(
+				`Can't read ${name}_FILE (${path}): ${errorCode(error)}. Check that the file exists and Glaze may read it.`,
+			);
+		}
+		if (value === "") return err(`${name}_FILE (${path}) is empty.`);
+		resolved[name] = value;
+	}
+	return ok(resolved);
 }
 
 /** Turns an optional path setting into an absolute path, or `null` when empty. */
@@ -164,16 +221,22 @@ function readAuth(
  * was started from.
  *
  * The server must refuse to start (an error here) when no admin password is
- * set, when a hash or `GLAZE_SECRET` is malformed, or when `GLAZE_AUTH=off`
- * is used with `NODE_ENV=production`.
- * @param env - Environment variables, usually `process.env`.
+ * set, when a hash or `GLAZE_SECRET` is malformed, when a secret is set both
+ * directly and as `<NAME>_FILE` (or that file can't be read), or when
+ * `GLAZE_AUTH=off` is used with `NODE_ENV=production`.
+ * @param rawEnv - Environment variables, usually `process.env`.
  * @param root - Directory that relative paths are resolved from.
+ * @param read - Reads `_FILE` secrets; only replaced in tests.
  * @returns The settings, or a message explaining what to fix.
  */
 export function readServerEnv(
-	env: Readonly<Record<string, string | undefined>>,
+	rawEnv: Readonly<Record<string, string | undefined>>,
 	root: string,
+	read: ReadTextFile = readTextFile,
 ): Result<ServerEnv, string> {
+	const files = resolveFileVariables(rawEnv, root, read);
+	if (!files.ok) return files;
+	const env = files.value;
 	const rawPath = env.GLAZE_CONFIG_PATH?.trim() || DEFAULT_CONFIG_PATH;
 	const configPath = isAbsolute(rawPath) ? rawPath : resolve(root, rawPath);
 	const rawPort = env.GLAZE_PORT?.trim();
