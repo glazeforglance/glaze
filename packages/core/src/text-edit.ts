@@ -159,6 +159,7 @@ function isInlineValue(value: unknown): boolean {
 function renderInlineScalar(
 	value: unknown,
 	oldType: Scalar["type"],
+	inFlow: boolean,
 ): string | null {
 	const scalar = new Scalar(value);
 	if (
@@ -166,9 +167,43 @@ function renderInlineScalar(
 		(oldType === Scalar.QUOTE_DOUBLE || oldType === Scalar.QUOTE_SINGLE)
 	) {
 		scalar.type = oldType;
+	} else if (typeof value === "string" && inFlow && /[,[\]{}]/.test(value)) {
+		// `stringify` renders for block context, where these characters are fine unquoted.
+		scalar.type = Scalar.QUOTE_DOUBLE;
 	}
 	const text = stringify(scalar, RENDER_OPTIONS).replace(/\r?\n$/, "");
 	return text.includes("\n") ? null : text;
+}
+
+/**
+ * Replaces a one-line scalar node in place, so its trailing comment and quote
+ * style survive. Returns null when the old node or the new value isn't a simple
+ * one-line scalar (block scalars, anchors, tags, lists, maps).
+ */
+function replaceScalar(
+	src: string,
+	old: unknown,
+	value: unknown,
+	inFlow: boolean,
+): string | null {
+	if (
+		!isScalar(old) ||
+		!old.range ||
+		!isInlineValue(value) ||
+		old.type === Scalar.BLOCK_LITERAL ||
+		old.type === Scalar.BLOCK_FOLDED ||
+		old.anchor !== undefined ||
+		old.tag !== undefined
+	) {
+		return null;
+	}
+	const text = renderInlineScalar(value, old.type, inFlow);
+	if (text === null) return null;
+	const [start, end] = old.range;
+	// `key:` with no value has an empty range; keep a space after the colon.
+	return start === end
+		? splice(src, start, end, ` ${text}`)
+		: splice(src, start, end, text);
 }
 
 // --- layout of collections ------------------------------------------------
@@ -176,6 +211,8 @@ function renderInlineScalar(
 interface ItemSpan {
 	/** Start of the item: its leading comment lines, or else the line with its `-`. */
 	readonly start: number;
+	/** Start of the line with the item's `-`. */
+	readonly dash: number;
 	readonly contentEnd: number;
 }
 
@@ -239,7 +276,11 @@ function seqLayout(src: string, seq: YAMLSeq): Result<SeqLayout, EditError> {
 			if (indentOf(line) !== col || !line.trimStart().startsWith("#")) break;
 			start = previous;
 		}
-		spans.push({ start, contentEnd: blockContentEnd(src, dashLine, col) });
+		spans.push({
+			start,
+			dash: dashLine,
+			contentEnd: blockContentEnd(src, dashLine, col),
+		});
 	}
 	const [first, second] = spans;
 	const separated =
@@ -361,8 +402,9 @@ function writePairText(
 
 /**
  * Sets `key` to `value` in the map at `mapPath`. A single-line scalar is
- * replaced in place (trailing comments and quote style survive); anything else
- * replaces the whole `key: value` block. A missing key is appended at the end.
+ * replaced in place (trailing comments and quote style survive), also inside a
+ * flow map (`{ a: 1 }`); anything else replaces the whole `key: value` block.
+ * A missing key is appended at the end.
  * @param src - Current source.
  * @param yaml - `src`, parsed.
  * @param mapPath - Path of the map.
@@ -379,30 +421,16 @@ export function setMapEntry(
 ): Result<string, EditError> {
 	const map = getBlockMap(yaml, mapPath);
 	if (!map.ok) return map;
-	const layout = mapLayout(src, map.value);
-	if (!layout.ok) return layout;
-	const existing = layout.value.pairs.find((pair) => pair.key === key);
-	const old = existing?.value;
-	if (
-		isScalar(old) &&
-		old.range &&
-		isInlineValue(value) &&
-		old.type !== Scalar.BLOCK_LITERAL &&
-		old.type !== Scalar.BLOCK_FOLDED &&
-		old.anchor === undefined &&
-		old.tag === undefined
-	) {
-		const text = renderInlineScalar(value, old.type);
-		if (text !== null) {
-			const [start, end] = old.range;
-			// `key:` with no value has an empty range; keep a space after the colon.
-			return ok(
-				start === end
-					? splice(src, start, end, ` ${text}`)
-					: splice(src, start, end, text),
-			);
-		}
-	}
+	const existing = map.value.items.find(
+		(pair) => isScalar(pair.key) && String(pair.key.value) === key,
+	);
+	const inPlace = replaceScalar(
+		src,
+		existing?.value,
+		value,
+		map.value.flow === true,
+	);
+	if (inPlace !== null) return ok(inPlace);
 	return writePairText(
 		src,
 		map.value,
@@ -533,6 +561,57 @@ export function insertSeqItem(
 		key,
 		`${key}:${eol}${indent(item, 2)}`,
 	);
+}
+
+/**
+ * Replaces item `index` of the list at `seqPath`. A single-line scalar is
+ * replaced in place (also in a flow list); anything else replaces the item's
+ * block, while the comment lines above it stay.
+ * @param src - Current source.
+ * @param yaml - `src`, parsed.
+ * @param seqPath - Path of the list.
+ * @param index - Item to replace.
+ * @param value - Plain JS value.
+ * @returns The new source.
+ */
+export function setSeqItem(
+	src: string,
+	yaml: ParsedYaml,
+	seqPath: YamlPath,
+	index: number,
+	value: unknown,
+): Result<string, EditError> {
+	const node = getNodeAt(yaml, seqPath);
+	if (!isSeq(node))
+		return err(editError("not-found", `No list at ${JSON.stringify(seqPath)}`));
+	if (!Number.isInteger(index) || index < 0 || index >= node.items.length) {
+		return err(
+			editError(
+				"index-out-of-range",
+				`No item ${index} in ${JSON.stringify(seqPath)}`,
+			),
+		);
+	}
+	const inPlace = replaceScalar(
+		src,
+		node.items[index],
+		value,
+		node.flow === true,
+	);
+	if (inPlace !== null) return ok(inPlace);
+	const layout = seqLayout(src, node);
+	if (!layout.ok) return layout;
+	const { col, spans } = layout.value;
+	const span = spans[index];
+	if (!span)
+		return err(editError("index-out-of-range", `No item ${index} in the list`));
+	const eol = detectEol(src);
+	let text = indent(ensureTrailingEol(renderItem(value, eol), eol), col);
+	// Don't add a line break at the end of a file that had none.
+	if (span.contentEnd === src.length && !src.endsWith("\n")) {
+		text = text.replace(/\r?\n$/, "");
+	}
+	return ok(splice(src, span.dash, span.contentEnd, text));
 }
 
 /**

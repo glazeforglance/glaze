@@ -20,7 +20,7 @@ export interface WidgetInput {
 }
 
 /** Keys of lists that hold widgets: columns, head widgets, and group / split-column children. */
-const WIDGET_LISTS = ["widgets", "head-widgets"] as const;
+export const WIDGET_LISTS = ["widgets", "head-widgets"] as const;
 
 function listLength(doc: GlazeDocument, seq: YamlPath): number {
 	const list = getNodeAt(doc.yaml, seq);

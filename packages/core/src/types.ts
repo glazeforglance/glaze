@@ -74,6 +74,10 @@ export type EditErrorCode =
 	| "unsupported-structure"
 	| "widget-is-alias"
 	| "option-not-found"
+	/** The value only comes from a merge key (`<<: *anchor`); editing it would change the anchor. */
+	| "option-inherited"
+	/** The value is an alias (`*name`); editing it would change the anchored node. */
+	| "option-is-alias"
 	| "invalid-move"
 	| "layout-violation"
 	| "invalid-result";

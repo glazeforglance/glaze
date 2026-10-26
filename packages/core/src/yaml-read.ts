@@ -43,11 +43,21 @@ export function getNodeAt(doc: ParsedYaml, path: YamlPath): unknown {
 	return path.length === 0 ? doc.contents : doc.getIn(path, true);
 }
 
-function pairKey(key: unknown): unknown {
+/**
+ * Returns the plain value of a map key.
+ * @param key - A pair's key (a node or a plain value).
+ * @returns The scalar's value, or `key` itself when it isn't a scalar.
+ */
+export function pairKey(key: unknown): unknown {
 	return isScalar(key) ? key.value : key;
 }
 
-function isMergeKey(key: unknown): boolean {
+/**
+ * Tells whether a map key is the merge key `<<`.
+ * @param key - A pair's key.
+ * @returns True for `<<`.
+ */
+export function isMergeKey(key: unknown): boolean {
 	return isScalar(key) && (key.value === "<<" || key.source === "<<");
 }
 
