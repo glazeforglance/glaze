@@ -69,7 +69,7 @@ services:
 - [x] **Phase 1:** read and write `glance.yml` without losing comments
 - [x] **Phase 2:** drag & drop editor for pages, columns and widgets
 - [x] **Phase 3:** widget forms for the 10 most used widgets
-- [ ] **Phase 4:** code view, live preview and validation
+- [x] **Phase 4:** code view, live preview and validation
 - [ ] **Phase 5:** login and Docker image → **v0.1 release**
 - [ ] Later: theme editor, "Edit page" button, forms for every widget, multiple users
 
@@ -104,6 +104,31 @@ pnpm dev
 ```
 
 `pnpm dev` starts both the web app and the API server.
+
+### Configuration
+
+Copy `.env.example` to `.env` (git-ignored) and adjust it. The server reads:
+
+| Variable            | Default           | What it does                                                                                                                                     |
+| ------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `GLAZE_CONFIG_PATH` | `.dev/glance.yml` | The `glance.yml` Glaze edits. Relative paths start at the repository root.                                                                       |
+| `GLAZE_PORT`        | `8090`            | Port of the API; the web app proxies `/api` to it.                                                                                               |
+| `GLANCE_BIN`        | _(off)_           | Path to the Glance binary. When set, every draft is also checked with `glance config:validate`, so Glance's own errors show up in the code view. |
+| `GLANCE_URL`        | _(off)_           | Where your browser reaches Glance, e.g. `http://localhost:8080`. Turns on the live preview.                                                      |
+
+**Validation with Glance (`GLANCE_BIN`).** Download the Glance binary for your platform from the [Glance releases](https://github.com/glanceapp/glance/releases) (Glaze targets v0.8.7) and point `GLANCE_BIN` at it. Glaze writes the draft to a temporary `.glaze-validate-*.yml` next to your config (so `$include` paths work), runs Glance on it with a 10 second timeout, and always deletes it again. `${VAR}` references that aren't set in Glaze's environment get a dummy value, so they don't cause false errors. `${secret:…}` and `${readFileFromEnv:…}` read files where Glance runs, so they are reported as "can't be checked here" instead. Without `GLANCE_BIN`, Glaze still checks YAML syntax, Glance's layout rules and unknown options itself.
+
+**Live preview (`GLANCE_URL`).** The preview is your real Glance in an iframe, so it shows the **published** config: after Publish, Glaze waits for Glance to reload and then refreshes the preview. If your Glance has a login, sign in once inside the preview.
+
+**Asset files.** The code view also opens the files your config references under `server.assets-path`: `theme.custom-css-file` and `<link>` / `<script>` tags with `/assets/…` in `document.head`. For safety, Glaze only edits them when the assets folder is inside the config's folder.
+
+### Keyboard shortcuts
+
+| Keys                     | Action                       |
+| ------------------------ | ---------------------------- |
+| `Ctrl/Cmd + S`           | Review and publish           |
+| `Ctrl/Cmd + 1 / 2 / 3`   | Design / Code / Preview view |
+| `Ctrl/Cmd + F` (in code) | Search in the file           |
 
 ### Project structure
 

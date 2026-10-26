@@ -75,6 +75,8 @@ export interface EditorState {
 	readonly validation: ValidationResult | null;
 	/** Counts successful publishes; the preview reloads when it changes. */
 	readonly publishCount: number;
+	/** Counts Ctrl/Cmd+S presses; the Publish button opens its review on a change. */
+	readonly publishRequest: number;
 }
 
 /** What components can do with the editor state. */
@@ -100,6 +102,8 @@ export interface EditorActions {
 	/** Renames a key, e.g. the "Fix" for `stlye` → `style`. */
 	renameKey(mapPath: YamlPath, from: string, to: string): boolean;
 	setValidation(validation: ValidationResult | null): void;
+	/** Asks for the publish review dialog (Ctrl/Cmd+S). */
+	requestPublish(): void;
 	selectPage(pageId: string): void;
 	/** Selects a widget on the current page, or clears the selection with `null`. */
 	selectWidget(widgetId: string | null): void;
@@ -190,6 +194,7 @@ const INITIAL_STATE: EditorState = {
 	codeError: null,
 	validation: null,
 	publishCount: 0,
+	publishRequest: 0,
 };
 
 function findColumn(
@@ -368,6 +373,9 @@ export function createEditorStore(): StoreApi<EditorStore> {
 				runEdit((doc) => renameKey(doc, mapPath, from, to)),
 
 			setValidation: (validation) => set({ validation }),
+
+			requestPublish: () =>
+				set((state) => ({ publishRequest: state.publishRequest + 1 })),
 
 			selectPage: (pageId) =>
 				set((state) =>

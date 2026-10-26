@@ -8,6 +8,7 @@ import { TopBar } from "./components/top-bar/TopBar.tsx";
 import { GlazeMark } from "./components/ui/icons.tsx";
 import { useLoadConfig } from "./hooks/use-load-config.ts";
 import { useOnceTrue } from "./hooks/use-once-true.ts";
+import { useShortcuts } from "./hooks/use-shortcuts.ts";
 import { useEditor } from "./store/editor-store.ts";
 
 /**
@@ -16,6 +17,7 @@ import { useEditor } from "./store/editor-store.ts";
  */
 export function App() {
 	useLoadConfig();
+	useShortcuts();
 	const status = useEditor((state) => state.status);
 	const error = useEditor((state) => state.error);
 	const view = useEditor((state) => state.view);

@@ -1,6 +1,6 @@
 # Glaze: design document
 
-> Status: in development · phases 0–3 done
+> Status: in development · phases 0–4 done
 > Target: Glance **v0.8.7**
 
 ---
@@ -141,8 +141,9 @@ Three bigger tools that build on the editor. Each one still compiles down to pla
 
 Glance has no size options per widget (§4), so Glaze translates sizes into things Glance does understand:
 
-- **Width** → `split-column`. Dragging a widget's right edge snaps to *full / ½ / ⅓* of the column. Glaze then wraps the widget and its neighbour(s) in a `split-column` with the matching `max-columns`, or unwraps it again when the widget goes back to full width. The canvas shows the snap points while dragging.
-- **Height** → `css-class` + generated CSS. Dragging the bottom edge snaps to *auto / S / M / L / XL* (or a custom px value in the inspector). Glaze adds a class such as `glaze-h-320` to the widget's `css-class` (keeping any classes that were already there) and writes the rule to a **Glaze-managed CSS file** (`assets/glaze.css`, linked through `theme.custom-css-file` or appended to an existing custom CSS file between `/* glaze:start */ … /* glaze:end */` markers):
+- **Width** → `split-column`. Dragging a widget's right edge snaps to _full / ½ / ⅓_ of the column. Glaze then wraps the widget and its neighbour(s) in a `split-column` with the matching `max-columns`, or unwraps it again when the widget goes back to full width. The canvas shows the snap points while dragging.
+- **Height** → `css-class` + generated CSS. Dragging the bottom edge snaps to _auto / S / M / L / XL_ (or a custom px value in the inspector). Glaze adds a class such as `glaze-h-320` to the widget's `css-class` (keeping any classes that were already there) and writes the rule to a **Glaze-managed CSS file** (`assets/glaze.css`, linked through `theme.custom-css-file` or appended to an existing custom CSS file between `/* glaze:start */ … /* glaze:end */` markers):
+
   ```css
   .glaze-h-320 .widget-content { height: 320px; overflow-y: auto; }
   ```
@@ -320,22 +321,22 @@ A script (`scripts/generate-widget-schemas.ts`) reads the Glance Go source (`int
 
 ## 11. Roadmap
 
-| Phase | Scope                                                         | Done when…                                                  | Status  |
-| ----- | ------------------------------------------------------------- | ----------------------------------------------------------- | ------- |
-| 0     | Project setup: monorepo, Vite + React + TS, Hono, lint/format | `pnpm dev` starts the app and the API                       | ✅ done |
-| 1     | `packages/core`: parse → model → edit → serialize, with tests | A large real-world `glance.yml` round-trips without changes | ✅ done |
-| 2     | Editor: pages, columns, drag & drop widgets (dnd-kit)         | Moving a widget produces a correct YAML diff                | ✅ done |
-| 3     | Inspector + forms for 10 widgets                              | Monitor/bookmarks fully editable without YAML               | ✅ done |
-| 4     | Code view + live preview + validation                         | Errors show up on the right line                            |         |
-| 5     | Auth, Docker image, README → **v0.1 release**                 | Installable next to Glance                                  |         |
-| 6     | "Edit page" button, generated schemas, multiple users         | See §5 (v0.2 / v0.3)                                        |         |
-| 7     | Extras: widget size, widget builder, theme editor             | A resized widget, a builder widget and a theme all survive a round-trip and render in real Glance | |
+| Phase | Scope                                                         | Done when…                                                                                        | Status  |
+| ----- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------- |
+| 0     | Project setup: monorepo, Vite + React + TS, Hono, lint/format | `pnpm dev` starts the app and the API                                                             | ✅ done |
+| 1     | `packages/core`: parse → model → edit → serialize, with tests | A large real-world `glance.yml` round-trips without changes                                       | ✅ done |
+| 2     | Editor: pages, columns, drag & drop widgets (dnd-kit)         | Moving a widget produces a correct YAML diff                                                      | ✅ done |
+| 3     | Inspector + forms for 10 widgets                              | Monitor/bookmarks fully editable without YAML                                                     | ✅ done |
+| 4     | Code view + live preview + validation                         | Errors show up on the right line                                                                  | ✅ done |
+| 5     | Auth, Docker image, README → **v0.1 release**                 | Installable next to Glance                                                                        |         |
+| 6     | "Edit page" button, generated schemas, multiple users         | See §5 (v0.2 / v0.3)                                                                              |         |
+| 7     | Extras: widget size, widget builder, theme editor             | A resized widget, a builder widget and a theme all survive a round-trip and render in real Glance |         |
 
 ---
 
 ## 12. Open questions
 
-1. Ship the Glance binary in the Glaze image for `config:validate`, or write our own validation in TypeScript based on the generated schemas?
+1. ~~Ship the Glance binary in the Glaze image for `config:validate`, or write our own validation in TypeScript based on the generated schemas?~~ **Answered (phase 4): both.** Glaze runs `glance config:validate` when `GLANCE_BIN` points to a Glance binary (the Docker image will ship one), because only Glance itself knows every rule. Next to that, Glaze has its own TypeScript checks that always run, also without the binary: YAML syntax, the layout rules from §4 and unknown options (warnings with a "did you mean" fix, from the keys of the widget schemas). Glance's errors carry a line only when the draft has no `$include`, since Glance inlines includes before it counts lines.
 2. Multiple users: build route A (one Glance per user), or first try a pull request for route B in Glance?
 3. Publish straight to `glance.yml`, or first to a draft (`glance.draft.yml`) with "Publish" as a separate step? (The design assumes draft + Publish.)
 4. Use `$include` to put every page in its own file (clearer, fewer conflicts)?
