@@ -31,7 +31,8 @@ export function contentSecurityPolicy(glanceUrl: string | null): CspDirectives {
 		styleSrc: ["'self'", NONCE],
 		// data: for small inline SVG/PNG icons that CSS or widgets may use.
 		imgSrc: ["'self'", "data:"],
-		fontSrc: ["'self'"],
+		// Vite inlines small font subsets (< 4 kB) as data: URIs; fonts can't run code.
+		fontSrc: ["'self'", "data:"],
 		connectSrc: ["'self'", ...glance],
 		frameSrc: glance.length > 0 ? glance : ["'none'"],
 		frameAncestors: ["'none'"],

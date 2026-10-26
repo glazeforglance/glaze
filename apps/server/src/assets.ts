@@ -1,11 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 import { err, ok, parseConfig, type Result } from "@glaze/core";
-import {
-	hashText,
-	type StoreError,
-	writeConfigAtomic,
-} from "./config-store.ts";
+import { hashText, type StoreError, writeFileSafely } from "./config-store.ts";
 
 /** Asset files are text you edit by hand; anything bigger is refused. */
 export const MAX_ASSET_BYTES = 1024 * 1024;
@@ -214,7 +210,7 @@ export async function writeAsset(
 			message: `${name} changed on disk since it was loaded`,
 		});
 	}
-	const written = await writeConfigAtomic(path, text);
+	const written = await writeFileSafely(path, text);
 	if (!written.ok) return written;
 	return ok({ version: hashText(text) });
 }

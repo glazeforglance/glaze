@@ -129,6 +129,8 @@ export function LoginOverlay() {
 	useEffect(() => {
 		const dialog = ref.current;
 		if (dialog && !dialog.open) dialog.showModal();
+		// showModal() focuses the first field (username); the password is what's needed.
+		dialog?.querySelector<HTMLInputElement>('input[type="password"]')?.focus();
 		return () => dialog?.close();
 	}, []);
 	return (

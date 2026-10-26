@@ -3,7 +3,7 @@
 	"type": "module",
 	"scripts": {
 		"dev": "tsx watch src/index.ts",
-		"build": "tsc",
+		"build": "tsx build.ts",
 		"start": "node dist/index.js",
 		"test": "vitest run",
 		"typecheck": "tsc --noEmit && tsc --noEmit -p test",
@@ -16,6 +16,7 @@
 	},
 	"devDependencies": {
 		"@types/node": "^24.19.2",
+		"esbuild": "0.28.2",
 		"tsx": "^4.23.0",
 		"typescript": "~6.0.3",
 		"vitest": "^5.0.5"

@@ -6,10 +6,11 @@ import {
 	resolveAssetPath,
 	writeAsset,
 } from "./assets.ts";
-import { hashText, readConfig, writeConfigAtomic } from "./config-store.ts";
+import { hashText, readConfig, writeFileSafely } from "./config-store.ts";
 import type { GlanceCommand } from "./glance-validate.ts";
 import type { RateLimiter } from "./rate-limit.ts";
 import { csrfProtection, securityHeaders } from "./security.ts";
+import { installWebApp } from "./static.ts";
 import { hasErrors, validateDraft } from "./validate.ts";
 
 /** What the API needs to know about its environment. */
@@ -35,6 +36,8 @@ export interface AppOptions {
 	readonly now?: () => number;
 	/** Login limiter, replaceable in tests. */
 	readonly loginLimiter?: RateLimiter;
+	/** Folder of the built web app to serve next to the API; `null` or missing: API only. */
+	readonly webDist?: string | null;
 }
 
 // A config or draft this large is a mistake, not something to validate.
@@ -72,6 +75,7 @@ function textOf(body: unknown): string | null {
  * - `GET /api/files/:name` → `{ name, text, version }`
  * - `PUT /api/files/:name` with `{ text, baseVersion }` → `{ version }`; 409 on conflict
  * - `GET /api/settings` → `{ glanceUrl, glanceValidation }`
+ * - with `webDist`: the web app on every other GET (see `installWebApp`)
  * @param options - Where the config file lives and how to reach Glance.
  * @returns The Hono app.
  */
@@ -166,7 +170,7 @@ export function createApp(options: AppOptions): Hono {
 			);
 		}
 
-		const written = await writeConfigAtomic(configPath, text);
+		const written = await writeFileSafely(configPath, text);
 		if (!written.ok) {
 			return c.json(
 				{ error: written.error.code, message: written.error.message },
@@ -294,6 +298,8 @@ export function createApp(options: AppOptions): Hono {
 			glanceValidation: glance !== null,
 		}),
 	);
+
+	if (options.webDist) installWebApp(app, options.webDist);
 
 	return app;
 }

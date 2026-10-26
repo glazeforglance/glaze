@@ -8,6 +8,7 @@
 	"author": "Sean Klinge",
 	"scripts": {
 		"dev": "pnpm --parallel --filter \"./apps/*\" dev",
+		"build": "pnpm -r --if-present build",
 		"test": "pnpm -r --if-present test",
 		"typecheck": "pnpm -r --if-present typecheck"
 	},
