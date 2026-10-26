@@ -475,9 +475,62 @@ describe("refused paths", () => {
 		expect(
 			unwrapErr(setWidgetValue(doc, MONITOR, ["sites", 7, "url"], "x")).code,
 		).toBe("index-out-of-range");
+		// A missing list can't get an item at an index.
 		expect(
-			unwrapErr(setWidgetValue(doc, MONITOR, ["nothing", "here"], "x")).code,
+			unwrapErr(setWidgetValue(doc, MONITOR, ["nothing", 0, "url"], "x")).code,
 		).toBe("not-found");
+		expect(
+			unwrapErr(insertWidgetListItem(doc, MONITOR, ["nothing", "here"], "x"))
+				.code,
+		).toBe("not-found");
+		expect(
+			unwrapErr(removeWidgetValue(doc, MONITOR, ["nothing", "here"])).code,
+		).toBe("option-not-found");
+	});
+
+	it("creates missing maps on the way to a nested key", () => {
+		const next = text(
+			setWidgetValue(
+				doc,
+				MONITOR,
+				["sites", 0, "basic-auth", "username"],
+				"admin",
+			),
+		);
+		expectLineChanges(source, next, {
+			removed: [],
+			added: [
+				"                basic-auth:",
+				"                  username: admin",
+			],
+		});
+		const options = unwrap(getWidgetOptions(load(next), MONITOR)).options;
+		const sites = options.get("sites")?.value;
+		expect(Array.isArray(sites) && sites[0]).toMatchObject({
+			"basic-auth": { username: "admin" },
+		});
+	});
+
+	it("adds to a map created earlier instead of nesting again", () => {
+		const first = unwrap(
+			setWidgetValue(
+				doc,
+				MONITOR,
+				["sites", 0, "basic-auth", "username"],
+				"admin",
+			),
+		);
+		const next = text(
+			setWidgetValue(
+				first,
+				MONITOR,
+				["sites", 0, "basic-auth", "password"],
+				"${IMMICH_PASSWORD}",
+			),
+		);
+		expect(next).toContain(
+			"                basic-auth:\n                  username: admin\n                  password: ${IMMICH_PASSWORD}\n",
+		);
 	});
 
 	it("refuses alias widgets", () => {

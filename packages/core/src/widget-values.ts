@@ -41,6 +41,11 @@ interface Target {
 	readonly collection: YAMLMap | YAMLSeq;
 	/** Current value at the sub-path; `undefined` when the map key is missing. */
 	readonly node: unknown;
+	/**
+	 * Segments after a missing key `last`, e.g. `["username"]` when
+	 * `["basic-auth", "username"]` is set on a site without `basic-auth`.
+	 */
+	readonly rest: YamlPath;
 }
 
 function ownPair(map: YAMLMap, key: string) {
@@ -51,7 +56,8 @@ function ownPair(map: YAMLMap, key: string) {
 
 /**
  * Walks `subPath` from the widget, refusing paths that would edit an anchor
- * through a merge key or an alias. Only the last map key may be missing.
+ * through a merge key or an alias. It stops at the first missing map key and
+ * returns the segments after it in `rest`.
  */
 function resolveTarget(
 	doc: GlazeDocument,
@@ -120,15 +126,13 @@ function resolveTarget(
 						),
 					);
 				}
-				if (isLast) {
-					return ok({
-						parent,
-						last: segment,
-						collection: current,
-						node: undefined,
-					});
-				}
-				return err(editError("not-found", `${where(i)} is not set`));
+				return ok({
+					parent,
+					last: segment,
+					collection: current,
+					node: undefined,
+					rest: subPath.slice(i + 1),
+				});
 			}
 			child = pair.value;
 		} else if (isSeq(current)) {
@@ -155,7 +159,13 @@ function resolveTarget(
 			);
 		}
 		if (isLast) {
-			return ok({ parent, last: segment, collection: current, node: child });
+			return ok({
+				parent,
+				last: segment,
+				collection: current,
+				node: child,
+				rest: [],
+			});
 		}
 		current = child;
 	}
@@ -167,11 +177,32 @@ function sameValue(a: unknown, b: unknown): boolean {
 	return JSON.stringify(a) === JSON.stringify(b);
 }
 
+/** Refuses a target whose key is missing somewhere before the end of the sub-path. */
+function requireFullPath(
+	target: Target,
+	subPath: YamlPath,
+): Result<Target, EditError> {
+	if (target.rest.length === 0) return ok(target);
+	return err(
+		editError(
+			"not-found",
+			`${JSON.stringify(subPath.slice(0, subPath.length - target.rest.length))} is not set`,
+		),
+	);
+}
+
+/** Wraps `value` in maps for the keys in `keys`: `["a", "b"]`, 1 → `{ a: { b: 1 } }`. */
+function nestValue(keys: readonly string[], value: unknown): unknown {
+	return keys.reduceRight<unknown>((inner, key) => ({ [key]: inner }), value);
+}
+
 /**
  * Sets a value below a widget: a map key (`["sites", 2, "url"]`) or a list
  * item (`["repositories", 0]`). One-line scalars are replaced in place, so a
  * trailing comment and the quote style survive; other values replace that
- * node's block. A missing last key is added to its map.
+ * node's block. Missing keys are added, also nested ones: setting
+ * `["sites", 0, "basic-auth", "username"]` creates `basic-auth`. Missing list
+ * items are never created.
  * @param doc - The document to edit.
  * @param widgetPath - Path of the widget.
  * @param subPath - Path below the widget; not into child `widgets`.
@@ -186,10 +217,15 @@ export function setWidgetValue(
 ): Result<GlazeDocument, EditError> {
 	const target = resolveTarget(doc, widgetPath, subPath);
 	if (!target.ok) return target;
-	const { parent, last } = target.value;
+	const { parent, last, rest } = target.value;
+	const keys = rest.filter((segment) => typeof segment === "string");
+	if (keys.length !== rest.length) {
+		const full = requireFullPath(target.value, subPath);
+		if (!full.ok) return full;
+	}
 	const source =
 		typeof last === "string"
-			? setMapEntry(doc.source, doc.yaml, parent, last, value)
+			? setMapEntry(doc.source, doc.yaml, parent, last, nestValue(keys, value))
 			: setSeqItem(doc.source, doc.yaml, parent, last, value);
 	if (!source.ok) return source;
 	const next = finishEdit(doc, source.value, null);
@@ -225,8 +261,8 @@ export function removeWidgetValue(
 ): Result<GlazeDocument, EditError> {
 	const target = resolveTarget(doc, widgetPath, subPath);
 	if (!target.ok) return target;
-	const { parent, last, node } = target.value;
-	if (node === undefined) {
+	const { parent, last, node, rest } = target.value;
+	if (node === undefined || rest.length > 0) {
 		return err(
 			editError("option-not-found", `${JSON.stringify(subPath)} is not set`),
 		);
@@ -258,7 +294,9 @@ export function insertWidgetListItem(
 	value: unknown,
 	index?: number,
 ): Result<GlazeDocument, EditError> {
-	const target = resolveTarget(doc, widgetPath, listSubPath);
+	const resolved = resolveTarget(doc, widgetPath, listSubPath);
+	if (!resolved.ok) return resolved;
+	const target = requireFullPath(resolved.value, listSubPath);
 	if (!target.ok) return target;
 	if (typeof target.value.last !== "string") {
 		return err(editError("invalid-path", "A list path must end with a key"));
