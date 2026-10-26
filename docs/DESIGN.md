@@ -1,6 +1,6 @@
 # Glaze: design document
 
-> Status: in development · phases 0–4 done
+> Status: v0.1.0 · phases 0–5 done
 > Target: Glance **v0.8.7**
 
 ---
@@ -251,7 +251,7 @@ Browser
 | Forms        | React Hook Form + Zod                   | One Zod schema per widget that both validates and drives the form.                |
 | Code editor  | CodeMirror 6 + `@codemirror/lang-yaml`  | Lighter than Monaco; per-line error markers.                                      |
 | Backend      | Node + Hono                             | Small and fast, TypeScript end to end.                                            |
-| Auth (Glaze) | Session cookie + Argon2/bcrypt hash     | Glaze writes config, so it always sits behind a login.                            |
+| Auth (Glaze) | Signed session cookie + scrypt hash     | Glaze writes config, so it always sits behind a login (see §9).                   |
 | Tests        | Vitest (+ Playwright for the editor)    | Above all: "parse → edit → serialize changes nothing else".                       |
 | Deployment   | Docker multi-stage build → single image | One container next to Glance; compose example in the README.                      |
 
@@ -290,6 +290,15 @@ A script (`scripts/generate-widget-schemas.ts`) reads the Glance Go source (`int
 ## 9. Security
 
 - Glaze is **always behind a login**. Anyone who reaches Glaze can change the config, including API keys.
+- **How the login works (v0.1, single admin):**
+  - **Account:** `GLAZE_ADMIN_USERNAME` (default `admin`) and `GLAZE_ADMIN_PASSWORD_HASH`, a scrypt hash `scrypt$N$r$p$salt$hash` (N=2^15, r=8, p=1, 16-byte salt, 32-byte key) made with the `hash-password` command. `node:crypto` only, so no native modules in the Docker image. A plain `GLAZE_ADMIN_PASSWORD` works too (warning at startup; the hash wins when both are set). Without a password, or with `GLAZE_AUTH=off` in production, the server refuses to start.
+  - **Login:** `POST /api/auth/login`. scrypt always runs and the username is compared in constant time, so a wrong user and a wrong password look the same (same answer, same timing).
+  - **Sessions:** stateless cookie `glaze_session` = base64url payload `{ user, exp, pwdTag }` + HMAC-SHA256 signature, checked in constant time. `pwdTag` is an HMAC of the current password hash, so a password change ends every session. 14 days, renewed when less than 7 are left. `HttpOnly`, `SameSite=Strict`, `Path=/`, and `Secure` over HTTPS. The key is `GLAZE_SECRET`, or a random secret created once in `<config folder>/.glaze/secret` (mode 0600), so sessions survive restarts.
+  - **Brute force:** 5 failed logins per IP per 5 minutes, then `429` with `Retry-After` (in memory, expired entries swept).
+  - **CSRF:** `SameSite=Strict` plus Hono's `csrf()` origin check on every non-GET API request that a plain form could send; JSON requests from other sites need a CORS preflight that Glaze never allows.
+  - **Headers:** `secureHeaders` with a CSP of `default-src 'self'`, `frame-src` and `connect-src` for the `GLANCE_URL` origin only (preview and health poll), `frame-ancestors 'none'`. Two deliberate exceptions: `style-src` carries a per-response nonce (written into `index.html`) for CodeMirror's `<style>` elements, and `font-src` allows `data:` for the small font subsets Vite inlines.
+  - **Proxies:** only with `GLAZE_TRUST_PROXY=true` does Glaze read the client IP from `CF-Connecting-IP` or the last `X-Forwarded-For` entry, and HTTPS from `X-Forwarded-Proto`.
+  - **Everything else:** every `/api/*` route except `/api/healthz` and `/api/auth/*` answers `401` without a valid session. In the browser, a `401` opens a login overlay over the editor and retries the request afterwards, so unpublished work survives.
 - Don't expose Glaze publicly without extra protection. README advice: Cloudflare Access, a VPN, or LAN only.
 - Secrets: a "secret" field in the UI that stores the value in `.env` and writes `${NAME}` to the YAML. Warn when a key is stored as plain text in the YAML.
 - Warn about `apiKey=` inside an `img src` (visible in the page source). Recommend a key with minimal permissions.
@@ -299,7 +308,7 @@ A script (`scripts/generate-widget-schemas.ts`) reads the Glance Go source (`int
 
 ## 10. Open source
 
-- **License:** MIT. Glance itself is AGPL-3.0, but Glaze contains no Glance code; it only uses the Glance CLI and its config format.
+- **License:** MIT. Glance itself is AGPL-3.0, but Glaze contains no Glance code; it only uses the Glance CLI and its config format. The Docker image ships the unmodified Glance binary for `config:validate`, with a pointer to its source.
 - **Repository layout:**
 
   ```
@@ -309,7 +318,7 @@ A script (`scripts/generate-widget-schemas.ts`) reads the Glance Go source (`int
   ├─ packages/core/     document model, YAML edits, layout rules (shared, well tested)
   ├─ packages/schemas/  generated widget schemas (planned)
   ├─ scripts/           generators (planned)
-  ├─ docker/            Dockerfile, compose example (planned)
+  ├─ docker/            Dockerfile, compose example, smoke test
   └─ README.md, LICENSE, CONTRIBUTING.md
   ```
 
@@ -328,7 +337,7 @@ A script (`scripts/generate-widget-schemas.ts`) reads the Glance Go source (`int
 | 2     | Editor: pages, columns, drag & drop widgets (dnd-kit)         | Moving a widget produces a correct YAML diff                                                      | ✅ done |
 | 3     | Inspector + forms for 10 widgets                              | Monitor/bookmarks fully editable without YAML                                                     | ✅ done |
 | 4     | Code view + live preview + validation                         | Errors show up on the right line                                                                  | ✅ done |
-| 5     | Auth, Docker image, README → **v0.1 release**                 | Installable next to Glance                                                                        |         |
+| 5     | Auth, Docker image, README → **v0.1 release**                 | Installable next to Glance                                                                        | ✅ done |
 | 6     | "Edit page" button, generated schemas, multiple users         | See §5 (v0.2 / v0.3)                                                                              |         |
 | 7     | Extras: widget size, widget builder, theme editor             | A resized widget, a builder widget and a theme all survive a round-trip and render in real Glance |         |
 
@@ -336,9 +345,9 @@ A script (`scripts/generate-widget-schemas.ts`) reads the Glance Go source (`int
 
 ## 12. Open questions
 
-1. ~~Ship the Glance binary in the Glaze image for `config:validate`, or write our own validation in TypeScript based on the generated schemas?~~ **Answered (phase 4): both.** Glaze runs `glance config:validate` when `GLANCE_BIN` points to a Glance binary (the Docker image will ship one), because only Glance itself knows every rule. Next to that, Glaze has its own TypeScript checks that always run, also without the binary: YAML syntax, the layout rules from §4 and unknown options (warnings with a "did you mean" fix, from the keys of the widget schemas). Glance's errors carry a line only when the draft has no `$include`, since Glance inlines includes before it counts lines.
+1. ~~Ship the Glance binary in the Glaze image for `config:validate`, or write our own validation in TypeScript based on the generated schemas?~~ **Answered (phase 4): both.** Glaze runs `glance config:validate` when `GLANCE_BIN` points to a Glance binary (the Docker image ships one), because only Glance itself knows every rule. Next to that, Glaze has its own TypeScript checks that always run, also without the binary: YAML syntax, the layout rules from §4 and unknown options (warnings with a "did you mean" fix, from the keys of the widget schemas). Glance's errors carry a line only when the draft has no `$include`, since Glance inlines includes before it counts lines.
 2. Multiple users: build route A (one Glance per user), or first try a pull request for route B in Glance?
-3. Publish straight to `glance.yml`, or first to a draft (`glance.draft.yml`) with "Publish" as a separate step? (The design assumes draft + Publish.)
+3. ~~Publish straight to `glance.yml`, or first to a draft (`glance.draft.yml`) with "Publish" as a separate step?~~ **Answered (phase 4–5): the draft lives in the browser.** Every edit (design, forms, code view, asset files) stays in the editor until Publish; nothing is written on the way, and there's no `glance.draft.yml`. Publish shows a review, the server validates the text again (YAML, layout, unknown options and `glance config:validate`) and only then writes `glance.yml` (temp file + rename), refusing broken YAML always and other errors unless forced. A changed file on disk is a conflict, not an overwrite.
 4. Use `$include` to put every page in its own file (clearer, fewer conflicts)?
 5. Widget size: when a widget becomes ½ width but has no neighbour to share the row with, should Glaze leave empty space (a `split-column` with one widget) or refuse the resize?
 6. Glaze-managed CSS: always a separate `assets/glaze.css`, or a marked block inside the user's existing custom CSS file? Glance accepts only one `custom-css-file`, so a separate file means adding an `@import` to the existing one.

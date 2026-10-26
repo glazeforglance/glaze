@@ -71,6 +71,8 @@ jobs:
           version="${GITHUB_REF_NAME#v}"
           awk -v v="$version" '
             /^## \[/ { if (found) exit; if (index($0, "[" v "]")) { found = 1; next } }
+            # The link definitions at the bottom end the last section.
+            /^\[[^]]+\]: / { if (found) exit }
             found
           ' CHANGELOG.md > release-notes.md
           if [ ! -s release-notes.md ]; then
