@@ -1,0 +1,53 @@
+name: Bug report
+description: Something in Glaze doesn't work as expected.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! **Never paste API keys, passwords, tokens or `secret-key` values.**
+        Replace them with `xxx` or a `${ENV_VAR}` before you post YAML.
+  - type: input
+    id: glaze-version
+    attributes:
+      label: Glaze version
+      description: Shown in the user menu (top right) and in `/api/healthz`.
+      placeholder: "0.1.0"
+    validations:
+      required: true
+  - type: input
+    id: glance-version
+    attributes:
+      label: Glance version
+      placeholder: "v0.8.7"
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How do you run Glaze?
+      options:
+        - Docker / Docker Compose
+        - From source (pnpm dev / pnpm start)
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: yaml
+    attributes:
+      label: Relevant glance.yml (keys removed!)
+      description: The smallest part of your config that shows the problem. Remove every API key, password and secret first.
+      render: yaml
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Output of `docker logs glaze` (or the server console), if relevant.
+      render: text

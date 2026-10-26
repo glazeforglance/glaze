@@ -1,0 +1,21 @@
+name: Feature request
+description: Suggest an idea, a widget form, or an improvement.
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What would you like to do?
+      description: The problem or use case, in your own words.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: How could Glaze help?
+      description: Your idea for a solution, if you have one.
+  - type: input
+    id: widgets
+    attributes:
+      label: Widgets involved
+      placeholder: "monitor, bookmarks, custom-api, …"

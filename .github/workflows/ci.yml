@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Typecheck, lint, test, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      # Installs the pnpm version from package.json's "packageManager".
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm --filter web lint
+      - run: pnpm test
+      - run: pnpm build
+
+  docker:
+    name: Docker image (amd64) + smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/setup-buildx-action@v3
+      - name: Build (no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          platforms: linux/amd64
+          load: true
+          push: false
+          tags: glaze:smoke
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Smoke test
+        run: sh docker/smoke-test.sh glaze:smoke
