@@ -455,7 +455,7 @@ describe("resolveAuthConfig", () => {
 		const a = await resolveAuthConfig(env, dir);
 		const b = await resolveAuthConfig(env, dir);
 		if (!a.ok || !b.ok || a.value === null) throw new Error("no auth config");
-		expect(a.value.passwordHash).toMatch(/^scrypt\$/);
+		expect(a.value.passwordHash).toMatch(/^scrypt:/);
 		expect(b.value?.passwordHash).toBe(a.value.passwordHash);
 		const res = await createApp({ configPath, auth: a.value }).request(
 			"/api/auth/login",

@@ -16,7 +16,7 @@ export interface ScryptParams {
 	readonly p: number;
 }
 
-/** A parsed `scrypt$N$r$p$salt$hash` string. */
+/** A parsed password hash. */
 export interface PasswordHash extends ScryptParams {
 	readonly salt: Buffer;
 	readonly hash: Buffer;
@@ -30,7 +30,16 @@ export const DEFAULT_SCRYPT_PARAMS: ScryptParams = { N: 2 ** 15, r: 8, p: 1 };
 
 const KEY_LENGTH = 32;
 const SALT_LENGTH = 16;
+// v0.1.1+: `scrypt:N:r:p:salt:hash`, base64url without padding. Only
+// [A-Za-z0-9_:-], so Docker Compose, .env files and app-store UIs that
+// re-serialise YAML (ZimaOS, CasaOS) leave it alone.
+const BASE64URL = /^[A-Za-z0-9_-]+$/;
+// v0.1.0: `scrypt$N$r$p$salt$hash`, standard base64. Still accepted.
 const BASE64 = /^[A-Za-z0-9+/]+={0,2}$/;
+
+/** Explains a hash that lost parts on the way, without echoing it. */
+export const MANGLED_HASH_HINT =
+	"Looks like `$` signs were removed: Docker Compose treats `$` as a variable. Generate a new hash with `hash-password` (v0.1.1+ hashes contain no `$`).";
 
 function deriveKey(
 	password: string,
@@ -58,18 +67,28 @@ function inRange(value: number, min: number, max: number): boolean {
 }
 
 /**
- * Parses a password hash in Glaze's format `scrypt$<N>$<r>$<p>$<saltB64>$<hashB64>`.
- * Cost settings are bounded, so a hash can't make the server use gigabytes of memory.
+ * Parses a password hash. Two formats are accepted:
+ * - `scrypt:<N>:<r>:<p>:<salt>:<hash>` with base64url (no padding), from v0.1.1;
+ * - `scrypt$<N>$<r>$<p>$<salt>$<hash>` with standard base64, from v0.1.0.
+ *
+ * Cost settings are bounded, so a hash can't make the server use gigabytes
+ * of memory. Error messages never contain the value itself.
  * @param encoded - The hash, e.g. from `GLAZE_ADMIN_PASSWORD_HASH`.
  * @returns The parsed parts, or a message explaining what's wrong.
  */
 export function parsePasswordHash(
 	encoded: string,
 ): Result<PasswordHash, string> {
-	const parts = encoded.trim().split("$");
-	const [scheme, rawN, rawR, rawP, rawSalt, rawHash] = parts;
+	const value = encoded.trim();
+	const modern = value.startsWith("scrypt:");
+	const parts = value.split(modern ? ":" : "$");
+	const [scheme, rawN, rawR, rawP, rawSalt = "", rawHash = ""] = parts;
 	if (parts.length !== 6 || scheme !== "scrypt") {
-		return err("expected the format scrypt$N$r$p$salt$hash");
+		// Compose turns `$name` into "", so an old hash arrives with parts missing.
+		if (value.startsWith("scrypt") && parts.length < 6) {
+			return err(MANGLED_HASH_HINT);
+		}
+		return err("expected the format scrypt:N:r:p:salt:hash");
 	}
 	const N = Number(rawN);
 	const r = Number(rawR);
@@ -81,11 +100,17 @@ export function parsePasswordHash(
 	if (!inRange(r, 1, 32) || !inRange(p, 1, 16)) {
 		return err("r must be 1–32 and p 1–16");
 	}
-	if (!BASE64.test(rawSalt ?? "") || !BASE64.test(rawHash ?? "")) {
-		return err("salt and hash must be base64");
+	const alphabet = modern ? BASE64URL : BASE64;
+	if (!alphabet.test(rawSalt) || !alphabet.test(rawHash)) {
+		return err(
+			modern
+				? "salt and hash must be base64url without padding (A–Z, a–z, 0–9, - and _)"
+				: "salt and hash must be base64",
+		);
 	}
-	const salt = Buffer.from(rawSalt ?? "", "base64");
-	const hash = Buffer.from(rawHash ?? "", "base64");
+	const encoding = modern ? "base64url" : "base64";
+	const salt = Buffer.from(rawSalt, encoding);
+	const hash = Buffer.from(rawHash, encoding);
 	if (salt.length < 8 || hash.length < 16) {
 		return err("salt or hash is too short");
 	}
@@ -97,7 +122,7 @@ export function parsePasswordHash(
  * @param password - The plain-text password.
  * @param params - Cost settings; defaults to `DEFAULT_SCRYPT_PARAMS`.
  * @param salt - Fixed salt; only for deriving a stable hash from `GLAZE_ADMIN_PASSWORD`.
- * @returns The hash as `scrypt$N$r$p$saltB64$hashB64`.
+ * @returns The hash as `scrypt:N:r:p:salt:hash` (base64url, no padding).
  */
 export async function hashPassword(
 	password: string,
@@ -110,9 +135,9 @@ export async function hashPassword(
 		params.N,
 		params.r,
 		params.p,
-		salt.toString("base64"),
-		key.toString("base64"),
-	].join("$");
+		salt.toString("base64url"),
+		key.toString("base64url"),
+	].join(":");
 }
 
 /**

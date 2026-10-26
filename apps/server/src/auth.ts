@@ -15,7 +15,7 @@ import {
 /** The single admin account and the key that signs its sessions. */
 export interface AuthConfig {
 	readonly username: string;
-	/** `scrypt$N$r$p$salt$hash`, from `GLAZE_ADMIN_PASSWORD_HASH` (or derived from the plain password). */
+	/** `scrypt:N:r:p:salt:hash` (or the v0.1.0 `$` format), from `GLAZE_ADMIN_PASSWORD_HASH` (or derived from the plain password). */
 	readonly passwordHash: string;
 	/** Signs session cookies; from `GLAZE_SECRET` or `.glaze/secret`. */
 	readonly secret: string;

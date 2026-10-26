@@ -107,7 +107,7 @@ export async function runHashPassword(): Promise<number> {
 	process.stdout.write(`${hash}\n`);
 	if (process.stdout.isTTY) {
 		process.stderr.write(
-			"\nSet GLAZE_ADMIN_PASSWORD_HASH to the line above. In .env files, wrap it in\nsingle quotes ('scrypt$…'), so the $ signs aren't read as variables.\n",
+			"\nSet GLAZE_ADMIN_PASSWORD_HASH to the line above. It contains no $ signs or\nquotes, so it works as is in .env files, Docker Compose and app-store UIs.\n",
 		);
 	}
 	return 0;

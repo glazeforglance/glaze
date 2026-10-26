@@ -4,7 +4,7 @@ import { DEFAULT_WEB_DIST, readServerEnv } from "../src/env.ts";
 
 const ROOT = resolve("/repo");
 // A well-formed fake hash (salt "saltsalt", hash of 16 bytes); not a real password.
-const HASH = "scrypt$1024$8$1$c2FsdHNhbHQ=$aGFzaGhhc2hoYXNoaGFzaA==";
+const HASH = "scrypt:1024:8:1:c2FsdHNhbHQ:aGFzaGhhc2hoYXNoaGFzaA";
 /** The minimum env to start: a password hash. */
 const BASE = { GLAZE_ADMIN_PASSWORD_HASH: HASH };
 
