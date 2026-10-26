@@ -8,7 +8,7 @@ Glaze is young; only the latest release gets security fixes.
 
 | Version | Supported |
 | ------- | --------- |
-| 0.1.x   | ✅        |
+| 0.1.x   | ✅ (latest patch) |
 | < 0.1   | ❌        |
 
 ## Reporting a vulnerability

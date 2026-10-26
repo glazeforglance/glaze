@@ -51,15 +51,9 @@ You need Docker with Compose, and a folder with your `glance.yml` (for example `
 docker run --rm -it ghcr.io/klingesean/glaze:latest hash-password
 ```
 
-Type your password twice (nothing is shown while you type). The output is one line starting with `scrypt$`.
+Type your password twice (nothing is shown while you type). The output is one line like `scrypt:32768:8:1:…:…`. It contains only letters, digits, `-`, `_` and `:`, so you can paste it anywhere as is: no quotes, no escaping.
 
-**2. Put the hash in `glaze.env`**, next to your compose file. Keep the **single quotes**: the hash contains `$` signs, which Compose would otherwise read as variables.
-
-```bash
-GLAZE_ADMIN_PASSWORD_HASH='scrypt$32768$8$1$...$...'
-```
-
-**3. Add Glaze next to Glance** in your `compose.yml` (also in [`docker/compose.example.yml`](docker/compose.example.yml)):
+**2. Add Glaze next to Glance** in your `compose.yml` (also in [`docker/compose.example.yml`](docker/compose.example.yml)) and paste your hash:
 
 ```yaml
 services:
@@ -68,6 +62,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./config:/app/config
+      - ./config/assets:/app/assets # server.assets-path: /app/assets
     ports:
       - "8080:8080"
 
@@ -80,12 +75,14 @@ services:
       - ./config:/config # the same folder Glance uses
     ports:
       - "8090:8090"
-    env_file: glaze.env
     environment:
+      # Fake example: replace it with the output of step 1.
+      GLAZE_ADMIN_PASSWORD_HASH: scrypt:32768:8:1:FAKEsaltReplaceMe0000w:FAKEhashRunHashPasswordAndPasteYourOwn00000
+      GLAZE_ASSETS_PATH: /config/assets # the folder Glance serves as /assets/
       GLANCE_URL: http://localhost:8080 # where your browser reaches Glance
 ```
 
-**4. Start it and log in:**
+**3. Start it and log in:**
 
 ```bash
 docker compose up -d
@@ -96,6 +93,62 @@ Open <http://localhost:8090> and log in as `admin` with the password from step 1
 > [!IMPORTANT]
 > Glaze can change your dashboard config, including API keys. Keep it behind its login, and don't expose it to the internet without extra protection. See [Security](#security).
 
+## Password
+
+Glaze has one admin account. There are three ways to give it a password; pick one:
+
+| Option | When |
+| --- | --- |
+| `GLAZE_ADMIN_PASSWORD_HASH` (**recommended**) | The hash from `hash-password`. The password itself is never stored anywhere. |
+| `GLAZE_ADMIN_PASSWORD` | The password in plain text. Works, but Glaze logs a warning at startup, and the password sits in your compose file. The hash wins if both are set. |
+| `GLAZE_ADMIN_PASSWORD_HASH_FILE` or `GLAZE_ADMIN_PASSWORD_FILE` | The path to a file holding the hash or password, e.g. a [Docker secret](https://docs.docker.com/compose/how-tos/use-secrets/) in `/run/secrets/`. Whitespace and newlines around the value are ignored. |
+
+Setting both a variable and its `_FILE` variant is an error, so it's always clear which one counts. `GLAZE_SECRET_FILE` works the same way for `GLAZE_SECRET`.
+
+> [!NOTE]
+> **Upgrading from v0.1.0?** Its hashes look like `scrypt$32768$8$1$…$…`. Docker Compose reads every `$name` as a variable and replaces it with nothing, so the hash arrives broken (Glaze then says _"Looks like `$` signs were removed"_). Such a hash still works if it reaches Glaze intact, for example in single quotes in an `env_file`, or with every `$` written as `$$`. Simpler: run `hash-password` again (v0.1.1+) and use the new hash, which contains no `$`. Some app installers, such as ZimaOS and CasaOS, turn `$$` back into `$`; there regenerating is the only option.
+
+## ZimaOS / CasaOS
+
+ZimaOS and CasaOS install apps from a compose file and re-serialise it, so values must be free of `$` signs (the v0.1.1+ hash is). If Glance keeps its config in `/DATA/AppData/glance/config` and uses `server.assets-path: /assets` (served from `/DATA/AppData/glance/config/assets` on the host), add Glaze as a **custom app** via **Import → Docker Compose**:
+
+```yaml
+name: glaze
+services:
+  glaze:
+    image: ghcr.io/klingesean/glaze:latest
+    container_name: glaze
+    restart: unless-stopped
+    # The AppData folders belong to root on ZimaOS/CasaOS.
+    user: "0:0"
+    ports:
+      - "8090:8090"
+    volumes:
+      - type: bind
+        source: /DATA/AppData/glance/config
+        target: /config
+    environment:
+      # Fake example: run `docker run --rm -it ghcr.io/klingesean/glaze:latest hash-password`
+      # in the ZimaOS/CasaOS terminal and paste your own hash here.
+      GLAZE_ADMIN_PASSWORD_HASH: scrypt:32768:8:1:FAKEsaltReplaceMe0000w:FAKEhashRunHashPasswordAndPasteYourOwn00000
+      # Glance serves this folder as /assets/; inside Glaze it's here.
+      GLAZE_ASSETS_PATH: /config/assets
+      # Where your browser reaches Glance (your device's IP and Glance's port).
+      GLANCE_URL: http://192.168.1.10:8080
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: glaze
+  title:
+    en_us: Glaze
+  description:
+    en_us: A visual editor for Glance dashboards
+  port_map: "8090"
+```
+
+Adjust the host path and `GLANCE_URL` to your setup. `user: "0:0"` runs Glaze as root, because root owns the AppData folders; the alternative is `chown -R 1000:1000 /DATA/AppData/glance/config` and leaving `user:` out (see [File permissions](#file-permissions)).
+
 ## Configuration
 
 Glaze is configured with environment variables. In Docker, the image already sets `NODE_ENV`, `GLAZE_CONFIG_PATH`, `GLANCE_BIN` and `GLAZE_PORT`.
@@ -103,22 +156,30 @@ Glaze is configured with environment variables. In Docker, the image already set
 | Variable                    | Default                                          | What it does                                                                                                                                                                                                             |
 | --------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `GLAZE_ADMIN_USERNAME`      | `admin`                                          | Username for the login.                                                                                                                                                                                                  |
-| `GLAZE_ADMIN_PASSWORD_HASH` | _(none)_                                         | **Preferred.** The password as a scrypt hash (`scrypt$N$r$p$salt$hash`), made with `hash-password`. Glaze refuses to start without a password.                                                                           |
+| `GLAZE_ADMIN_PASSWORD_HASH` | _(none)_ | **Preferred.** The password as a scrypt hash (`scrypt:N:r:p:salt:hash`), made with `hash-password`. v0.1.0 hashes (`scrypt$…`) still work if they arrive intact. Glaze refuses to start without a password. |
 | `GLAZE_ADMIN_PASSWORD`      | _(none)_                                         | The password in plain text. Works, but logs a warning at startup; use the hash instead. When both are set, the hash wins.                                                                                                |
 | `GLAZE_SECRET`              | _(generated)_                                    | Signs the session cookies (at least 32 characters). When unset, Glaze generates one on first start and keeps it in `<config folder>/.glaze/secret` (mode 0600), so you stay logged in across restarts.                   |
 | `GLAZE_TRUST_PROXY`         | `false`                                          | `true` when Glaze runs behind a reverse proxy or Cloudflare Tunnel: the client IP for the login rate limit comes from `CF-Connecting-IP` / `X-Forwarded-For`, and HTTPS (for `Secure` cookies) from `X-Forwarded-Proto`. |
+| `GLAZE_ADMIN_PASSWORD_HASH_FILE`, `GLAZE_ADMIN_PASSWORD_FILE`, `GLAZE_SECRET_FILE` | _(none)_ | Read that value from a file instead (Docker secrets), trimmed. Setting both `X` and `X_FILE` is an error. See [Password](#password). |
 | `GLAZE_AUTH`                | `on`                                             | `off` disables the login. **Development only**: Glaze refuses to start with `off` when `NODE_ENV=production` (always the case in Docker).                                                                                |
 | `GLAZE_CONFIG_PATH`         | `.dev/glance.yml` (Docker: `/config/glance.yml`) | The `glance.yml` Glaze edits. Relative paths start at the repository root.                                                                                                                                               |
 | `GLAZE_PORT`                | `8090`                                           | Port Glaze listens on.                                                                                                                                                                                                   |
 | `GLANCE_BIN`                | _(off)_ (Docker: the bundled Glance)             | Path to the Glance binary. When set, every draft is also checked with `glance config:validate`, so Glance's own errors show up in the code view.                                                                         |
 | `GLANCE_URL`                | _(off)_                                          | Where your **browser** reaches Glance, e.g. `http://localhost:8080`. Turns on the live preview; its origin is the only one the page may frame.                                                                           |
+| `GLAZE_ASSETS_PATH` | _(none)_ | The folder **inside the Glaze container** that holds the files Glance serves under `/assets/`. Needed in Docker, see [Asset files](#asset-files). |
 | `GLAZE_WEB_DIST`            | `apps/web/dist`                                  | Folder with the built web app, served next to the API.                                                                                                                                                                   |
 
 **Validation with Glance (`GLANCE_BIN`).** Glaze writes the draft to a temporary `.glaze-validate-*.yml` next to your config (so `$include` paths work), runs Glance on it with a 10 second timeout, and always deletes it again. `${VAR}` references that aren't set in Glaze's environment get a dummy value, so they don't cause false errors. `${secret:…}` and `${readFileFromEnv:…}` read files where Glance runs, so they are reported as "can't be checked here" instead. Without `GLANCE_BIN`, Glaze still checks YAML syntax, Glance's layout rules and unknown options itself.
 
 **Live preview (`GLANCE_URL`).** The preview is your real Glance in an iframe, so it shows the **published** config: after Publish, Glaze waits for Glance to reload and then refreshes the preview. If your Glance has a login, sign in once inside the preview.
 
-**Asset files.** The code view also opens the files your config references under `server.assets-path`: `theme.custom-css-file` and `<link>` / `<script>` tags with `/assets/…` in `document.head`. For safety, Glaze only edits them when the assets folder is inside the config's folder.
+### Asset files
+
+The code view also opens the files your config references under `/assets/`: `theme.custom-css-file` and `<link>` / `<script>` tags in `document.head` (`.css`, `.js` and `.mjs` only).
+
+- **In Docker, set `GLAZE_ASSETS_PATH`.** `server.assets-path` (e.g. `/assets` or `/app/assets`) is a path inside the *Glance* container and means nothing inside Glaze's. Mount the same host folder into Glaze (usually it's already inside the config folder you mount at `/config`) and tell Glaze where it is, e.g. `GLAZE_ASSETS_PATH=/config/assets`. `/assets/custom.css` then opens `/config/assets/custom.css`. The folder must exist and be writable, which Glaze checks at startup.
+- **Without it**, Glaze resolves `server.assets-path` from the config's folder and only edits files when that folder lies inside the config's folder, so a config alone can't point Glaze elsewhere on disk.
+- **The trade-off:** `GLAZE_ASSETS_PATH` may point anywhere, because you set it yourself. Whatever folder you name becomes editable through Glaze: only the `.css`/`.js`/`.mjs` files the config references, never anything above it (`..` and similar tricks are refused). Point it at the assets folder, nothing broader.
 
 ## Security
 
@@ -148,7 +209,7 @@ docker compose pull glaze
 docker compose up -d glaze
 ```
 
-Your config and login stay as they are; they live in your config folder and `glaze.env`. See the [changelog](CHANGELOG.md) for what changed.
+Your config and login stay as they are; they live in your config folder and compose file. See the [changelog](CHANGELOG.md) for what changed.
 
 ## Roadmap
 

@@ -2,22 +2,24 @@
 #
 #   .
 #   ├─ compose.yml      (this file)
-#   ├─ glaze.env        (GLAZE_ADMIN_PASSWORD_HASH, see below)
 #   └─ config/
-#      └─ glance.yml
+#      ├─ glance.yml    (with server.assets-path: /app/assets)
+#      └─ assets/       (custom.css, design.js, …)
 #
 # Create the password hash once:
 #   docker run --rm -it ghcr.io/klingesean/glaze:latest hash-password
-# and put it in glaze.env, in single quotes (the hash contains $ signs):
-#   GLAZE_ADMIN_PASSWORD_HASH='scrypt$32768$8$1$...$...'
+# and paste it below. Since v0.1.1 it contains no $ signs, so it needs no
+# quotes or escaping. (A v0.1.0 hash with $ signs must be regenerated.)
 
 services:
   glance:
     image: glanceapp/glance:v0.8.7
     restart: unless-stopped
     volumes:
-      # Glance reads /app/config/glance.yml.
+      # Glance reads /app/config/glance.yml ...
       - ./config:/app/config
+      # ... and serves this folder as /assets/ (server.assets-path: /app/assets).
+      - ./config/assets:/app/assets
     ports:
       - "8080:8080"
 
@@ -33,8 +35,11 @@ services:
       - ./config:/config
     ports:
       - "8090:8090"
-    env_file: glaze.env
     environment:
+      # Fake example; replace it with the output of hash-password.
+      GLAZE_ADMIN_PASSWORD_HASH: scrypt:32768:8:1:FAKEsaltReplaceMe0000w:FAKEhashRunHashPasswordAndPasteYourOwn00000
+      # Where Glaze finds the files Glance serves as /assets/ (here: ./config/assets).
+      GLAZE_ASSETS_PATH: /config/assets
       # Where your *browser* reaches Glance, for the live preview.
       GLANCE_URL: http://localhost:8080
       # Behind a reverse proxy or Cloudflare Tunnel:

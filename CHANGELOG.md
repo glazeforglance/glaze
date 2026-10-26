@@ -6,6 +6,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-10-26
+
+Fixes from the first real installs (ZimaOS / CasaOS with Docker Compose).
+
+### Fixed
+
+- **Password hash in Docker Compose.** `hash-password` now prints `scrypt:N:r:p:salt:hash` with base64url salt and hash, using only `A–Z a–z 0–9 _ : -`. The v0.1.0 format contained `$` signs, which Compose (and app installers that re-serialise compose files, such as ZimaOS and CasaOS) read as variables, so the hash arrived without its salt and hash. v0.1.0 hashes are still accepted when they arrive intact; a hash that lost its parts now gets a clear hint to regenerate it.
+- **Asset files in Docker setups.** `server.assets-path` is a path inside the Glance container (e.g. `/assets`), so Glaze refused it and `custom.css` / `design.js` never showed up in the code view. Set `GLAZE_ASSETS_PATH` to where Glaze sees the same folder (see Added). When assets are refused, the message now points to `GLAZE_ASSETS_PATH`.
+
+### Added
+
+- `GLAZE_ADMIN_PASSWORD_FILE`, `GLAZE_ADMIN_PASSWORD_HASH_FILE` and `GLAZE_SECRET_FILE` read the value from a file (Docker secrets). Setting a variable and its `_FILE` variant together is refused.
+- `GLAZE_ASSETS_PATH`: the folder inside the Glaze container with the files Glance serves under `/assets/`. Checked at startup like the config folder.
+- README sections on the password options and on installing Glaze on ZimaOS / CasaOS.
+- The Docker smoke test now starts Glaze through a compose file with an unquoted hash and an assets folder.
+
+### Changed
+
+- With `GLAZE_ADMIN_PASSWORD` (plain text), sessions from v0.1.0 end once after the upgrade, because the derived hash uses the new format.
+
 ## [0.1.0] - 2026-10-26
 
 The first release: a visual editor that runs next to Glance v0.8.7 and edits its `glance.yml`.
@@ -28,5 +48,6 @@ The first release: a visual editor that runs next to Glance v0.8.7 and edits its
 - **Docker image** `ghcr.io/klingesean/glaze` for `linux/amd64` and `linux/arm64`: non-root (uid 1000), with the checksum-verified Glance v0.8.7 binary for validation, a health check and a compose example.
 - CI (typecheck, lint, tests, build, Docker smoke test) and a tag-driven release workflow.
 
-[Unreleased]: https://github.com/klingesean/glaze-for-glance/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/klingesean/glaze-for-glance/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/klingesean/glaze-for-glance/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/klingesean/glaze-for-glance/releases/tag/v0.1.0
