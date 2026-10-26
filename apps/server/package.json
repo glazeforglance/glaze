@@ -6,7 +6,8 @@
 		"build": "tsc",
 		"start": "node dist/index.js",
 		"test": "vitest run",
-		"typecheck": "tsc --noEmit && tsc --noEmit -p test"
+		"typecheck": "tsc --noEmit && tsc --noEmit -p test",
+		"hash-password": "tsx src/cli.ts"
 	},
 	"dependencies": {
 		"@glaze/core": "workspace:*",

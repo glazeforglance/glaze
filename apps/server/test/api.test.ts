@@ -2,8 +2,8 @@ import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { createApp } from "../src/app.ts";
 import { hashText } from "../src/config-store.ts";
+import { testApp } from "./helpers/session.ts";
 
 const ORIGINAL = `# Test config, fake values only.
 pages:
@@ -39,7 +39,7 @@ afterEach(async () => {
 });
 
 async function put(body: unknown): Promise<Response> {
-	return await createApp({ configPath }).request("/api/config", {
+	return await (await testApp({ configPath })).request("/api/config", {
 		method: "PUT",
 		headers: { "Content-Type": "application/json" },
 		body: JSON.stringify(body),
@@ -48,7 +48,7 @@ async function put(body: unknown): Promise<Response> {
 
 describe("GET /api/config", () => {
 	it("returns the text and its hash", async () => {
-		const res = await createApp({ configPath }).request("/api/config");
+		const res = await (await testApp({ configPath })).request("/api/config");
 		expect(res.status).toBe(200);
 		expect(await res.json()).toEqual({
 			text: ORIGINAL,
@@ -57,9 +57,9 @@ describe("GET /api/config", () => {
 	});
 
 	it("returns 404 when the file is missing", async () => {
-		const res = await createApp({ configPath: join(dir, "nope.yml") }).request(
-			"/api/config",
-		);
+		const res = await (
+			await testApp({ configPath: join(dir, "nope.yml") })
+		).request("/api/config");
 		expect(res.status).toBe(404);
 	});
 });
@@ -124,8 +124,9 @@ describe("PUT /api/config", () => {
 
 	it("returns 400 for a malformed body", async () => {
 		expect((await put({ text: EDITED })).status).toBe(400);
-		const res = await createApp({ configPath }).request("/api/config", {
+		const res = await (await testApp({ configPath })).request("/api/config", {
 			method: "PUT",
+			headers: { "Content-Type": "application/json" },
 			body: "not json",
 		});
 		expect(res.status).toBe(400);
@@ -167,7 +168,7 @@ describe("PUT /api/config with validation", () => {
 
 describe("POST /api/validate", () => {
 	async function validate(body: unknown): Promise<Response> {
-		return await createApp({ configPath }).request("/api/validate", {
+		return await (await testApp({ configPath })).request("/api/validate", {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify(body),
@@ -191,16 +192,18 @@ describe("POST /api/validate", () => {
 
 describe("GET /api/settings", () => {
 	it("reports the Glance URL and whether validation is on", async () => {
-		const off = await createApp({ configPath }).request("/api/settings");
+		const off = await (await testApp({ configPath })).request("/api/settings");
 		expect(await off.json()).toEqual({
 			glanceUrl: null,
 			glanceValidation: false,
 		});
-		const on = await createApp({
-			configPath,
-			glanceUrl: "http://localhost:8080",
-			glance: { bin: "glance" },
-		}).request("/api/settings");
+		const on = await (
+			await testApp({
+				configPath,
+				glanceUrl: "http://localhost:8080",
+				glance: { bin: "glance" },
+			})
+		).request("/api/settings");
 		expect(await on.json()).toEqual({
 			glanceUrl: "http://localhost:8080",
 			glanceValidation: true,

@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { type AuthConfig, installAuth } from "./auth.ts";
 import {
 	findReferencedAssets,
 	readAsset,
@@ -7,6 +8,8 @@ import {
 } from "./assets.ts";
 import { hashText, readConfig, writeConfigAtomic } from "./config-store.ts";
 import type { GlanceCommand } from "./glance-validate.ts";
+import type { RateLimiter } from "./rate-limit.ts";
+import { csrfProtection, securityHeaders } from "./security.ts";
 import { hasErrors, validateDraft } from "./validate.ts";
 
 /** What the API needs to know about its environment. */
@@ -19,6 +22,19 @@ export interface AppOptions {
 	readonly glanceUrl?: string | null;
 	/** Environment passed to Glance; defaults to `process.env`. */
 	readonly env?: Readonly<Record<string, string | undefined>>;
+	/**
+	 * The admin account. Required on purpose, so no caller can forget it:
+	 * `null` turns auth off (`GLAZE_AUTH=off`, refused in production).
+	 */
+	readonly auth: AuthConfig | null;
+	/** `GLAZE_TRUST_PROXY`: believe `X-Forwarded-*` / `CF-Connecting-IP`. */
+	readonly trustProxy?: boolean;
+	/** Reported by `/api/healthz`. */
+	readonly version?: string;
+	/** Clock for sessions and the login limit, replaceable in tests. */
+	readonly now?: () => number;
+	/** Login limiter, replaceable in tests. */
+	readonly loginLimiter?: RateLimiter;
 }
 
 // A config or draft this large is a mistake, not something to validate.
@@ -42,6 +58,11 @@ function textOf(body: unknown): string | null {
  * Creates the Glaze API. Kept separate from `serve()` so tests can call
  * `app.request()` against a temp file without starting a server.
  *
+ * Every response gets security headers (CSP); non-GET `/api` requests get a
+ * CSRF check. `/api/healthz` and `/api/auth/*` are public, every other
+ * `/api/*` route answers 401 without a valid session (see `installAuth`).
+ *
+ * - `GET /api/healthz` → `{ ok, version }`
  * - `GET /api/config` → `{ text, version }`
  * - `PUT /api/config` with `{ text, baseVersion, force? }` → `{ version, issues }`;
  *   400 bad body, 422 with `{ issues }` when validation finds errors (YAML
@@ -63,7 +84,22 @@ export function createApp(options: AppOptions): Hono {
 			glance,
 			...(options.env ? { env: options.env } : {}),
 		});
+	const trustProxy = options.trustProxy ?? false;
 	const app = new Hono();
+
+	app.use("*", securityHeaders(options.glanceUrl ?? null));
+	app.use("/api/*", csrfProtection(trustProxy));
+
+	app.get("/api/healthz", (c) =>
+		c.json({ ok: true, version: options.version ?? "dev" }),
+	);
+
+	installAuth(app, {
+		auth: options.auth,
+		trustProxy,
+		...(options.now ? { now: options.now } : {}),
+		...(options.loginLimiter ? { loginLimiter: options.loginLimiter } : {}),
+	});
 
 	app.get("/api/config", async (c) => {
 		const file = await readConfig(configPath);

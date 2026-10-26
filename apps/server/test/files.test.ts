@@ -2,9 +2,9 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { createApp } from "../src/app.ts";
 import { findReferencedAssets, isSafeName } from "../src/assets.ts";
 import { hashText } from "../src/config-store.ts";
+import { testApp } from "./helpers/session.ts";
 
 // Fake values only.
 const CONFIG = `server:
@@ -45,8 +45,8 @@ afterEach(async () => {
 	await rm(dir, { recursive: true, force: true });
 });
 
-function request(path: string, init?: RequestInit): Promise<Response> {
-	return Promise.resolve(createApp({ configPath }).request(path, init));
+async function request(path: string, init?: RequestInit): Promise<Response> {
+	return (await testApp({ configPath })).request(path, init);
 }
 
 function put(name: string, body: unknown): Promise<Response> {
