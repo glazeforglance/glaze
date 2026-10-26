@@ -4,7 +4,7 @@ import { createApp } from "./app.ts";
 import { resolveAuthConfig } from "./auth-config.ts";
 import { waitForPendingWrites } from "./config-store.ts";
 import { loadDotEnv, REPO_ROOT, readServerEnv } from "./env.ts";
-import { checkConfigAccess } from "./startup-check.ts";
+import { checkAssetsAccess, checkConfigAccess } from "./startup-check.ts";
 import { hasWebApp } from "./static.ts";
 import { GLAZE_VERSION } from "./version.ts";
 
@@ -27,13 +27,24 @@ async function main(): Promise<void> {
 	loadDotEnv(REPO_ROOT);
 	const env = readServerEnv(process.env, REPO_ROOT);
 	if (!env.ok) fail(env.error);
-	const { configPath, port, glanceBin, glanceUrl, trustProxy, webDist } =
-		env.value;
+	const {
+		configPath,
+		port,
+		glanceBin,
+		glanceUrl,
+		trustProxy,
+		webDist,
+		assetsPath,
+	} = env.value;
 	for (const warning of env.value.warnings) console.warn(`Warning: ${warning}`);
 
 	// Before the secret: it's created in the same folder.
 	const access = await checkConfigAccess(configPath);
 	if (!access.ok) fail(access.error);
+	if (assetsPath !== null) {
+		const assets = await checkAssetsAccess(assetsPath);
+		if (!assets.ok) fail(assets.error);
+	}
 
 	const auth = await resolveAuthConfig(env.value.auth, dirname(configPath));
 	if (!auth.ok) fail(auth.error);
@@ -45,6 +56,7 @@ async function main(): Promise<void> {
 		glanceUrl,
 		auth: auth.value,
 		trustProxy,
+		assetsPath,
 		version: GLAZE_VERSION,
 		webDist: serveWeb ? webDist : null,
 	});
@@ -52,6 +64,7 @@ async function main(): Promise<void> {
 	const server = serve({ fetch: app.fetch, port }, (info) => {
 		console.log(`Glaze ${GLAZE_VERSION} on http://localhost:${info.port}`);
 		console.log(`Editing ${configPath}`);
+		if (assetsPath !== null) console.log(`Asset files in ${assetsPath}`);
 		console.log(
 			serveWeb
 				? `Serving the web app from ${webDist}`

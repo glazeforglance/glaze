@@ -36,6 +36,12 @@ export interface AppOptions {
 	readonly now?: () => number;
 	/** Login limiter, replaceable in tests. */
 	readonly loginLimiter?: RateLimiter;
+	/**
+	 * `GLAZE_ASSETS_PATH`: the folder inside Glaze's container that holds the
+	 * files Glance serves under `/assets/`. `null` or missing: resolve
+	 * `server.assets-path` from the config's folder instead.
+	 */
+	readonly assetsPath?: string | null;
 	/** Folder of the built web app to serve next to the API; `null` or missing: API only. */
 	readonly webDist?: string | null;
 }
@@ -89,6 +95,7 @@ export function createApp(options: AppOptions): Hono {
 			...(options.env ? { env: options.env } : {}),
 		});
 	const trustProxy = options.trustProxy ?? false;
+	const assetsPath = options.assetsPath ?? null;
 	const app = new Hono();
 
 	app.use("*", securityHeaders(options.glanceUrl ?? null));
@@ -197,7 +204,12 @@ export function createApp(options: AppOptions): Hono {
 		if (!config.ok) return c.json({ files: [], unavailable: null });
 		const checked = findReferencedAssets(config.value.text).map((entry) => ({
 			entry,
-			path: resolveAssetPath(configPath, config.value.text, entry.name),
+			path: resolveAssetPath(
+				configPath,
+				config.value.text,
+				entry.name,
+				assetsPath,
+			),
 		}));
 		const refused = checked.find(({ path }) => !path.ok)?.path;
 		return c.json({
@@ -225,7 +237,12 @@ export function createApp(options: AppOptions): Hono {
 				message: config.error.message,
 			};
 		}
-		const resolved = resolveAssetPath(configPath, config.value.text, name);
+		const resolved = resolveAssetPath(
+			configPath,
+			config.value.text,
+			name,
+			assetsPath,
+		);
 		if (!resolved.ok) {
 			const status = resolved.error.code === "invalid-name" ? 400 : 404;
 			return {

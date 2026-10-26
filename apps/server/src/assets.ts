@@ -105,18 +105,32 @@ function isInside(folder: string, path: string): boolean {
 }
 
 /**
- * Resolves an asset name to a file path. The name must be referenced by the
- * config, and both `server.assets-path` and the file must lie inside the
- * config's folder, so the API can never reach other files.
+ * Resolves an asset name to a file path. The name must be a safe relative
+ * path that the config references, and the file must lie inside the assets
+ * folder, so the API can never reach other files.
+ *
+ * Which folder that is:
+ * - with `assetsDir` (`GLAZE_ASSETS_PATH`): that folder. `server.assets-path`
+ *   is a path inside the *Glance* container (e.g. `/assets`), which means
+ *   nothing inside Glaze's container; the admin mounts the same host folder
+ *   into Glaze and names it here. Because the admin chose this path
+ *   explicitly, it may lie outside the config folder: the trade-off is that
+ *   whatever folder is configured becomes editable (only referenced
+ *   `.css`/`.js`/`.mjs` files, never anything above it).
+ * - without it: `server.assets-path`, resolved from the config's folder, and
+ *   only when it lies inside that folder, so a config alone can't point
+ *   Glaze at arbitrary places on disk.
  * @param configPath - Path of `glance.yml`.
  * @param configText - The config on disk (decides which files are referenced).
  * @param name - The requested name.
+ * @param assetsDir - Absolute `GLAZE_ASSETS_PATH`, or `null` to use `server.assets-path`.
  * @returns The absolute file path, or why it was refused.
  */
 export function resolveAssetPath(
 	configPath: string,
 	configText: string,
 	name: string,
+	assetsDir: string | null = null,
 ): Result<string, AssetError> {
 	if (!isSafeName(name)) {
 		return err({ code: "invalid-name", message: `Invalid file name: ${name}` });
@@ -127,21 +141,31 @@ export function resolveAssetPath(
 			message: `${name} is not referenced by the config`,
 		});
 	}
-	const assetsPath = stringAt(configText, ["server", "assets-path"]);
-	if (assetsPath === null || assetsPath.includes("${")) {
-		return err({
-			code: "no-assets-path",
-			message: "The config has no server.assets-path",
-		});
+	let folder: string;
+	if (assetsDir !== null) {
+		folder = resolve(assetsDir);
+	} else {
+		const assetsPath = stringAt(configText, ["server", "assets-path"]);
+		if (assetsPath === null || assetsPath.includes("${")) {
+			return err({
+				code: "no-assets-path",
+				message: "The config has no server.assets-path",
+			});
+		}
+		const configDir = dirname(configPath);
+		folder = resolve(configDir, assetsPath);
+		if (!isInside(configDir, folder)) {
+			return err({
+				code: "outside-config-folder",
+				message:
+					"server.assets-path is outside the config's folder. In Docker, mount Glance's assets folder into Glaze as well and set GLAZE_ASSETS_PATH to it (see the README).",
+			});
+		}
 	}
-	const configDir = dirname(configPath);
-	const assetsDir = resolve(configDir, assetsPath);
-	const file = resolve(assetsDir, name);
-	if (!isInside(configDir, assetsDir) || !isInside(assetsDir, file)) {
-		return err({
-			code: "outside-config-folder",
-			message: "server.assets-path is outside the config's folder",
-		});
+	const file = resolve(folder, name);
+	// isSafeName already rules out `..`; this guards against anything it missed.
+	if (!isInside(folder, file)) {
+		return err({ code: "invalid-name", message: `Invalid file name: ${name}` });
 	}
 	return ok(file);
 }

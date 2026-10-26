@@ -30,6 +30,7 @@ describe("readServerEnv", () => {
 					secret: null,
 				},
 				trustProxy: false,
+				assetsPath: null,
 				webDist: DEFAULT_WEB_DIST,
 				production: false,
 				warnings: [],
@@ -90,6 +91,19 @@ describe("readServerEnv", () => {
 		).toBe(false);
 		expect(readServerEnv({ ...BASE, GLANCE_URL: "ftp://x" }, ROOT).ok).toBe(
 			false,
+		);
+	});
+
+	it("reads GLAZE_ASSETS_PATH, relative to the root", () => {
+		const absolute = resolve("/config/assets");
+		const set = readServerEnv({ ...BASE, GLAZE_ASSETS_PATH: absolute }, ROOT);
+		expect(set.ok && set.value.assetsPath).toBe(absolute);
+		const relative = readServerEnv(
+			{ ...BASE, GLAZE_ASSETS_PATH: "assets" },
+			ROOT,
+		);
+		expect(relative.ok && relative.value.assetsPath).toBe(
+			resolve(ROOT, "assets"),
 		);
 	});
 

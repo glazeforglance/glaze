@@ -60,6 +60,11 @@ export interface ServerEnv {
 	readonly auth: AuthEnv;
 	/** `GLAZE_TRUST_PROXY=true`: believe `X-Forwarded-*` and `CF-Connecting-IP`. */
 	readonly trustProxy: boolean;
+	/**
+	 * `GLAZE_ASSETS_PATH`: the folder inside Glaze's container with the files
+	 * Glance serves under `/assets/`; `null` to use `server.assets-path`.
+	 */
+	readonly assetsPath: string | null;
 	/** Folder with the built web app (`GLAZE_WEB_DIST`). */
 	readonly webDist: string;
 	/** `NODE_ENV === "production"`. */
@@ -216,7 +221,8 @@ function readAuth(
 
 /**
  * Reads the server settings from environment variables.
- * Relative paths in `GLAZE_CONFIG_PATH`, `GLANCE_BIN` and `GLAZE_WEB_DIST` are
+ * Relative paths in `GLAZE_CONFIG_PATH`, `GLANCE_BIN`, `GLAZE_ASSETS_PATH`,
+ * `GLAZE_WEB_DIST` and the `_FILE` variables are
  * resolved from `root`, so the server finds them no matter which folder it
  * was started from.
  *
@@ -268,6 +274,7 @@ export function readServerEnv(
 		glanceUrl,
 		auth: auth.value,
 		trustProxy: trustProxy.value,
+		assetsPath: optionalPath(env.GLAZE_ASSETS_PATH, root),
 		webDist: optionalPath(env.GLAZE_WEB_DIST, root) ?? DEFAULT_WEB_DIST,
 		production,
 		warnings,
