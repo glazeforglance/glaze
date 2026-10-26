@@ -1,6 +1,6 @@
 # Glaze: design document
 
-> Status: in development · phases 0 and 1 done
+> Status: in development · phases 0–3 done
 > Target: Glance **v0.8.7**
 
 ---
@@ -257,8 +257,8 @@ A script (`scripts/generate-widget-schemas.ts`) reads the Glance Go source (`int
 | ----- | ------------------------------------------------------------- | ----------------------------------------------------------- | ------- |
 | 0     | Project setup: monorepo, Vite + React + TS, Hono, lint/format | `pnpm dev` starts the app and the API                       | ✅ done |
 | 1     | `packages/core`: parse → model → edit → serialize, with tests | A large real-world `glance.yml` round-trips without changes | ✅ done |
-| 2     | Editor: pages, columns, drag & drop widgets (dnd-kit)         | Moving a widget produces a correct YAML diff                |         |
-| 3     | Inspector + forms for 10 widgets                              | Monitor/bookmarks fully editable without YAML               |         |
+| 2     | Editor: pages, columns, drag & drop widgets (dnd-kit)         | Moving a widget produces a correct YAML diff                | ✅ done |
+| 3     | Inspector + forms for 10 widgets                              | Monitor/bookmarks fully editable without YAML               | ✅ done |
 | 4     | Code view + live preview + validation                         | Errors show up on the right line                            |         |
 | 5     | Auth, Docker image, README → **v0.1 release**                 | Installable next to Glance                                  |         |
 | 6+    | Themes, "Edit page" button, generated schemas, multiple users | See §5                                                      |         |

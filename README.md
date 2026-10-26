@@ -67,8 +67,8 @@ services:
 
 - [x] **Phase 0:** project setup (monorepo, React app, API server)
 - [x] **Phase 1:** read and write `glance.yml` without losing comments
-- [ ] **Phase 2:** drag & drop editor for pages, columns and widgets
-- [ ] **Phase 3:** widget forms for the 10 most used widgets
+- [x] **Phase 2:** drag & drop editor for pages, columns and widgets
+- [x] **Phase 3:** widget forms for the 10 most used widgets
 - [ ] **Phase 4:** code view, live preview and validation
 - [ ] **Phase 5:** login and Docker image → **v0.1 release**
 - [ ] Later: theme editor, "Edit page" button, forms for every widget, multiple users
