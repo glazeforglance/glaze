@@ -132,6 +132,11 @@ export function MapField({
 					}}
 					onKeyDown={(event) => {
 						if (event.key === "Enter") onAdd(event);
+						else if (event.key === "Escape") {
+							event.preventDefault();
+							setDraft("");
+							setDraftError(null);
+						}
 					}}
 					className={`${INPUT_CLASS} ${borderClass(draftError !== null)} font-mono text-[13px]`}
 				/>

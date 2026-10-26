@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { WidgetForm } from "../../forms/WidgetForm.tsx";
+import { useScrollMemory } from "../../hooks/use-scroll-memory.ts";
 import { findWidget } from "../../lib/model.ts";
 import { selectCurrentPage, useEditor } from "../../store/editor-store.ts";
 import { InspectorHeader } from "./InspectorHeader.tsx";
@@ -16,9 +17,16 @@ export function Inspector() {
 	const [tab, setTab] = useState<InspectorTab>("settings");
 	const widget =
 		page && selectedWidgetId ? findWidget(page, selectedWidgetId) : null;
+	// Widget ids stay the same through option edits (see ids.ts), so an edit
+	// keeps the scroll position, and selecting a widget again brings it back.
+	const { ref: scrollRef, onScroll } = useScrollMemory<HTMLElement>(
+		widget ? `${widget.id}:${tab}` : null,
+	);
 
 	return (
 		<aside
+			ref={scrollRef}
+			onScroll={onScroll}
 			aria-label="Inspector"
 			className="flex w-[330px] shrink-0 flex-col overflow-y-auto border-l border-line bg-bg px-5 py-5"
 		>

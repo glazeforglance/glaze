@@ -18,13 +18,20 @@ export function YamlView({ widget }: YamlViewProps) {
 			<p className="text-sm text-muted">This widget's YAML can't be shown.</p>
 		);
 	}
+	// `doc` comes from the store, so this updates right after every form edit.
 	return (
-		<pre
-			tabIndex={0}
-			aria-label="Widget YAML"
-			className="overflow-x-auto rounded-md border border-line bg-card p-3 font-mono text-xs leading-relaxed text-text"
-		>
-			<code>{source}</code>
-		</pre>
+		<>
+			<pre
+				tabIndex={0}
+				aria-label="Widget YAML"
+				aria-describedby="yaml-view-note"
+				className="overflow-x-auto rounded-md border border-line bg-card p-3 font-mono text-xs leading-relaxed text-text"
+			>
+				<code>{source}</code>
+			</pre>
+			<p id="yaml-view-note" className="mt-2 text-xs text-faint">
+				Read-only for now. Editing YAML arrives with the code view.
+			</p>
+		</>
 	);
 }

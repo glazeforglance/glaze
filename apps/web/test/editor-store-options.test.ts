@@ -118,6 +118,27 @@ describe("option actions", () => {
 		expect(store.getState().dirty).toBe(false);
 	});
 
+	it("keeps every widget id and the selection through a series of edits", () => {
+		const { store, monitor } = setup();
+		const ids = () =>
+			selectCurrentPage(store.getState())?.columns.flatMap((column) =>
+				column.widgets.map((widget) => widget.id),
+			);
+		const before = ids();
+		const state = () => store.getState();
+		state().selectWidget(monitor.id);
+		state().setWidgetOption(monitor.id, "title", "Diensten");
+		state().insertWidgetListItem(monitor.id, ["sites"], {
+			url: "https://grafana.example.test",
+		});
+		state().moveWidgetListItem(monitor.id, ["sites"], 2, 0);
+		state().setWidgetValue(monitor.id, ["sites", 0, "title"], "Grafana");
+		state().removeWidgetValue(monitor.id, ["sites", 0]);
+		state().removeWidgetOption(monitor.id, "title");
+		expect(ids()).toEqual(before);
+		expect(state().selectedWidgetId).toBe(monitor.id);
+	});
+
 	it("returns false for an unknown widget", () => {
 		const { store } = setup();
 		expect(store.getState().setWidgetOption("widget-999", "title", "x")).toBe(

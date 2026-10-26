@@ -158,7 +158,13 @@ export function useWidgetField(
 				: plan.kind === "set"
 					? store.setWidgetValue(widget.id, path, plan.value)
 					: store.removeWidgetValue(widget.id, path);
-		if (!applied) form.resetField(name);
+		if (!applied) {
+			// Show the document's value again, and why the edit was refused right
+			// at the field (the canvas notice may be out of view).
+			form.resetField(name);
+			const notice = editorStore.getState().notice;
+			if (notice) form.setError(name, { type: "refused", message: notice });
+		}
 		return applied;
 	};
 
