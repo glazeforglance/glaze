@@ -13,6 +13,23 @@ export interface ServerEnv {
 	/** Absolute path of the `glance.yml` Glaze edits. */
 	readonly configPath: string;
 	readonly port: number;
+	/**
+	 * Optional `GLANCE_BIN`: the Glance binary used for `config:validate`.
+	 * Relative paths start at `root`. `null` turns Glance validation off.
+	 */
+	readonly glanceBin: string | null;
+	/**
+	 * Optional `GLANCE_URL`: where the browser can reach Glance, for the live
+	 * preview (e.g. `http://localhost:8080`). No trailing slash; `null` when unset.
+	 */
+	readonly glanceUrl: string | null;
+}
+
+/** Turns an optional path setting into an absolute path, or `null` when empty. */
+function optionalPath(raw: string | undefined, root: string): string | null {
+	const value = raw?.trim();
+	if (!value) return null;
+	return isAbsolute(value) ? value : resolve(root, value);
 }
 
 /**
@@ -40,7 +57,7 @@ export function loadDotEnv(root: string): boolean {
  * server finds the file no matter which folder it was started from.
  * @param env - Environment variables, usually `process.env`.
  * @param root - Directory that relative paths are resolved from.
- * @returns The settings, or a message when `GLAZE_PORT` is not a valid port number.
+ * @returns The settings, or a message when `GLAZE_PORT` or `GLANCE_URL` is invalid.
  */
 export function readServerEnv(
 	env: Readonly<Record<string, string | undefined>>,
@@ -55,5 +72,19 @@ export function readServerEnv(
 			`GLAZE_PORT must be a number between 1 and 65535, got "${rawPort}"`,
 		);
 	}
-	return ok({ configPath, port });
+	const rawUrl = env.GLANCE_URL?.trim();
+	let glanceUrl: string | null = null;
+	if (rawUrl) {
+		const url = URL.canParse(rawUrl) ? new URL(rawUrl) : null;
+		if (!url || (url.protocol !== "http:" && url.protocol !== "https:")) {
+			return err(`GLANCE_URL must be an http(s) URL, got "${rawUrl}"`);
+		}
+		glanceUrl = rawUrl.replace(/\/+$/, "");
+	}
+	return ok({
+		configPath,
+		port,
+		glanceBin: optionalPath(env.GLANCE_BIN, root),
+		glanceUrl,
+	});
 }

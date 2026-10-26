@@ -1,27 +1,41 @@
-import { parseConfig, validateLayout } from "@glaze/core";
 import { Hono } from "hono";
+import {
+	findReferencedAssets,
+	readAsset,
+	resolveAssetPath,
+	writeAsset,
+} from "./assets.ts";
 import { hashText, readConfig, writeConfigAtomic } from "./config-store.ts";
+import type { GlanceCommand } from "./glance-validate.ts";
+import { hasErrors, validateDraft } from "./validate.ts";
 
 /** What the API needs to know about its environment. */
 export interface AppOptions {
 	/** Absolute path of the `glance.yml` to read and write. */
 	readonly configPath: string;
+	/** How to run Glance for validation; `null` or missing turns it off. */
+	readonly glance?: GlanceCommand | null;
+	/** Where the browser reaches Glance (`GLANCE_URL`), for the preview. */
+	readonly glanceUrl?: string | null;
+	/** Environment passed to Glance; defaults to `process.env`. */
+	readonly env?: Readonly<Record<string, string | undefined>>;
 }
 
-interface PutConfigBody {
-	readonly text: string;
-	readonly baseVersion: string;
+// A config or draft this large is a mistake, not something to validate.
+const MAX_TEXT_BYTES = 2 * 1024 * 1024;
+
+function field(body: unknown, key: string): unknown {
+	return typeof body === "object" && body !== null && key in body
+		? (body as Record<string, unknown>)[key]
+		: undefined;
 }
 
-function isPutConfigBody(value: unknown): value is PutConfigBody {
-	return (
-		typeof value === "object" &&
-		value !== null &&
-		"text" in value &&
-		typeof value.text === "string" &&
-		"baseVersion" in value &&
-		typeof value.baseVersion === "string"
-	);
+function textOf(body: unknown): string | null {
+	const text = field(body, "text");
+	return typeof text === "string" &&
+		Buffer.byteLength(text, "utf8") <= MAX_TEXT_BYTES
+		? text
+		: null;
 }
 
 /**
@@ -29,13 +43,26 @@ function isPutConfigBody(value: unknown): value is PutConfigBody {
  * `app.request()` against a temp file without starting a server.
  *
  * - `GET /api/config` → `{ text, version }`
- * - `PUT /api/config` with `{ text, baseVersion }` → `{ version }`;
- *   400 bad body, 422 invalid YAML or layout, 409 file changed since `baseVersion`.
- * @param options - Where the config file lives.
+ * - `PUT /api/config` with `{ text, baseVersion, force? }` → `{ version, issues }`;
+ *   400 bad body, 422 with `{ issues }` when validation finds errors (YAML
+ *   errors always, others unless `force: true`), 409 file changed since `baseVersion`.
+ * - `POST /api/validate` with `{ text }` → `{ issues }`
+ * - `GET /api/files` → `{ files, unavailable }`: asset files the config references
+ * - `GET /api/files/:name` → `{ name, text, version }`
+ * - `PUT /api/files/:name` with `{ text, baseVersion }` → `{ version }`; 409 on conflict
+ * - `GET /api/settings` → `{ glanceUrl, glanceValidation }`
+ * @param options - Where the config file lives and how to reach Glance.
  * @returns The Hono app.
  */
 export function createApp(options: AppOptions): Hono {
 	const { configPath } = options;
+	const glance = options.glance ?? null;
+	const validate = (text: string) =>
+		validateDraft(text, {
+			configPath,
+			glance,
+			...(options.env ? { env: options.env } : {}),
+		});
 	const app = new Hono();
 
 	app.get("/api/config", async (c) => {
@@ -52,27 +79,31 @@ export function createApp(options: AppOptions): Hono {
 
 	app.put("/api/config", async (c) => {
 		const body: unknown = await c.req.json().catch(() => null);
-		if (!isPutConfigBody(body)) {
+		const text = textOf(body);
+		const baseVersion = field(body, "baseVersion");
+		const force = field(body, "force") === true;
+		if (text === null || typeof baseVersion !== "string") {
 			return c.json(
 				{
 					error: "bad-request",
-					message: "Expected JSON { text: string, baseVersion: string }",
+					message:
+						"Expected JSON { text: string, baseVersion: string, force?: boolean }",
 				},
 				400,
 			);
 		}
 
 		// Validate before touching the disk: Glance should never get a config it can't load.
-		const parsed = parseConfig(body.text);
-		if (!parsed.ok) {
-			return c.json({ error: "invalid-yaml", ...parsed.error }, 422);
-		}
-		const issues = validateLayout(parsed.value);
-		if (issues.length > 0) {
+		const issues = await validate(text);
+		// Broken YAML can't be forced: neither Glance nor Glaze could load it again.
+		const yamlBroken = issues.some((issue) => issue.source === "yaml");
+		if (hasErrors(issues) && (!force || yamlBroken)) {
 			return c.json(
 				{
-					error: "invalid-layout",
-					message: "The layout breaks Glance's rules",
+					error: "invalid",
+					message: yamlBroken
+						? "The YAML has errors"
+						: "Glance can't use this config",
 					issues,
 				},
 				422,
@@ -88,7 +119,7 @@ export function createApp(options: AppOptions): Hono {
 			);
 		}
 		const currentVersion = current.ok ? current.value.version : null;
-		if (currentVersion !== body.baseVersion) {
+		if (currentVersion !== baseVersion) {
 			return c.json(
 				{
 					error: "conflict",
@@ -99,15 +130,134 @@ export function createApp(options: AppOptions): Hono {
 			);
 		}
 
-		const written = await writeConfigAtomic(configPath, body.text);
+		const written = await writeConfigAtomic(configPath, text);
 		if (!written.ok) {
 			return c.json(
 				{ error: written.error.code, message: written.error.message },
 				500,
 			);
 		}
-		return c.json({ version: hashText(body.text) });
+		return c.json({ version: hashText(text), issues });
 	});
+
+	app.post("/api/validate", async (c) => {
+		const body: unknown = await c.req.json().catch(() => null);
+		const text = textOf(body);
+		if (text === null) {
+			return c.json(
+				{ error: "bad-request", message: "Expected JSON { text: string }" },
+				400,
+			);
+		}
+		return c.json({ issues: await validate(text) });
+	});
+
+	app.get("/api/files", async (c) => {
+		const config = await readConfig(configPath);
+		if (!config.ok) return c.json({ files: [], unavailable: null });
+		const checked = findReferencedAssets(config.value.text).map((entry) => ({
+			entry,
+			path: resolveAssetPath(configPath, config.value.text, entry.name),
+		}));
+		const refused = checked.find(({ path }) => !path.ok)?.path;
+		return c.json({
+			files: checked.filter(({ path }) => path.ok).map(({ entry }) => entry),
+			// Explains why referenced files can't be edited, e.g. an assets path outside the config folder.
+			unavailable: refused && !refused.ok ? refused.error.message : null,
+		});
+	});
+
+	/** Resolves `:name`, refusing anything that isn't a referenced asset. */
+	const assetPath = async (rawPath: string, name: string) => {
+		// Encoded slashes or backslashes are never part of a real asset name.
+		if (/%2f|%5c/i.test(rawPath)) {
+			return {
+				ok: false as const,
+				status: 400 as const,
+				message: "Invalid file name",
+			};
+		}
+		const config = await readConfig(configPath);
+		if (!config.ok) {
+			return {
+				ok: false as const,
+				status: 404 as const,
+				message: config.error.message,
+			};
+		}
+		const resolved = resolveAssetPath(configPath, config.value.text, name);
+		if (!resolved.ok) {
+			const status = resolved.error.code === "invalid-name" ? 400 : 404;
+			return {
+				ok: false as const,
+				status: status as 400 | 404,
+				message: resolved.error.message,
+			};
+		}
+		return { ok: true as const, path: resolved.value };
+	};
+
+	app.get("/api/files/:name{.+}", async (c) => {
+		const name = c.req.param("name");
+		const resolved = await assetPath(c.req.path, name);
+		if (!resolved.ok) {
+			return c.json(
+				{ error: "invalid-file", message: resolved.message },
+				resolved.status,
+			);
+		}
+		const file = await readAsset(resolved.path, name);
+		if (!file.ok) {
+			const status = file.error.code === "io-error" ? 500 : 422;
+			return c.json(
+				{ error: file.error.code, message: file.error.message },
+				status,
+			);
+		}
+		return c.json(file.value);
+	});
+
+	app.put("/api/files/:name{.+}", async (c) => {
+		const name = c.req.param("name");
+		const resolved = await assetPath(c.req.path, name);
+		if (!resolved.ok) {
+			return c.json(
+				{ error: "invalid-file", message: resolved.message },
+				resolved.status,
+			);
+		}
+		const body: unknown = await c.req.json().catch(() => null);
+		const text = field(body, "text");
+		const baseVersion = field(body, "baseVersion");
+		if (
+			typeof text !== "string" ||
+			(typeof baseVersion !== "string" && baseVersion !== null)
+		) {
+			return c.json(
+				{
+					error: "bad-request",
+					message: "Expected JSON { text: string, baseVersion: string | null }",
+				},
+				400,
+			);
+		}
+		const written = await writeAsset(resolved.path, name, text, baseVersion);
+		if (!written.ok) {
+			const { code, message } = written.error;
+			const status =
+				code === "conflict" ? 409 : code === "io-error" ? 500 : 422;
+			return c.json({ ...written.error, error: code, message }, status);
+		}
+		return c.json(written.value);
+	});
+
+	app.get("/api/settings", (c) =>
+		// Only what the browser needs; never env values or paths.
+		c.json({
+			glanceUrl: options.glanceUrl ?? null,
+			glanceValidation: glance !== null,
+		}),
+	);
 
 	return app;
 }

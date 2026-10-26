@@ -68,7 +68,7 @@ describe("PUT /api/config", () => {
 	it("writes the new text and returns the new version", async () => {
 		const res = await put({ text: EDITED, baseVersion: hashText(ORIGINAL) });
 		expect(res.status).toBe(200);
-		expect(await res.json()).toEqual({ version: hashText(EDITED) });
+		expect(await res.json()).toMatchObject({ version: hashText(EDITED) });
 		expect(await readFile(configPath, "utf8")).toBe(EDITED);
 	});
 
@@ -95,7 +95,13 @@ describe("PUT /api/config", () => {
 			baseVersion: hashText(ORIGINAL),
 		});
 		expect(res.status).toBe(422);
-		expect(await res.json()).toMatchObject({ error: "invalid-yaml" });
+		const body = (await res.json()) as {
+			error: string;
+			issues: { source: string; line?: number }[];
+		};
+		expect(body.error).toBe("invalid");
+		expect(body.issues[0]).toMatchObject({ source: "yaml" });
+		expect(body.issues[0]?.line).toBeGreaterThan(0);
 		expect(await readFile(configPath, "utf8")).toBe(ORIGINAL);
 	});
 
@@ -107,11 +113,11 @@ describe("PUT /api/config", () => {
 		expect(res.status).toBe(422);
 		const body = (await res.json()) as {
 			error: string;
-			issues: { code: string }[];
+			issues: { source: string; severity: string; line?: number }[];
 		};
-		expect(body.error).toBe("invalid-layout");
-		expect(body.issues.map((issue) => issue.code)).toEqual([
-			"too-many-columns",
+		expect(body.error).toBe("invalid");
+		expect(body.issues.filter((issue) => issue.severity === "error")).toEqual([
+			expect.objectContaining({ source: "layout", line: 3 }),
 		]);
 		expect(await readFile(configPath, "utf8")).toBe(ORIGINAL);
 	});
@@ -123,5 +129,81 @@ describe("PUT /api/config", () => {
 			body: "not json",
 		});
 		expect(res.status).toBe(400);
+	});
+});
+
+describe("PUT /api/config with validation", () => {
+	it("writes an invalid layout when forced", async () => {
+		const res = await put({
+			text: FOUR_COLUMNS,
+			baseVersion: hashText(ORIGINAL),
+			force: true,
+		});
+		expect(res.status).toBe(200);
+		expect(await readFile(configPath, "utf8")).toBe(FOUR_COLUMNS);
+	});
+
+	it("never writes broken YAML, even when forced", async () => {
+		const res = await put({
+			text: "pages:\n  - name: [\n",
+			baseVersion: hashText(ORIGINAL),
+			force: true,
+		});
+		expect(res.status).toBe(422);
+		expect(await readFile(configPath, "utf8")).toBe(ORIGINAL);
+	});
+
+	it("doesn't block on warnings", async () => {
+		const text = EDITED.replace(
+			"type: clock",
+			"type: clock\n            stlye: x",
+		);
+		const res = await put({ text, baseVersion: hashText(ORIGINAL) });
+		expect(res.status).toBe(200);
+		const body = (await res.json()) as { issues: { severity: string }[] };
+		expect(body.issues.map((issue) => issue.severity)).toContain("warning");
+	});
+});
+
+describe("POST /api/validate", () => {
+	async function validate(body: unknown): Promise<Response> {
+		return await createApp({ configPath }).request("/api/validate", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify(body),
+		});
+	}
+
+	it("checks the draft, not the file on disk", async () => {
+		const res = await validate({ text: FOUR_COLUMNS });
+		expect(res.status).toBe(200);
+		const body = (await res.json()) as { issues: { source: string }[] };
+		expect(body.issues.map((issue) => issue.source)).toEqual([
+			"layout",
+			"glaze",
+		]);
+	});
+
+	it("returns 400 without text", async () => {
+		expect((await validate({})).status).toBe(400);
+	});
+});
+
+describe("GET /api/settings", () => {
+	it("reports the Glance URL and whether validation is on", async () => {
+		const off = await createApp({ configPath }).request("/api/settings");
+		expect(await off.json()).toEqual({
+			glanceUrl: null,
+			glanceValidation: false,
+		});
+		const on = await createApp({
+			configPath,
+			glanceUrl: "http://localhost:8080",
+			glance: { bin: "glance" },
+		}).request("/api/settings");
+		expect(await on.json()).toEqual({
+			glanceUrl: "http://localhost:8080",
+			glanceValidation: true,
+		});
 	});
 });

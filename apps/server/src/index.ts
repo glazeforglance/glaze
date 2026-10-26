@@ -8,9 +8,20 @@ if (!env.ok) {
 	console.error(env.error);
 	process.exit(1);
 }
-const { configPath, port } = env.value;
+const { configPath, port, glanceBin, glanceUrl } = env.value;
 
-serve({ fetch: createApp({ configPath }).fetch, port }, (info) => {
+const app = createApp({
+	configPath,
+	glance: glanceBin === null ? null : { bin: glanceBin },
+	glanceUrl,
+});
+
+serve({ fetch: app.fetch, port }, (info) => {
 	console.log(`Glaze API on http://localhost:${info.port}`);
 	console.log(`Editing ${configPath}`);
+	console.log(
+		glanceBin === null
+			? "Glance validation is off (set GLANCE_BIN)"
+			: "Glance validation is on",
+	);
 });
