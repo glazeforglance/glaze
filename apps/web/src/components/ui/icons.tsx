@@ -119,3 +119,42 @@ export function CheckIcon({ className = "size-3.5" }: IconProps) {
 		</svg>
 	);
 }
+
+/** A desktop screen: the desktop preview. */
+export function DesktopIcon({ className = "size-4" }: IconProps) {
+	return (
+		<svg viewBox="0 0 16 16" className={className} aria-hidden="true">
+			<rect x="2" y="3" width="12" height="8" rx="1.5" {...STROKE} />
+			<path d="M6 14h4M8 11v3" {...STROKE} />
+		</svg>
+	);
+}
+
+/** A phone: the phone preview. */
+export function PhoneIcon({ className = "size-4" }: IconProps) {
+	return (
+		<svg viewBox="0 0 16 16" className={className} aria-hidden="true">
+			<rect x="4.5" y="1.5" width="7" height="13" rx="1.5" {...STROKE} />
+			<path d="M7.2 12.2h1.6" {...STROKE} />
+		</svg>
+	);
+}
+
+/** Circular arrow: reload. */
+export function ReloadIcon({ className = "size-4" }: IconProps) {
+	return (
+		<svg viewBox="0 0 16 16" className={className} aria-hidden="true">
+			<path d="M13 8a5 5 0 1 1-1.5-3.6M13 2.5v3h-3" {...STROKE} />
+		</svg>
+	);
+}
+
+/** Two panes side by side: show or hide the preview next to the code. */
+export function SplitIcon({ className = "size-4" }: IconProps) {
+	return (
+		<svg viewBox="0 0 16 16" className={className} aria-hidden="true">
+			<rect x="2" y="3" width="12" height="10" rx="1.5" {...STROKE} />
+			<path d="M9 3v10" {...STROKE} />
+		</svg>
+	);
+}

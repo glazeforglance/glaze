@@ -19,7 +19,15 @@ import {
 import { filesStore, isFileDirty, useFiles } from "../../store/files-store.ts";
 import { CodeEditor } from "./CodeEditor.tsx";
 import { type FileTab, FileTabs } from "./FileTabs.tsx";
+import { SplitIcon } from "../ui/icons.tsx";
 import { IssueList } from "./IssueList.tsx";
+
+export interface CodePanelProps {
+	/** Whether the Code view is showing (the panel stays mounted while hidden). */
+	readonly active: boolean;
+	/** Shows the preview again; `null` while it is already visible. */
+	readonly onShowPreview: (() => void) | null;
+}
 
 /** Tab id of the config itself; asset files use their name. */
 export const CONFIG_TAB = "glance.yml";
@@ -42,10 +50,10 @@ function applyFix(fix: RenameKeyFix): void {
  *
  * The panel stays mounted (hidden) outside the Code view, so the editor keeps
  * its cursor, scroll position and undo history while you work in Design.
- * @param props - `active`: whether the Code view is showing.
+ * @param props - Whether the view is showing, and how to bring the preview back.
  * @returns The panel.
  */
-export function CodePanel({ active }: { readonly active: boolean }) {
+export function CodePanel({ active, onShowPreview }: CodePanelProps) {
 	useValidation(active);
 	const draft = useDraftText() ?? "";
 	const doc = useEditor((state) => state.doc);
@@ -171,8 +179,7 @@ export function CodePanel({ active }: { readonly active: boolean }) {
 	return (
 		<section
 			aria-label="Code"
-			hidden={!active}
-			className="min-h-0 min-w-0 flex-1 flex-col bg-bg [&:not([hidden])]:flex"
+			className="flex min-h-0 min-w-0 flex-1 flex-col bg-bg"
 		>
 			<div className="flex h-12 shrink-0 items-center gap-3 border-b border-line px-4">
 				<FileTabs
@@ -181,12 +188,20 @@ export function CodePanel({ active }: { readonly active: boolean }) {
 					onSelect={setTab}
 					panelId={PANEL_ID}
 				/>
-				<span
-					className="ml-auto shrink-0 font-mono text-xs text-muted"
-					aria-live="off"
-				>
+				<span className="ml-auto shrink-0 font-mono text-xs text-muted">
 					line {cursorLine} · {LANGUAGE_LABEL[language]}
 				</span>
+				{onShowPreview && (
+					<button
+						type="button"
+						aria-label="Show preview"
+						title="Show preview"
+						onClick={onShowPreview}
+						className="inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-sm border border-line text-muted hover:text-text"
+					>
+						<SplitIcon />
+					</button>
+				)}
 			</div>
 			{codeText !== null && isConfig && (
 				<p

@@ -1,7 +1,8 @@
 import { Canvas } from "./components/canvas/Canvas.tsx";
-import { CodePanel } from "./components/code/CodePanel.tsx";
+import { CodeWorkspace } from "./components/code/CodeWorkspace.tsx";
 import { EditorDndContext } from "./components/dnd/EditorDndContext.tsx";
 import { Inspector } from "./components/inspector/Inspector.tsx";
+import { PreviewPane } from "./components/preview/PreviewPane.tsx";
 import { WidgetLibrary } from "./components/library/WidgetLibrary.tsx";
 import { TopBar } from "./components/top-bar/TopBar.tsx";
 import { GlazeMark } from "./components/ui/icons.tsx";
@@ -43,7 +44,8 @@ export function App() {
 		<div className="flex h-full flex-col">
 			<TopBar />
 			<div className="flex min-h-0 flex-1">
-				{codeMounted && <CodePanel active={view === "code"} />}
+				{codeMounted && <CodeWorkspace active={view === "code"} />}
+				{view === "preview" && <PreviewPane />}
 				{view === "design" && (
 					<>
 						<EditorDndContext>
