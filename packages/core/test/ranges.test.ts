@@ -4,9 +4,10 @@ import {
 	getNodeRange,
 	offsetToLineColumn,
 	parseConfig,
+	replaceSource,
 	validateLayout,
 } from "../src/index.ts";
-import { load, unwrapErr } from "./helpers/line-diff.ts";
+import { load, unwrap, unwrapErr } from "./helpers/line-diff.ts";
 
 // Fake values only. Comments, an anchor + merge key and ${ENV} references on purpose.
 const CONFIG = `# Test config
@@ -195,6 +196,9 @@ describe("parse errors", () => {
 		expect(error.code).toBe("yaml-syntax");
 		expect(error.line).toBe(7);
 		expect(error.column).toBeGreaterThan(0);
+		// One readable line; the location is in `line` / `column`.
+		expect(error.message).not.toContain("\n");
+		expect(error.message).not.toMatch(/at line \d+/);
 	});
 
 	it("carry line and column for a missing anchor", () => {
@@ -206,5 +210,33 @@ describe("parse errors", () => {
 			line: 3,
 			column: 14,
 		});
+	});
+});
+
+describe("replaceSource", () => {
+	it("keeps ids for paths that still exist", () => {
+		const next = unwrap(
+			replaceSource(doc, CONFIG.replace("title: Services", "title: Diensten")),
+		);
+		expect(next.ids).toEqual(doc.ids);
+		expect(next.source).toContain("title: Diensten");
+	});
+
+	it("gives new nodes new ids", () => {
+		const text = `${CONFIG}          - type: calendar\n`;
+		const next = unwrap(replaceSource(doc, text));
+		const added = next.ids.get(
+			JSON.stringify(["pages", 0, "columns", 1, "widgets", 2]),
+		);
+		expect(added).toBe(`widget-${doc.nextId}`);
+		expect(next.nextId).toBe(doc.nextId + 1);
+		for (const [key, id] of doc.ids) expect(next.ids.get(key)).toBe(id);
+	});
+
+	it("returns the same document for the same text, and errors for bad YAML", () => {
+		expect(unwrap(replaceSource(doc, CONFIG))).toBe(doc);
+		expect(unwrapErr(replaceSource(doc, "pages: [\n")).code).toBe(
+			"yaml-syntax",
+		);
 	});
 });

@@ -1,5 +1,6 @@
 import { listsOfPage } from "../../lib/drop-target.ts";
 import { selectCurrentPage, useEditor } from "../../store/editor-store.ts";
+import { CodeErrorBanner } from "./CodeErrorBanner.tsx";
 import { ColumnCard } from "./ColumnCard.tsx";
 import { EditNotice } from "./EditNotice.tsx";
 import { HeadWidgets } from "./HeadWidgets.tsx";
@@ -43,6 +44,7 @@ export function Canvas() {
 			}}
 		>
 			<PageHeader page={page} />
+			<CodeErrorBanner />
 			<EditNotice />
 			{page.include !== null ? (
 				<p className="text-sm text-muted">

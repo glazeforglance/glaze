@@ -82,16 +82,17 @@ export function PublishDialog({
 		>
 			{error?.kind === "invalid" ? (
 				<>
-					<p>
-						Nothing was written.{" "}
-						{error.line !== null ? `Line ${error.line}: ` : ""}
-						{error.message}
-					</p>
+					<p>Nothing was written. {error.message}</p>
 					{error.issues.length > 0 && (
 						<ul className="mt-3 list-disc space-y-1 pl-5 text-text">
-							{error.issues.map((issue) => (
-								<li key={`${issue.code}-${issue.message}`}>{issue.message}</li>
-							))}
+							{error.issues
+								.filter((issue) => issue.severity === "error")
+								.map((issue) => (
+									<li key={`${issue.line}-${issue.message}`}>
+										{issue.line !== undefined ? `Line ${issue.line}: ` : ""}
+										{issue.message}
+									</li>
+								))}
 						</ul>
 					)}
 				</>

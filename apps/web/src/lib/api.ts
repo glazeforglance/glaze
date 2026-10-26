@@ -1,4 +1,12 @@
-import { err, ok, type Result } from "@glaze/core";
+import {
+	err,
+	type IssueSeverity,
+	type IssueSource,
+	ok,
+	type Result,
+	type ValidationIssue,
+	type YamlPath,
+} from "@glaze/core";
 
 /** The config as `GET /api/config` returns it. */
 export interface ConfigResponse {
@@ -13,23 +21,56 @@ export interface ApiError {
 	readonly message: string;
 }
 
-function isConfigResponse(value: unknown): value is ConfigResponse {
-	return (
-		typeof value === "object" &&
-		value !== null &&
-		"text" in value &&
-		typeof value.text === "string" &&
-		"version" in value &&
-		typeof value.version === "string"
-	);
+const UNREACHABLE = "Can't reach the Glaze API. Is the server running?";
+
+function field(body: unknown, key: string): unknown {
+	return typeof body === "object" && body !== null && key in body
+		? (body as Record<string, unknown>)[key]
+		: undefined;
 }
 
 function messageOf(body: unknown, fallback: string): string {
-	if (typeof body === "object" && body !== null && "message" in body) {
-		return String(body.message);
-	}
-	return fallback;
+	const message = field(body, "message");
+	return message === undefined ? fallback : String(message);
 }
+
+/** Fetches JSON; turns network failures and non-2xx answers into an `ApiError`. */
+async function requestJson(
+	url: string,
+	init: RequestInit = {},
+): Promise<Result<unknown, ApiError>> {
+	let response: Response;
+	try {
+		response = await fetch(url, init);
+	} catch (error) {
+		// An abort is the caller's own doing; report it as such so it can be ignored.
+		const aborted =
+			error instanceof DOMException && error.name === "AbortError";
+		return err({ status: null, message: aborted ? "Aborted" : UNREACHABLE });
+	}
+	const body: unknown = await response.json().catch(() => null);
+	if (!response.ok) {
+		return err({
+			status: response.status,
+			message: messageOf(body, `The API answered ${response.status}`),
+		});
+	}
+	return ok(body);
+}
+
+function jsonInit(method: string, body: unknown, signal?: AbortSignal) {
+	return {
+		method,
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify(body),
+		signal: signal ?? null,
+	};
+}
+
+const BAD_RESPONSE: ApiError = {
+	status: null,
+	message: "The API sent an unexpected response",
+};
 
 /**
  * Loads `glance.yml` from the Glaze API.
@@ -39,84 +80,133 @@ function messageOf(body: unknown, fallback: string): string {
 export async function fetchConfig(
 	signal?: AbortSignal,
 ): Promise<Result<ConfigResponse, ApiError>> {
-	let response: Response;
-	try {
-		response = await fetch("/api/config", { signal: signal ?? null });
-	} catch {
-		return err({
-			status: null,
-			message: "Can't reach the Glaze API. Is the server running?",
-		});
+	const result = await requestJson("/api/config", { signal: signal ?? null });
+	if (!result.ok) return result;
+	const text = field(result.value, "text");
+	const version = field(result.value, "version");
+	if (typeof text !== "string" || typeof version !== "string") {
+		return err(BAD_RESPONSE);
 	}
-	const body: unknown = await response.json().catch(() => null);
-	if (!response.ok) {
-		return err({
-			status: response.status,
-			message: messageOf(body, `The API answered ${response.status}`),
-		});
-	}
-	if (!isConfigResponse(body)) {
-		return err({
-			status: response.status,
-			message: "The API sent an unexpected response",
-		});
-	}
-	return ok(body);
+	return ok({ text, version });
 }
 
-/** A Glance layout rule the server reported as broken. */
-export interface PublishIssue {
-	readonly code: string;
-	readonly message: string;
+const SEVERITIES: readonly IssueSeverity[] = ["error", "warning", "info"];
+const SOURCES: readonly IssueSource[] = ["yaml", "layout", "glance", "glaze"];
+
+function isPath(value: unknown): value is YamlPath {
+	return (
+		Array.isArray(value) &&
+		value.every((part) => typeof part === "string" || typeof part === "number")
+	);
+}
+
+function toIssue(value: unknown): ValidationIssue | null {
+	const severity = field(value, "severity");
+	const source = field(value, "source");
+	const message = field(value, "message");
+	if (
+		!SEVERITIES.includes(severity as IssueSeverity) ||
+		!SOURCES.includes(source as IssueSource) ||
+		typeof message !== "string"
+	) {
+		return null;
+	}
+	const line = field(value, "line");
+	const column = field(value, "column");
+	const path = field(value, "path");
+	const fix = field(value, "fix");
+	const fixPath = field(fix, "mapPath");
+	const from = field(fix, "from");
+	const to = field(fix, "to");
+	return {
+		severity: severity as IssueSeverity,
+		source: source as IssueSource,
+		message,
+		...(typeof line === "number" ? { line } : {}),
+		...(typeof column === "number" ? { column } : {}),
+		...(isPath(path) ? { path } : {}),
+		...(field(fix, "kind") === "rename-key" &&
+		isPath(fixPath) &&
+		typeof from === "string" &&
+		typeof to === "string"
+			? { fix: { kind: "rename-key" as const, mapPath: fixPath, from, to } }
+			: {}),
+	};
+}
+
+/**
+ * Reads the `issues` array of an API answer, dropping anything malformed.
+ * @param body - The parsed JSON body.
+ * @returns The issues.
+ */
+export function issuesOf(body: unknown): ValidationIssue[] {
+	const issues = field(body, "issues");
+	if (!Array.isArray(issues)) return [];
+	return issues
+		.map(toIssue)
+		.filter((issue): issue is ValidationIssue => issue !== null);
+}
+
+/**
+ * Validates a draft config (YAML, layout rules, unknown options and, when the
+ * server has `GLANCE_BIN`, Glance itself).
+ * @param text - The draft text.
+ * @param signal - Cancels the request when a newer draft comes in.
+ * @returns The issues, or why validation couldn't run.
+ */
+export async function validateConfig(
+	text: string,
+	signal?: AbortSignal,
+): Promise<Result<ValidationIssue[], ApiError>> {
+	const result = await requestJson(
+		"/api/validate",
+		jsonInit("POST", { text }, signal),
+	);
+	return result.ok ? ok(issuesOf(result.value)) : result;
 }
 
 /** Why publishing failed. */
 export type PublishError =
 	/** The file changed on disk since it was loaded; `version` is what is there now. */
 	| { readonly kind: "conflict"; readonly version: string | null }
-	/** The server refused the text: invalid YAML (with `line`) or broken layout rules. */
+	/** The server refused the text; `issues` explains why. */
 	| {
 			readonly kind: "invalid";
 			readonly message: string;
-			readonly line: number | null;
-			readonly issues: readonly PublishIssue[];
+			readonly issues: readonly ValidationIssue[];
 	  }
 	/** The server couldn't be reached or failed. */
 	| { readonly kind: "network" | "server"; readonly message: string };
 
-function field(body: unknown, key: string): unknown {
-	return typeof body === "object" && body !== null && key in body
-		? (body as Record<string, unknown>)[key]
-		: undefined;
-}
-
-function issuesOf(body: unknown): PublishIssue[] {
-	const issues = field(body, "issues");
-	if (!Array.isArray(issues)) return [];
-	return issues.map((issue: unknown) => ({
-		code: String(field(issue, "code") ?? "invalid"),
-		message: String(field(issue, "message") ?? "Invalid layout"),
-	}));
+/** A successful write. */
+export interface Published {
+	readonly version: string;
+	/** Warnings (and errors, when forced) that came with the write. */
+	readonly issues: readonly ValidationIssue[];
 }
 
 /**
- * Writes the config through the Glaze API.
+ * Writes the config through the Glaze API. The server validates it first.
  * @param text - The full new `glance.yml`.
  * @param baseVersion - Version the edits were based on; the server refuses
  *   the write (conflict) when the file on disk has a different version.
+ * @param force - Write even when validation finds errors (never for broken YAML).
  * @returns The new version, or why publishing failed.
  */
 export async function putConfig(
 	text: string,
 	baseVersion: string,
-): Promise<Result<{ version: string }, PublishError>> {
+	force = false,
+): Promise<Result<Published, PublishError>> {
 	let response: Response;
 	try {
-		response = await fetch("/api/config", {
-			method: "PUT",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ text, baseVersion }),
-		});
+		response = await fetch(
+			"/api/config",
+			jsonInit(
+				"PUT",
+				force ? { text, baseVersion, force } : { text, baseVersion },
+			),
+		);
 	} catch {
 		return err({
 			kind: "network",
@@ -125,7 +215,9 @@ export async function putConfig(
 	}
 	const body: unknown = await response.json().catch(() => null);
 	const version = field(body, "version");
-	if (response.ok && typeof version === "string") return ok({ version });
+	if (response.ok && typeof version === "string") {
+		return ok({ version, issues: issuesOf(body) });
+	}
 	if (response.status === 409) {
 		return err({
 			kind: "conflict",
@@ -133,16 +225,137 @@ export async function putConfig(
 		});
 	}
 	if (response.status === 422) {
-		const line = field(body, "line");
 		return err({
 			kind: "invalid",
 			message: messageOf(body, "The config is not valid"),
-			line: typeof line === "number" ? line : null,
 			issues: issuesOf(body),
 		});
 	}
 	return err({
 		kind: "server",
 		message: messageOf(body, `The API answered ${response.status}`),
+	});
+}
+
+/** An asset file the config references (`theme.custom-css-file`, `/assets/` links). */
+export interface AssetEntry {
+	readonly name: string;
+	readonly language: "css" | "javascript";
+}
+
+/** The list of asset files, plus why some can't be edited (if so). */
+export interface AssetList {
+	readonly files: readonly AssetEntry[];
+	readonly unavailable: string | null;
+}
+
+/**
+ * Lists the asset files the config on disk references.
+ * @returns The files, or why the list couldn't be loaded.
+ */
+export async function fetchFiles(): Promise<Result<AssetList, ApiError>> {
+	const result = await requestJson("/api/files");
+	if (!result.ok) return result;
+	const files = field(result.value, "files");
+	const unavailable = field(result.value, "unavailable");
+	if (!Array.isArray(files)) return err(BAD_RESPONSE);
+	return ok({
+		files: files.flatMap((file: unknown) => {
+			const name = field(file, "name");
+			const language = field(file, "language");
+			return typeof name === "string" &&
+				(language === "css" || language === "javascript")
+				? [{ name, language }]
+				: [];
+		}),
+		unavailable: typeof unavailable === "string" ? unavailable : null,
+	});
+}
+
+/** An asset file's contents; `version` is `null` while the file doesn't exist. */
+export interface AssetContent {
+	readonly text: string;
+	readonly version: string | null;
+}
+
+function fileUrl(name: string): string {
+	// Keep `/` between folders; encode everything inside a segment.
+	return `/api/files/${name.split("/").map(encodeURIComponent).join("/")}`;
+}
+
+/**
+ * Loads one asset file.
+ * @param name - Name from `fetchFiles`, e.g. `custom.css`.
+ * @returns The text and version, or why it couldn't be loaded.
+ */
+export async function fetchFile(
+	name: string,
+): Promise<Result<AssetContent, ApiError>> {
+	const result = await requestJson(fileUrl(name));
+	if (!result.ok) return result;
+	const text = field(result.value, "text");
+	const version = field(result.value, "version");
+	if (
+		typeof text !== "string" ||
+		(typeof version !== "string" && version !== null)
+	) {
+		return err(BAD_RESPONSE);
+	}
+	return ok({ text, version });
+}
+
+/**
+ * Writes one asset file.
+ * @param name - Name from `fetchFiles`.
+ * @param text - New contents.
+ * @param baseVersion - Version it was loaded with (`null` for a new file).
+ * @returns The new version, or why it failed (a change on disk included).
+ */
+export async function putFile(
+	name: string,
+	text: string,
+	baseVersion: string | null,
+): Promise<Result<{ version: string }, PublishError>> {
+	const result = await requestJson(
+		fileUrl(name),
+		jsonInit("PUT", { text, baseVersion }),
+	);
+	if (result.ok) {
+		const version = field(result.value, "version");
+		return typeof version === "string"
+			? ok({ version })
+			: err({ kind: "server", message: BAD_RESPONSE.message });
+	}
+	if (result.error.status === 409) {
+		return err({
+			kind: "server",
+			message: `${name} changed on disk since it was loaded. Reload Glaze to get the new version.`,
+		});
+	}
+	return err({
+		kind: result.error.status === null ? "network" : "server",
+		message: `${name}: ${result.error.message}`,
+	});
+}
+
+/** Server settings the browser needs. */
+export interface Settings {
+	/** Where the preview iframe loads Glance from; `null` when `GLANCE_URL` isn't set. */
+	readonly glanceUrl: string | null;
+	/** Whether the server runs `glance config:validate`. */
+	readonly glanceValidation: boolean;
+}
+
+/**
+ * Loads the server settings.
+ * @returns The settings, or why they couldn't be loaded.
+ */
+export async function fetchSettings(): Promise<Result<Settings, ApiError>> {
+	const result = await requestJson("/api/settings");
+	if (!result.ok) return result;
+	const glanceUrl = field(result.value, "glanceUrl");
+	return ok({
+		glanceUrl: typeof glanceUrl === "string" ? glanceUrl : null,
+		glanceValidation: field(result.value, "glanceValidation") === true,
 	});
 }

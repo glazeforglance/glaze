@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useEditor } from "../../store/editor-store.ts";
+import { useHasUnsavedChanges } from "../../hooks/use-unsaved.ts";
 
 /**
  * "● Unsaved changes" while the document differs from the file on disk.
@@ -7,7 +7,7 @@ import { useEditor } from "../../store/editor-store.ts";
  * @returns The indicator, or nothing when everything is published.
  */
 export function UnsavedIndicator() {
-	const dirty = useEditor((state) => state.dirty);
+	const dirty = useHasUnsavedChanges();
 
 	useEffect(() => {
 		if (!dirty) return;

@@ -4,6 +4,7 @@ export { addColumn, removeColumn, setColumnSize } from "./columns.ts";
 export {
 	type GlazeDocument,
 	parseConfig,
+	replaceSource,
 	serializeConfig,
 } from "./document.ts";
 export {

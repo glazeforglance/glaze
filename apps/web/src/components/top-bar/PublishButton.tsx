@@ -1,5 +1,5 @@
 import { usePublish } from "../../hooks/use-publish.ts";
-import { useEditor } from "../../store/editor-store.ts";
+import { useHasUnsavedChanges } from "../../hooks/use-unsaved.ts";
 import { Button } from "../ui/Button.tsx";
 import { CheckIcon } from "../ui/icons.tsx";
 import { PublishDialog } from "./PublishDialog.tsx";
@@ -10,7 +10,7 @@ import { PublishDialog } from "./PublishDialog.tsx";
  * @returns The button, a short "Published" confirmation and the error dialog.
  */
 export function PublishButton() {
-	const dirty = useEditor((state) => state.dirty);
+	const dirty = useHasUnsavedChanges();
 	const { status, publish, overwrite, reload, dismiss } = usePublish();
 	const busy = status.phase === "publishing";
 	return (

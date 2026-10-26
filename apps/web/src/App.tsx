@@ -1,10 +1,12 @@
 import { Canvas } from "./components/canvas/Canvas.tsx";
+import { CodePanel } from "./components/code/CodePanel.tsx";
 import { EditorDndContext } from "./components/dnd/EditorDndContext.tsx";
 import { Inspector } from "./components/inspector/Inspector.tsx";
 import { WidgetLibrary } from "./components/library/WidgetLibrary.tsx";
 import { TopBar } from "./components/top-bar/TopBar.tsx";
 import { GlazeMark } from "./components/ui/icons.tsx";
 import { useLoadConfig } from "./hooks/use-load-config.ts";
+import { useOnceTrue } from "./hooks/use-once-true.ts";
 import { useEditor } from "./store/editor-store.ts";
 
 /**
@@ -15,6 +17,9 @@ export function App() {
 	useLoadConfig();
 	const status = useEditor((state) => state.status);
 	const error = useEditor((state) => state.error);
+	const view = useEditor((state) => state.view);
+	// Mounted on first use, then only hidden, so the editor keeps its cursor.
+	const codeMounted = useOnceTrue(view === "code");
 
 	if (status !== "ready") {
 		return (
@@ -38,11 +43,16 @@ export function App() {
 		<div className="flex h-full flex-col">
 			<TopBar />
 			<div className="flex min-h-0 flex-1">
-				<EditorDndContext>
-					<WidgetLibrary />
-					<Canvas />
-				</EditorDndContext>
-				<Inspector />
+				{codeMounted && <CodePanel active={view === "code"} />}
+				{view === "design" && (
+					<>
+						<EditorDndContext>
+							<WidgetLibrary />
+							<Canvas />
+						</EditorDndContext>
+						<Inspector />
+					</>
+				)}
 			</div>
 		</div>
 	);

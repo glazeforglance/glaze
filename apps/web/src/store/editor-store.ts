@@ -12,7 +12,9 @@ import {
 	movePage,
 	moveWidget,
 	moveWidgetListItem,
+	type NodeKind,
 	type PageNode,
+	type ParseError,
 	parseConfig,
 	type Result,
 	removeColumn,
@@ -20,16 +22,29 @@ import {
 	removeWidget,
 	removeWidgetOption,
 	removeWidgetValue,
+	renameKey,
 	renamePage,
+	replaceSource,
 	setColumnSize,
 	setWidgetOption,
 	setWidgetValue,
+	type ValidationIssue,
 	type WidgetInput,
 	type YamlPath,
 } from "@glaze/core";
 import { useStore } from "zustand";
 import { createStore, type StoreApi } from "zustand/vanilla";
 import { findWidget, findWidgetByPath, nextPageName } from "../lib/model.ts";
+
+/** The three main views of the editor. */
+export type EditorView = "design" | "code" | "preview";
+
+/** Validation results, with the draft they belong to. */
+export interface ValidationResult {
+	/** The exact text that was validated; results for older text are stale. */
+	readonly text: string;
+	readonly issues: readonly ValidationIssue[];
+}
 
 /** Everything the editor shows, in one place. */
 export interface EditorState {
@@ -48,6 +63,18 @@ export interface EditorState {
 	readonly renamingPageId: string | null;
 	/** Message about an edit that was refused (e.g. a layout rule); the document is unchanged. */
 	readonly notice: string | null;
+	readonly view: EditorView;
+	/**
+	 * Text in the code view that isn't valid YAML. While set, `doc` is the last
+	 * valid version, and Design edits are refused so this text isn't lost.
+	 */
+	readonly codeText: string | null;
+	/** Why `codeText` doesn't parse. */
+	readonly codeError: ParseError | null;
+	/** Latest validation of the draft, from `/api/validate`. */
+	readonly validation: ValidationResult | null;
+	/** Counts successful publishes; the preview reloads when it changes. */
+	readonly publishCount: number;
 }
 
 /** What components can do with the editor state. */
@@ -61,6 +88,18 @@ export interface EditorActions {
 	load(text: string, version: string): void;
 	/** Records a successful publish: the file on disk now matches the document. */
 	markPublished(version: string): void;
+	setView(view: EditorView): void;
+	/**
+	 * Takes the text from the code view. Valid YAML replaces the document (one
+	 * change, keeping the selection when its path still exists); invalid YAML is
+	 * kept in `codeText` and the document stays as it was.
+	 */
+	applyCode(text: string): void;
+	/** Selects the page (and widget) at a path, e.g. from the cursor in the code view. */
+	selectPath(path: YamlPath, kind: NodeKind): void;
+	/** Renames a key, e.g. the "Fix" for `stlye` → `style`. */
+	renameKey(mapPath: YamlPath, from: string, to: string): boolean;
+	setValidation(validation: ValidationResult | null): void;
 	selectPage(pageId: string): void;
 	/** Selects a widget on the current page, or clears the selection with `null`. */
 	selectWidget(widgetId: string | null): void;
@@ -146,6 +185,11 @@ const INITIAL_STATE: EditorState = {
 	selectedWidgetId: null,
 	renamingPageId: null,
 	notice: null,
+	view: "design",
+	codeText: null,
+	codeError: null,
+	validation: null,
+	publishCount: 0,
 };
 
 function findColumn(
@@ -175,8 +219,15 @@ export function createEditorStore(): StoreApi<EditorStore> {
 			edit: (doc: GlazeDocument) => Result<GlazeDocument, EditError>,
 			selectAfter: (pages: readonly PageNode[]) => Selection = () => ({}),
 		): boolean => {
-			const { doc } = get();
+			const { doc, codeText } = get();
 			if (!doc) return false;
+			if (codeText !== null) {
+				set({
+					notice:
+						"The YAML in the Code view has errors. Fix them there before editing here.",
+				});
+				return false;
+			}
 			const result = edit(doc);
 			if (!result.ok) {
 				set({ notice: result.error.message });
@@ -247,10 +298,76 @@ export function createEditorStore(): StoreApi<EditorStore> {
 					selectedWidgetId: null,
 					renamingPageId: null,
 					notice: null,
+					codeText: null,
+					codeError: null,
+					validation: null,
 				});
 			},
 
-			markPublished: (version) => set({ version, dirty: false }),
+			markPublished: (version) =>
+				set((state) => ({
+					version,
+					dirty: false,
+					publishCount: state.publishCount + 1,
+				})),
+
+			setView: (view) => set({ view }),
+
+			applyCode: (text) => {
+				const state = get();
+				if (!state.doc) return;
+				const result = replaceSource(state.doc, text);
+				if (!result.ok) {
+					set({ codeText: text, codeError: result.error });
+					return;
+				}
+				if (result.value === state.doc) {
+					if (state.codeText !== null) set({ codeText: null, codeError: null });
+					return;
+				}
+				// Ids follow paths, so a selection whose path still exists keeps its id.
+				const pages = getModel(result.value);
+				const page =
+					pages.find((candidate) => candidate.id === state.selectedPageId) ??
+					pages[0] ??
+					null;
+				const widgetId =
+					page && state.selectedWidgetId !== null
+						? (findWidget(page, state.selectedWidgetId)?.id ?? null)
+						: null;
+				set({
+					doc: result.value,
+					pages,
+					dirty: true,
+					notice: null,
+					codeText: null,
+					codeError: null,
+					selectedPageId: page?.id ?? null,
+					selectedWidgetId: widgetId,
+				});
+			},
+
+			selectPath: (path, kind) => {
+				const state = get();
+				const pageIndex = path[1];
+				const page =
+					typeof pageIndex === "number" ? state.pages[pageIndex] : undefined;
+				if (!page) return;
+				const widgetId =
+					kind === "widget" ? (findWidgetByPath(page, path)?.id ?? null) : null;
+				if (
+					page.id === state.selectedPageId &&
+					widgetId === state.selectedWidgetId
+				) {
+					return;
+				}
+				set({ selectedPageId: page.id, selectedWidgetId: widgetId });
+			},
+
+			renameKey: (mapPath, from, to) =>
+				runEdit((doc) => renameKey(doc, mapPath, from, to)),
+
+			setValidation: (validation) => set({ validation }),
 
 			selectPage: (pageId) =>
 				set((state) =>

@@ -12,6 +12,7 @@ export interface YamlViewProps {
  */
 export function YamlView({ widget }: YamlViewProps) {
 	const doc = useEditor((state) => state.doc);
+	const setView = useEditor((state) => state.setView);
 	const source = doc ? getNodeSource(doc, widget.path) : null;
 	if (source === null) {
 		return (
@@ -30,7 +31,14 @@ export function YamlView({ widget }: YamlViewProps) {
 				<code>{source}</code>
 			</pre>
 			<p id="yaml-view-note" className="mt-2 text-xs text-faint">
-				Read-only for now. Editing YAML arrives with the code view.
+				Read-only here.{" "}
+				<button
+					type="button"
+					onClick={() => setView("code")}
+					className="cursor-pointer text-muted underline hover:text-text"
+				>
+					Edit it in the Code view
+				</button>
 			</p>
 		</>
 	);

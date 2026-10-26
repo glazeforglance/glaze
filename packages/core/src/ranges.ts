@@ -65,20 +65,8 @@ function rangeOf(node: unknown): [number, number] | null {
 	return range ? [range[0], range[1]] : null;
 }
 
-/**
- * Locates a page, column, widget or option in the source text, using the
- * ranges the `yaml` parser records. Used for "jump to widget" and to put
- * validation messages on the right line.
- * - For a list item (a number at the end of the path) the range starts at its `- `.
- * - For an option (a string at the end) it runs from the key to the end of the value.
- * @param doc - The document.
- * @param path - Path of the node, e.g. `["pages", 0, "columns", 1, "widgets", 2]`.
- * @returns The range, or `null` when nothing is at `path` (or it is inside an alias).
- */
-export function getNodeRange(
-	doc: GlazeDocument,
-	path: YamlPath,
-): NodeRange | null {
+/** Start and end offsets of a node, without line numbers (cheap). */
+function nodeSpan(doc: GlazeDocument, path: YamlPath): [number, number] | null {
 	const { source } = doc;
 	const last = path[path.length - 1];
 	let span: [number, number] | null = null;
@@ -100,16 +88,37 @@ export function getNodeRange(
 			span = [itemStart(source, span[0]), span[1]];
 	}
 	if (!span) return null;
-	let [from, to] = span;
+	const [from] = span;
+	let [, to] = span;
 	// Block collections end after their last line break; that belongs to the next line.
 	while (to > from && (source[to - 1] === "\n" || source[to - 1] === "\r")) {
 		to -= 1;
 	}
+	return [from, to];
+}
+
+/**
+ * Locates a page, column, widget or option in the source text, using the
+ * ranges the `yaml` parser records. Used for "jump to widget" and to put
+ * validation messages on the right line.
+ * - For a list item (a number at the end of the path) the range starts at its `- `.
+ * - For an option (a string at the end) it runs from the key to the end of the value.
+ * @param doc - The document.
+ * @param path - Path of the node, e.g. `["pages", 0, "columns", 1, "widgets", 2]`.
+ * @returns The range, or `null` when nothing is at `path` (or it is inside an alias).
+ */
+export function getNodeRange(
+	doc: GlazeDocument,
+	path: YamlPath,
+): NodeRange | null {
+	const span = nodeSpan(doc, path);
+	if (!span) return null;
+	const [from, to] = span;
 	return {
 		from,
 		to,
-		startLine: offsetToLineColumn(source, from).line,
-		endLine: offsetToLineColumn(source, Math.max(from, to - 1)).line,
+		startLine: offsetToLineColumn(doc.source, from).line,
+		endLine: offsetToLineColumn(doc.source, Math.max(from, to - 1)).line,
 	};
 }
 
@@ -132,8 +141,9 @@ export function findPathAtOffset(
 ): PathAtOffset | null {
 	let best: PathAtOffset | null = null;
 	for (const { path, kind } of listNodePaths(doc.yaml)) {
-		const range = getNodeRange(doc, path);
-		if (!range || offset < range.from || offset > range.to) continue;
+		// Spans only: line numbers aren't needed here, and this runs on every cursor move.
+		const span = nodeSpan(doc, path);
+		if (!span || offset < span[0] || offset > span[1]) continue;
 		if (!best || path.length > best.path.length) best = { kind, path };
 	}
 	return best;

@@ -196,6 +196,9 @@ function run(
 			],
 			{
 				env,
+				// Glance resolves a relative `assets-path` from its working
+				// directory; the config's folder matches how Glaze finds assets.
+				cwd: dirname(configPath),
 				timeout: command.timeoutMs ?? DEFAULT_TIMEOUT_MS,
 				maxBuffer: MAX_OUTPUT_BYTES,
 				windowsHide: true,

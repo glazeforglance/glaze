@@ -33,7 +33,12 @@ export function parseChecked(text: string): Result<ParsedYaml, ParseError> {
 			: offsetToLineColumn(text, first.pos[0]);
 		return err({
 			code: "yaml-syntax",
-			message: first.message,
+			// The yaml package appends "at line N, column M:" and a code excerpt;
+			// line and column are separate fields, and the excerpt is the editor's job.
+			message: (first.message.split("\n")[0] ?? first.message).replace(
+				/ at line \d+, column \d+:?$/,
+				"",
+			),
 			line: at.line,
 			column: at.column,
 		});
@@ -75,6 +80,25 @@ export function parseConfig(text: string): Result<GlazeDocument, ParseError> {
 		ids: new Map(),
 		nextId: 1,
 	});
+	return ok({ source: text, yaml: parsed.value, ids, nextId });
+}
+
+/**
+ * Replaces a document's text with new text typed by hand (the code view).
+ * Pages, columns and widgets keep their ids when their path still exists, so
+ * the selection and open forms survive; new paths get new ids.
+ * @param previous - The current document.
+ * @param text - The new YAML text.
+ * @returns The new document, or a `ParseError` for invalid YAML.
+ */
+export function replaceSource(
+	previous: GlazeDocument,
+	text: string,
+): Result<GlazeDocument, ParseError> {
+	if (text === previous.source) return ok(previous);
+	const parsed = parseChecked(text);
+	if (!parsed.ok) return parsed;
+	const { ids, nextId } = assignIds(parsed.value, previous);
 	return ok({ source: text, yaml: parsed.value, ids, nextId });
 }
 
