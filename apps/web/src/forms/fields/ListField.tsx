@@ -23,8 +23,12 @@ export interface ListFieldProps {
 	/** Starts items folded, for long lists of big items (bookmark groups). */
 	readonly collapsible?: boolean;
 	readonly hint?: string;
-	/** The fields of one item; `itemName` is e.g. `sites.2`. */
-	readonly children: (itemName: string, index: number) => ReactNode;
+	/** The fields of one item; `itemName` is e.g. `sites.2`, `item` its current value. */
+	readonly children: (
+		itemName: string,
+		index: number,
+		item: unknown,
+	) => ReactNode;
 }
 
 const ICON_BUTTON =
@@ -129,7 +133,7 @@ export function ListField({
 							</div>
 							{isOpen(index) && (
 								<div id={bodyId} className="border-t border-line px-3 pt-3">
-									{children(`${name}.${index}`, index)}
+									{children(`${name}.${index}`, index, item)}
 								</div>
 							)}
 						</li>

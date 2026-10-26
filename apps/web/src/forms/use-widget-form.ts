@@ -28,7 +28,19 @@ export interface WidgetFormApi {
 	/** True for alias widgets: every field is shown but can't be changed. */
 	readonly readOnly: boolean;
 	readonly form: UseFormReturn<FieldValues>;
+	/** Type of the group / split-column this widget is in, or `null` in a column. */
+	readonly parentType: string | null;
+	/** Shared `widgetBase` fields that don't apply here (see `BaseFields`). */
+	readonly hiddenBaseFields: ReadonlySet<BaseFieldKey>;
 }
+
+/** The options every widget has (Glance's `widgetBase`). */
+export type BaseFieldKey =
+	| "title"
+	| "title-url"
+	| "cache"
+	| "hide-header"
+	| "css-class";
 
 /** Provided by `WidgetForm`; read with `useWidgetForm`. */
 export const WidgetFormContext = createContext<WidgetFormApi | null>(null);
@@ -223,6 +235,69 @@ export function useWidgetList(name: string): WidgetList {
 		},
 		move: (fromIndex, toIndex) =>
 			store().moveWidgetListItem(widget.id, path, fromIndex, toIndex),
+		override: () => {
+			if (!option || typeof key !== "string") return;
+			store().setWidgetOption(widget.id, key, option.value);
+		},
+	};
+}
+
+/** What a map editor needs. */
+export interface WidgetMap {
+	/** Entries in file order. */
+	readonly entries: readonly (readonly [string, unknown])[];
+	readonly path: YamlPath;
+	readonly status: FieldStatus;
+	readonly disabled: boolean;
+	readonly readOnly: boolean;
+	add(key: string, value: unknown): boolean;
+	remove(key: string): boolean;
+	override(): void;
+}
+
+/**
+ * Connects a map option whose keys are names the user picks (e.g.
+ * docker-containers `containers`, keyed by container name) to the document.
+ * @param name - Field name of the map, e.g. `containers`.
+ * @returns The entries and map actions.
+ */
+export function useWidgetMap(name: string): WidgetMap {
+	const { widget, options, readOnly, form } = useWidgetForm();
+	const watched: unknown = useWatch({ control: form.control, name });
+	const entries =
+		typeof watched === "object" && watched !== null && !Array.isArray(watched)
+			? Object.entries(watched)
+			: [];
+	const path = toSubPath(name);
+	const [key] = path;
+	const option = typeof key === "string" ? options.get(key) : undefined;
+	const status: FieldStatus = option
+		? option.source === "own"
+			? "own"
+			: "inherited"
+		: "unset";
+	const store = () => editorStore.getState();
+	const isTopLevel = path.length === 1 && typeof key === "string";
+
+	return {
+		entries,
+		path,
+		status,
+		disabled: readOnly || status === "inherited",
+		readOnly,
+		add: (entryKey, value) => {
+			// A missing map is written whole; an existing one gets one more key.
+			if (entries.length === 0 && isTopLevel) {
+				return store().setWidgetOption(widget.id, key, { [entryKey]: value });
+			}
+			return store().setWidgetValue(widget.id, [...path, entryKey], value);
+		},
+		remove: (entryKey) => {
+			if (entries.length === 1 && isTopLevel) {
+				return store().removeWidgetOption(widget.id, key);
+			}
+			return store().removeWidgetValue(widget.id, [...path, entryKey]);
+		},
 		override: () => {
 			if (!option || typeof key !== "string") return;
 			store().setWidgetOption(widget.id, key, option.value);

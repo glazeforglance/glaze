@@ -6,26 +6,31 @@ import { useWidgetForm } from "./use-widget-form.ts";
 
 /**
  * Settings every widget has (Glance's `widgetBase`): title, title-url, cache.
+ * Fields the widget's form hides (see `hiddenBaseFields`) are left out.
  * @returns The fields.
  */
 export function BaseSettingsFields() {
-	const { widget } = useWidgetForm();
+	const { widget, hiddenBaseFields: hidden, parentType } = useWidgetForm();
 	return (
 		<>
-			<TextField
-				name="title"
-				label="Title"
-				placeholder={catalogEntry(widget.type).label}
-			/>
-			<TextField
-				name="title-url"
-				label="Title link"
-				placeholder="https://…"
-				hint="Opens when the title is clicked."
-				inputMode="url"
-				mono
-			/>
-			<DurationField name="cache" label="Refresh" />
+			{!hidden.has("title") && (
+				<TextField
+					name="title"
+					label={parentType === "group" ? "Tab name" : "Title"}
+					placeholder={catalogEntry(widget.type).label}
+				/>
+			)}
+			{!hidden.has("title-url") && (
+				<TextField
+					name="title-url"
+					label="Title link"
+					placeholder="https://…"
+					hint="Opens when the title is clicked."
+					inputMode="url"
+					mono
+				/>
+			)}
+			{!hidden.has("cache") && <DurationField name="cache" label="Refresh" />}
 		</>
 	);
 }
@@ -35,20 +40,25 @@ export function BaseSettingsFields() {
  * @returns The fields.
  */
 export function BaseStyleFields() {
+	const { hiddenBaseFields: hidden } = useWidgetForm();
 	return (
 		<>
-			<ToggleField
-				name="hide-header"
-				label="Hide the header"
-				glanceDefault={false}
-			/>
-			<TextField
-				name="css-class"
-				label="CSS class"
-				placeholder="e.g. my-card"
-				hint="Added to the widget, for your own custom CSS."
-				mono
-			/>
+			{!hidden.has("hide-header") && (
+				<ToggleField
+					name="hide-header"
+					label="Hide the header"
+					glanceDefault={false}
+				/>
+			)}
+			{!hidden.has("css-class") && (
+				<TextField
+					name="css-class"
+					label="CSS class"
+					placeholder="e.g. my-card"
+					hint="Added to the widget, for your own custom CSS."
+					mono
+				/>
+			)}
 		</>
 	);
 }

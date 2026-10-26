@@ -15,14 +15,17 @@ export interface TextInputProps {
  * the form; blur or Enter writes to the document; Escape drops the change.
  * @param widgetField - From `useWidgetField`.
  * @param parse - Turns the text into the value to write.
+ * @param format - Turns the document's value into text. It also gets the text
+ *   typed so far (a string), which it should return unchanged.
  * @returns Props for the input.
  */
 export function useTextInput(
 	widgetField: WidgetField,
 	parse: (text: string) => unknown = (text) => text,
+	format: (value: unknown) => string = displayText,
 ): TextInputProps {
 	const { field } = widgetField;
-	const value = displayText(field.value);
+	const value = format(field.value);
 	return {
 		value,
 		onChange: (event) => field.onChange(event.target.value),

@@ -2,42 +2,37 @@ import { useId, useRef, useState } from "react";
 import { useWidgetField } from "../use-widget-form.ts";
 import { borderClass, describedBy, INPUT_CLASS } from "./field-styles.ts";
 import { FieldShell } from "./FieldShell.tsx";
+import type { SelectOption } from "./SelectField.tsx";
 import { useTextInput } from "./use-text-input.ts";
 
-const PRESETS: readonly { value: string; label: string }[] = [
-	{ value: "30s", label: "Every 30 seconds" },
-	{ value: "1m", label: "Every minute" },
-	{ value: "5m", label: "Every 5 minutes" },
-	{ value: "15m", label: "Every 15 minutes" },
-	{ value: "30m", label: "Every 30 minutes" },
-	{ value: "1h", label: "Every hour" },
-	{ value: "6h", label: "Every 6 hours" },
-	{ value: "12h", label: "Every 12 hours" },
-	{ value: "1d", label: "Every day" },
-];
+// Not a valid value for any Glance option, so it can't clash with a preset.
+const CUSTOM = "__custom__";
 
-const CUSTOM = "custom";
-
-export interface DurationFieldProps {
+export interface PresetFieldProps {
 	readonly name: string;
 	readonly label: string;
+	/** The common values, shown in the dropdown. */
+	readonly presets: readonly SelectOption[];
 	readonly hint?: string;
 	/** Label of the empty choice, which removes the key. */
 	readonly defaultLabel?: string;
+	readonly customPlaceholder?: string;
 }
 
 /**
- * A Glance duration such as `cache: 5m` (the mock's "Verversen"): common
- * values in a dropdown, anything else (or a `${VAR}`) as custom text.
- * @param props - Field name and label.
+ * A text option with common values in a dropdown and "Custom…" for anything
+ * else (or a `${VAR}`), e.g. `cache: 5m` or a search engine.
+ * @param props - Field name, label and the common values.
  * @returns The field element.
  */
-export function DurationField({
+export function PresetField({
 	name,
 	label,
+	presets,
 	hint,
 	defaultLabel = "Glance default",
-}: DurationFieldProps) {
+	customPlaceholder,
+}: PresetFieldProps) {
 	const id = useId();
 	const widgetField = useWidgetField(name);
 	const { field, error, disabled } = widgetField;
@@ -45,7 +40,7 @@ export function DurationField({
 	const customInput = useRef<HTMLInputElement | null>(null);
 	const isPreset =
 		input.value === "" ||
-		PRESETS.some((preset) => preset.value === input.value);
+		presets.some((preset) => preset.value === input.value);
 	const [customChosen, setCustomChosen] = useState(false);
 	const showCustom = customChosen || !isPreset;
 
@@ -80,7 +75,7 @@ export function DurationField({
 				className={`${INPUT_CLASS} ${borderClass(error !== undefined && !showCustom)} cursor-pointer`}
 			>
 				<option value="">{defaultLabel}</option>
-				{PRESETS.map((preset) => (
+				{presets.map((preset) => (
 					<option key={preset.value} value={preset.value}>
 						{preset.label}
 					</option>
@@ -98,7 +93,7 @@ export function DurationField({
 					aria-label={`${label} (custom)`}
 					aria-invalid={error ? true : undefined}
 					aria-describedby={describedBy(id, error)}
-					placeholder="e.g. 90s, 2h"
+					placeholder={customPlaceholder}
 					disabled={disabled}
 					autoComplete="off"
 					spellCheck={false}

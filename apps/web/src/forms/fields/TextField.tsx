@@ -20,6 +20,8 @@ export interface TextFieldProps {
 	 * validation, so the schema sees the converted value.
 	 */
 	readonly parse?: (text: string) => unknown;
+	/** Turns the document's value into text, e.g. `[401, 403]` → `401, 403`. */
+	readonly format?: (value: unknown) => string;
 	readonly inputMode?: "text" | "numeric" | "decimal" | "url";
 }
 
@@ -40,12 +42,13 @@ export function TextField({
 	mono = false,
 	secret = false,
 	parse,
+	format,
 	inputMode = "text",
 }: TextFieldProps) {
 	const id = useId();
 	const widgetField = useWidgetField(name);
 	const { field, error, disabled } = widgetField;
-	const input = useTextInput(widgetField, parse);
+	const input = useTextInput(widgetField, parse, format);
 	const [revealed, setRevealed] = useState(false);
 	const isEnv = isEnvReference(input.value);
 	const hidden = secret && !revealed && !isEnv;

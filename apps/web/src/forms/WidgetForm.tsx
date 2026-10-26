@@ -5,11 +5,13 @@ import {
 } from "@glaze/core";
 import { useMemo } from "react";
 import { type FieldValues, useForm } from "react-hook-form";
-import { useEditor } from "../store/editor-store.ts";
+import { findWidgetByPath } from "../lib/model.ts";
+import { selectCurrentPage, useEditor } from "../store/editor-store.ts";
 import { BaseSettingsFields, BaseStyleFields } from "./BaseFields.tsx";
 import { FormNotice } from "./FormNotice.tsx";
 import { formFor, schemaFor } from "./registry.ts";
 import {
+	type BaseFieldKey,
 	optionValues,
 	type WidgetFormApi,
 	WidgetFormContext,
@@ -33,6 +35,7 @@ export interface WidgetFormProps {
  */
 export function WidgetForm({ widget, tab, onShowYaml }: WidgetFormProps) {
 	const doc = useEditor((state) => state.doc);
+	const page = useEditor(selectCurrentPage);
 	const read = useMemo(
 		() => (doc ? getWidgetOptions(doc, widget.path) : null),
 		[doc, widget.path],
@@ -56,12 +59,22 @@ export function WidgetForm({ widget, tab, onShowYaml }: WidgetFormProps) {
 
 	const definition = formFor(widget.type);
 	const readOnly = read.value.isAlias;
+	const parentType = page
+		? (findWidgetByPath(page, widget.path.slice(0, -2))?.type ?? null)
+		: null;
+	const hiddenBaseFields = new Set<BaseFieldKey>(
+		definition?.hiddenBaseFields ?? [],
+	);
+	// Glance forces `hide-header: true` on every tab of a group.
+	if (parentType === "group") hiddenBaseFields.add("hide-header");
 	const api: WidgetFormApi = {
 		widget,
 		schema: schemaFor(widget.type),
 		options,
 		readOnly,
 		form,
+		parentType,
+		hiddenBaseFields,
 	};
 	const Extra = tab === "settings" ? definition?.Settings : definition?.Style;
 
