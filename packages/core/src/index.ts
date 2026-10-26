@@ -6,6 +6,12 @@ export {
 	parseConfig,
 	serializeConfig,
 } from "./document.ts";
+export {
+	COLUMN_KEYS,
+	PAGE_KEYS,
+	WIDGET_BASE_KEYS,
+	WIDGET_TYPE_KEYS,
+} from "./glance-keys.ts";
 export { validateLayout } from "./layout.ts";
 export { getModel } from "./model.ts";
 export {
@@ -19,17 +25,31 @@ export {
 	type WidgetOptions,
 } from "./options.ts";
 export { addPage, movePage, removePage, renamePage } from "./pages.ts";
+export {
+	findPathAtOffset,
+	getNodeRange,
+	type LineColumn,
+	type NodeRange,
+	offsetToLineColumn,
+	type PathAtOffset,
+} from "./ranges.ts";
+export { renameKey } from "./rename-key.ts";
 export { getNodeSource } from "./source.ts";
 export { err, ok, type Result } from "./result.ts";
+export type { NodeKind } from "./model.ts";
 export type {
 	ColumnNode,
 	ColumnSize,
 	EditError,
 	EditErrorCode,
+	IssueSeverity,
+	IssueSource,
 	LayoutIssue,
 	LayoutIssueCode,
 	PageNode,
 	ParseError,
+	RenameKeyFix,
+	ValidationIssue,
 	WidgetNode,
 	YamlPath,
 } from "./types.ts";
@@ -42,6 +62,13 @@ export {
 	setWidgetOption,
 	type WidgetInput,
 } from "./widgets.ts";
+export {
+	closestKey,
+	editDistance,
+	findUnknownOptions,
+	type KnownKeys,
+	type UnknownOption,
+} from "./unknown-options.ts";
 export {
 	insertWidgetListItem,
 	moveWidgetListItem,

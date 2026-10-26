@@ -1,5 +1,6 @@
 import { isAlias, visit } from "yaml";
 import { assignIds } from "./ids.ts";
+import { offsetToLineColumn } from "./ranges.ts";
 import { err, ok, type Result } from "./result.ts";
 import type { ParseError } from "./types.ts";
 import { type ParsedYaml, parseYamlDocument } from "./yaml-read.ts";
@@ -17,14 +18,6 @@ export interface GlazeDocument {
 	readonly nextId: number;
 }
 
-function lineOf(text: string, offset: number): number {
-	let line = 1;
-	for (let i = 0; i < offset && i < text.length; i++) {
-		if (text[i] === "\n") line += 1;
-	}
-	return line;
-}
-
 /**
  * Parses and checks YAML text without assigning ids.
  * @param text - YAML source.
@@ -34,10 +27,15 @@ export function parseChecked(text: string): Result<ParsedYaml, ParseError> {
 	const yaml = parseYamlDocument(text);
 	const [first] = yaml.errors;
 	if (first) {
+		const pos = first.linePos?.[0];
+		const at = pos
+			? { line: pos.line, column: pos.col }
+			: offsetToLineColumn(text, first.pos[0]);
 		return err({
 			code: "yaml-syntax",
 			message: first.message,
-			line: first.linePos?.[0].line ?? lineOf(text, first.pos[0]),
+			line: at.line,
+			column: at.column,
 		});
 	}
 	// The yaml package only notices missing anchors when converting to JS; check up front.
@@ -54,10 +52,12 @@ export function parseChecked(text: string): Result<ParsedYaml, ParseError> {
 	const [missing] = unresolved;
 	if (missing) {
 		const { source, offset } = missing;
+		const at = offsetToLineColumn(text, offset);
 		return err({
 			code: "unresolved-alias",
 			message: `Alias *${source} has no matching anchor &${source}`,
-			line: lineOf(text, offset),
+			line: at.line,
+			column: at.column,
 		});
 	}
 	return ok(yaml);

@@ -64,6 +64,8 @@ export interface ParseError {
 	readonly message: string;
 	/** 1-based line, when known. */
 	readonly line: number | null;
+	/** 1-based column, when known. */
+	readonly column: number | null;
 }
 
 /** Codes for failed edits. */
@@ -79,6 +81,8 @@ export type EditErrorCode =
 	/** The value is an alias (`*name`); editing it would change the anchored node. */
 	| "option-is-alias"
 	| "invalid-move"
+	/** The new key is already set in the same map. */
+	| "duplicate-key"
 	| "layout-violation"
 	| "invalid-result";
 
@@ -88,4 +92,33 @@ export interface EditError {
 	readonly message: string;
 	/** Layout issues the edit would have introduced (only for `layout-violation`). */
 	readonly issues: readonly LayoutIssue[];
+}
+
+/** How serious a validation issue is. `info` never blocks anything. */
+export type IssueSeverity = "error" | "warning" | "info";
+
+/** Which check found a validation issue. */
+export type IssueSource = "yaml" | "layout" | "glance" | "glaze";
+
+/** A one-click fix for an issue: rename a key, e.g. `stlye` → `style`. */
+export interface RenameKeyFix {
+	readonly kind: "rename-key";
+	/** Path of the map that holds the key. */
+	readonly mapPath: YamlPath;
+	readonly from: string;
+	readonly to: string;
+}
+
+/** One problem found in a draft config; shared by the API and the web app. */
+export interface ValidationIssue {
+	readonly severity: IssueSeverity;
+	readonly source: IssueSource;
+	readonly message: string;
+	/** 1-based line in the draft, when known. */
+	readonly line?: number;
+	/** 1-based column, when known. */
+	readonly column?: number;
+	/** The node the issue is about, when known. */
+	readonly path?: YamlPath;
+	readonly fix?: RenameKeyFix;
 }
