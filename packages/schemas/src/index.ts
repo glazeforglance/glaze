@@ -43,17 +43,23 @@ export function widgetSchema(type: string | null): WidgetSchema | null {
 }
 
 /**
- * The option names Glance reads for every widget type, for the unknown-option
- * check: the shared ones plus each type's own.
- * @returns `widgetBase` keys, and the extra keys per type (aliases included).
+ * The option names Glance reads, for the unknown-option check (same shape as
+ * `KnownKeys` in @glaze/core): page and column keys, the keys every widget
+ * has, and each widget type's own keys (aliases included).
+ * @returns The key lists.
  */
-export function knownWidgetKeys(): {
-	readonly base: readonly string[];
-	readonly types: Readonly<Record<string, readonly string[]>>;
+export function glanceKeys(): {
+	readonly page: readonly string[];
+	readonly column: readonly string[];
+	readonly widgetBase: readonly string[];
+	readonly widgetTypes: Readonly<Record<string, readonly string[]>>;
 } {
+	const columns = PAGE_FIELDS.find((field) => field.key === "columns");
 	return {
-		base: BASE_FIELDS.map((field) => field.key),
-		types: Object.fromEntries(
+		page: PAGE_FIELDS.map((field) => field.key),
+		column: columns?.item?.fields?.map((field) => field.key) ?? [],
+		widgetBase: BASE_FIELDS.map((field) => field.key),
+		widgetTypes: Object.fromEntries(
 			Object.entries(WIDGET_SCHEMAS).map(([type, schema]) => [
 				type,
 				schema.fields.map((field) => field.key),

@@ -1,17 +1,19 @@
 import { describe, expect, it } from "vitest";
 import {
 	closestKey,
-	COLUMN_KEYS,
 	editDistance,
 	findUnknownOptions,
 	getNodeRange,
 	type KnownKeys,
-	PAGE_KEYS,
 	renameKey,
 	serializeConfig,
+} from "../src/index.ts";
+import {
+	COLUMN_KEYS,
+	PAGE_KEYS,
 	WIDGET_BASE_KEYS,
 	WIDGET_TYPE_KEYS,
-} from "../src/index.ts";
+} from "./fixtures/known-keys.ts";
 import {
 	expectLineChanges,
 	load,

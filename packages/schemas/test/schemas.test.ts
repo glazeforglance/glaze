@@ -5,7 +5,7 @@ import {
 	type FieldSchema,
 	fieldAt,
 	GENERATED_FROM,
-	knownWidgetKeys,
+	glanceKeys,
 	PAGE_FIELDS,
 	WIDGET_SCHEMAS,
 	WIDGET_TYPES,
@@ -137,8 +137,8 @@ describe("generated schemas", () => {
 	});
 
 	it("list every option for the unknown-option check", () => {
-		const keys = knownWidgetKeys();
-		expect(keys.base).toEqual([
+		const keys = glanceKeys();
+		expect(keys.widgetBase).toEqual([
 			"type",
 			"title",
 			"title-url",
@@ -146,8 +146,10 @@ describe("generated schemas", () => {
 			"css-class",
 			"cache",
 		]);
-		expect(keys.types.stocks).toEqual(keys.types.markets);
-		expect(keys.types["custom-api"]).toContain("subrequests");
+		expect(keys.page).toContain("desktop-navigation-width");
+		expect(keys.column).toEqual(["size", "widgets"]);
+		expect(keys.widgetTypes.stocks).toEqual(keys.widgetTypes.markets);
+		expect(keys.widgetTypes["custom-api"]).toContain("subrequests");
 	});
 
 	it("start new widgets with only options their schema knows", () => {

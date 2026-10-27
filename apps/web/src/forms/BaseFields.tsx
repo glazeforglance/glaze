@@ -8,9 +8,14 @@ import { WidthField } from "./WidthField.tsx";
 /**
  * Settings every widget has (Glance's `widgetBase`): title, title-url, cache.
  * Fields the widget's form hides (see `hiddenBaseFields`) are left out.
+ * @param props - How often Glance refreshes this type by default, e.g. `30m`.
  * @returns The fields.
  */
-export function BaseSettingsFields() {
+export function BaseSettingsFields({
+	defaultCache,
+}: {
+	readonly defaultCache?: string | undefined;
+}) {
 	const { widget, hiddenBaseFields: hidden, parentType } = useWidgetForm();
 	return (
 		<>
@@ -31,7 +36,15 @@ export function BaseSettingsFields() {
 					mono
 				/>
 			)}
-			{!hidden.has("cache") && <DurationField name="cache" label="Refresh" />}
+			{!hidden.has("cache") && (
+				<DurationField
+					name="cache"
+					label="Refresh"
+					defaultLabel={
+						defaultCache ? `Glance default (${defaultCache})` : "Glance default"
+					}
+				/>
+			)}
 		</>
 	);
 }

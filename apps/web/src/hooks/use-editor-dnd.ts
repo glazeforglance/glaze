@@ -32,6 +32,7 @@ import {
 	toCoreIndex,
 	type WidgetList,
 } from "../lib/drop-target.ts";
+import { newWidgetOf } from "../lib/widget-catalog.ts";
 import { useEditor } from "../store/editor-store.ts";
 
 const IDLE: DragState = { active: null, target: null, indicator: null };
@@ -241,7 +242,7 @@ export function useEditorDnd(lists: readonly WidgetList[]): {
 					active.kind === "library"
 						? {
 								kind: "new",
-								widget: { type: active.type, title: active.label },
+								widget: newWidgetOf(active.type),
 							}
 						: { kind: "move", widgetId: active.widgetId },
 					targetId,
@@ -250,11 +251,7 @@ export function useEditorDnd(lists: readonly WidgetList[]): {
 			}
 		} else if (active && target && list) {
 			if (active.kind === "library") {
-				addWidget(
-					{ type: active.type, title: active.label },
-					list.path,
-					target.index,
-				);
+				addWidget(newWidgetOf(active.type), list.path, target.index);
 			} else if (!isNoOp(active.source, target)) {
 				moveWidget(
 					active.widgetId,

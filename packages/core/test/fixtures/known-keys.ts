@@ -1,10 +1,7 @@
 /*
- * Option names Glance v0.8.7 reads, as plain data.
- *
- * This lives in core (not next to the Zod schemas in apps/web) so the server
- * can use it for validation without pulling in React or Zod. A test in
- * apps/web checks that every key of the form schemas is listed here, so the
- * two can't drift apart.
+ * Option names for the unknown-option tests: a hand-kept subset of what
+ * Glance v0.8.7 reads. The app itself gets the full lists from
+ * @glaze/schemas, which generates them from the Glance source.
  */
 
 /** Keys of a page (`page` struct in config.go). */

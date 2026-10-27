@@ -1,7 +1,9 @@
+import { WIDGET_TYPES } from "@glaze/schemas";
 import { describe, expect, it } from "vitest";
 import {
 	badgeToneFor,
 	catalogEntry,
+	newWidgetOf,
 	searchCatalog,
 	WIDGET_CATALOG,
 } from "../src/lib/widget-catalog.ts";
@@ -65,5 +67,21 @@ describe("searchCatalog", () => {
 	it("has unique widget types", () => {
 		const types = WIDGET_CATALOG.map((entry) => entry.type);
 		expect(new Set(types).size).toBe(types.length);
+	});
+
+	it("lists every widget type Glance has", () => {
+		const types = WIDGET_CATALOG.map((entry) => entry.type).sort();
+		expect(types).toEqual([...WIDGET_TYPES].sort());
+	});
+});
+
+describe("newWidgetOf", () => {
+	it("starts from the schema's starting options, without a title", () => {
+		expect(newWidgetOf("weather")).toEqual({
+			type: "weather",
+			location: "London, United Kingdom",
+		});
+		expect(newWidgetOf("clock")).toEqual({ type: "clock" });
+		expect(newWidgetOf("future-widget")).toEqual({ type: "future-widget" });
 	});
 });

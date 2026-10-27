@@ -1,0 +1,167 @@
+import type { FieldSchema, WidgetSchema } from "@glaze/schemas";
+import { z } from "zod";
+import {
+	baseWidgetSchema,
+	duration,
+	hslColor,
+	isEnvReference,
+	oneOf,
+	optional,
+	orEnv,
+} from "./schema.ts";
+
+/*
+ * Form validation, derived from the generated schemas. It only checks what
+ * Glance itself would refuse (types, enums, duration and color formats,
+ * required options), so a config Glance accepts never shows an error here.
+ * Unknown keys always pass (`looseObject`).
+ */
+
+/** Text, also for numbers and booleans: YAML reads `id: 123` as a number, Glance as text. */
+const scalarText = (label: string) =>
+	z
+		.unknown()
+		.refine(
+			(value) =>
+				typeof value === "string" ||
+				typeof value === "number" ||
+				typeof value === "boolean",
+			`${label}: use text`,
+		);
+
+function wholeNumber(label: string, min: number | undefined) {
+	let base = z
+		.number({ error: `${label}: enter a whole number` })
+		.int(`${label}: enter a whole number`);
+	if (min !== undefined) base = base.min(min, `${label}: use ${min} or more`);
+	return orEnv(base);
+}
+
+function decimal(label: string, min: number | undefined) {
+	let base = z.number({ error: `${label}: enter a number` });
+	if (min !== undefined) base = base.min(min, `${label}: use ${min} or more`);
+	return orEnv(base);
+}
+
+/** One of several forms: valid when any variant accepts the value. */
+function anyOf(label: string, variants: readonly z.ZodType[]) {
+	return z.unknown().superRefine((value, ctx) => {
+		if (isEnvReference(value)) return;
+		if (variants.some((variant) => variant.safeParse(value).success)) return;
+		ctx.addIssue({
+			code: "custom",
+			message: `${label}: this form isn't supported`,
+		});
+	});
+}
+
+/** A list item or map value has no label of its own; messages use the parent's. */
+function childOf(parent: FieldSchema, child: FieldSchema): FieldSchema {
+	return child.label ? child : { ...child, label: parent.label };
+}
+
+/**
+ * The Zod schema for a value of one field (when the value is present).
+ * @param field - The field's schema.
+ * @returns A Zod schema.
+ */
+export function zodForValue(field: FieldSchema): z.ZodType {
+	const { label } = field;
+	switch (field.kind) {
+		case "number":
+			return decimal(label, field.min);
+		case "integer":
+			return wholeNumber(label, field.min);
+		case "boolean":
+			return orEnv(z.boolean({ error: `${label}: use true or false` }));
+		case "duration":
+			return orEnv(duration);
+		case "color":
+			return orEnv(hslColor);
+		case "enum": {
+			const values = (field.options ?? []).map((option) => option.value);
+			const [first, ...rest] = values;
+			if (field.allowCustom || first === undefined) return scalarText(label);
+			return orEnv(oneOf([first, ...rest]));
+		}
+		case "list":
+			return z
+				.array(
+					field.item ? zodForValue(childOf(field, field.item)) : z.unknown(),
+					{
+						error: `${label}: use a list`,
+					},
+				)
+				.nullable();
+		case "object":
+			return zodForFields(field.fields ?? []).nullable();
+		case "map":
+			return z
+				.record(
+					z.string(),
+					field.item ? zodForValue(childOf(field, field.item)) : z.unknown(),
+					{
+						error: `${label}: use names with values`,
+					},
+				)
+				.nullable();
+		case "union":
+			return anyOf(label, (field.variants ?? []).map(zodForValue));
+		case "any":
+		case "widgets":
+			return z.unknown();
+		default:
+			return scalarText(label);
+	}
+}
+
+/**
+ * The Zod schema for a field as an option: optional unless Glance requires it.
+ * @param field - The field's schema.
+ * @returns A Zod schema.
+ */
+export function zodForField(field: FieldSchema): z.ZodType {
+	const value = zodForValue(field);
+	if (!field.required) return optional(value);
+	const message = `${field.label} is required`;
+	return z.unknown().superRefine((current, ctx) => {
+		if (current === undefined || current === null || current === "") {
+			ctx.addIssue({ code: "custom", message });
+			return;
+		}
+		const result = value.safeParse(current);
+		if (result.success) return;
+		for (const issue of result.error.issues) {
+			ctx.addIssue({
+				code: "custom",
+				message: issue.message,
+				path: issue.path,
+			});
+		}
+	});
+}
+
+/**
+ * A loose object schema for a set of fields (unknown keys pass).
+ * @param fields - The fields.
+ * @returns A Zod object schema.
+ */
+export function zodForFields(fields: readonly FieldSchema[]) {
+	return z.looseObject(
+		Object.fromEntries(fields.map((field) => [field.key, zodForField(field)])),
+	);
+}
+
+/**
+ * The Zod schema of a whole widget: the shared options plus the type's own.
+ * @param schema - The widget type's schema, or `null` for an unknown type.
+ * @returns A Zod schema.
+ */
+export function zodForWidget(schema: WidgetSchema | null): z.ZodType {
+	if (!schema) return baseWidgetSchema;
+	return baseWidgetSchema.extend(
+		Object.fromEntries(
+			schema.fields.map((field) => [field.key, zodForField(field)]),
+		),
+	);
+}

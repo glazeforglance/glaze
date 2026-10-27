@@ -8,8 +8,10 @@ import { type FieldValues, useForm } from "react-hook-form";
 import { findWidgetByPath } from "../lib/model.ts";
 import { selectCurrentPage, useEditor } from "../store/editor-store.ts";
 import { BaseSettingsFields, BaseStyleFields } from "./BaseFields.tsx";
+import { WidgetTypeContext } from "./custom-fields.ts";
 import { FormNotice } from "./FormNotice.tsx";
 import { formFor, schemaFor } from "./registry.ts";
+import { OtherOptions, SchemaForm } from "./SchemaForm.tsx";
 import {
 	type BaseFieldKey,
 	optionValues,
@@ -76,36 +78,33 @@ export function WidgetForm({ widget, tab, onShowYaml }: WidgetFormProps) {
 		parentType,
 		hiddenBaseFields,
 	};
-	const Extra = tab === "settings" ? definition?.Settings : definition?.Style;
+	const schema = definition?.widget ?? null;
 
 	return (
 		<WidgetFormContext value={api}>
-			{readOnly && (
-				<FormNotice tone="violet">
-					This widget is a YAML alias (<code className="font-mono">*name</code>
-					): it shows another widget's settings. Edit that widget instead, or
-					change this item in the YAML.
-				</FormNotice>
-			)}
-			<form noValidate onSubmit={(event) => event.preventDefault()}>
-				<fieldset disabled={readOnly} className="m-0 min-w-0 border-0 p-0">
-					{tab === "settings" ? <BaseSettingsFields /> : <BaseStyleFields />}
-					{Extra && <Extra />}
-				</fieldset>
-			</form>
-			{tab === "settings" && !definition && (
-				<FormNotice>
-					No form for this widget yet — edit it in the{" "}
-					<button
-						type="button"
-						onClick={onShowYaml}
-						className="cursor-pointer text-accent underline-offset-2 hover:underline"
-					>
-						YAML tab
-					</button>
-					.
-				</FormNotice>
-			)}
+			<WidgetTypeContext value={schema?.type ?? null}>
+				{readOnly && (
+					<FormNotice tone="violet">
+						This widget is a YAML alias (
+						<code className="font-mono">*name</code>
+						): it shows another widget's settings. Edit that widget instead, or
+						change this item in the YAML.
+					</FormNotice>
+				)}
+				<form noValidate onSubmit={(event) => event.preventDefault()}>
+					<fieldset disabled={readOnly} className="m-0 min-w-0 border-0 p-0">
+						{tab === "settings" ? (
+							<BaseSettingsFields defaultCache={schema?.defaultCache} />
+						) : (
+							<BaseStyleFields />
+						)}
+						{schema && <SchemaForm schema={schema} tab={tab} />}
+						{tab === "settings" && (
+							<OtherOptions schema={schema} onShowYaml={onShowYaml} />
+						)}
+					</fieldset>
+				</form>
+			</WidgetTypeContext>
 		</WidgetFormContext>
 	);
 }

@@ -66,15 +66,16 @@ Style tab and on the resize handle (a slider).
 Code over docs (help texts say so): dns-stats `service` is required in v0.8.7 (empty is an
 error), and a missing iframe `height` gives 50 px.
 
-## 6e — Forms for every widget
+## 6e — Forms for every widget ✅
 
-- [ ] Generic `SchemaForm` for every field kind
-- [ ] All 27 widget types + `widgetBase`
-- [ ] custom-api editor (request, subrequests, options, template editor + cheat-sheet, frameless)
-- [ ] html / extension / iframe with the right warnings
-- [ ] New widgets start valid; publish review blocks with friendly messages
-- [ ] Unknown keys kept and listed under "Other options"
-- [ ] `${ENV}` values shown as ENV chips, never resolved
+- [x] Generic `SchemaForm` / `SchemaField` for every field kind (new: textarea, code with an HTML + Go template highlighter, icon, HSL color with hex, union, any, object); validation derived from the schemas (`schema-zod.ts`)
+- [x] All 28 widget types + `widgetBase`; the hand-made forms are gone except the docker container labels (names the Go source doesn't list)
+- [x] custom-api editor (request, subrequests, options, template editor + cheat sheet, frameless)
+- [x] html / extension / iframe with the right warnings (`warning` in the schema)
+- [x] New widgets start from the schema's `newWidget`; the server reports missing required options in plain words ("Weather needs a location"), which blocks publish
+- [x] Unknown keys kept and listed under "Other options" with a link to the YAML tab
+- [x] `${ENV}` values shown as ENV chips, never resolved
+- [x] The server's unknown-option check covers all 28 types (keys from `@glaze/schemas`; core's hand-kept lists moved to its test fixtures)
 
 ## 6f — Page settings and head widgets
 

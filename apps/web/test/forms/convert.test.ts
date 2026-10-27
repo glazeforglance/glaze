@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { fromNumberList, toNumberList } from "../../src/forms/convert.ts";
 import { checkNewMapKey, isFormSafeKey } from "../../src/forms/map-keys.ts";
-import { itemText } from "../../src/forms/widgets/item-text.ts";
 
 describe("number lists", () => {
 	it("turns text into numbers and back", () => {
@@ -31,15 +30,5 @@ describe("map keys", () => {
 			'"sonarr" is already in the list.',
 		);
 		expect(checkNewMapKey("my.app", [])).toMatch(/YAML tab/);
-	});
-});
-
-describe("itemText", () => {
-	it("reads list item headers", () => {
-		expect(itemText({ title: "Immich" }, "title")).toBe("Immich");
-		expect(itemText({ title: " " }, "title")).toBeNull();
-		expect(itemText("glanceapp/glance")).toBe("glanceapp/glance");
-		expect(itemText({ limit: 5 }, "limit")).toBe("5");
-		expect(itemText(null, "title")).toBeNull();
 	});
 });

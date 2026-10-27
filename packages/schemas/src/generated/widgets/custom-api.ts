@@ -345,6 +345,7 @@ export const schema: WidgetSchema = {
 				"kind": "any"
 			},
 			"keyLabel": "Option",
+			"group": "template",
 			"advanced": true,
 			"help": "Values for the template, read with .Options.StringOr \"name\" \"default\"."
 		},

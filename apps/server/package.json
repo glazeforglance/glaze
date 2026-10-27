@@ -12,6 +12,7 @@
 	},
 	"dependencies": {
 		"@glaze/core": "workspace:*",
+		"@glaze/schemas": "workspace:*",
 		"@hono/node-server": "^2.1.3",
 		"hono": "^4.13.14"
 	},

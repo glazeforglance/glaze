@@ -1,3 +1,6 @@
+import type { WidgetInput } from "@glaze/core";
+import { widgetSchema } from "@glaze/schemas";
+
 /** Library groups, in display order. */
 export type WidgetGroupId = "basics" | "server" | "media" | "advanced";
 
@@ -27,7 +30,7 @@ export const WIDGET_GROUPS: readonly WidgetGroup[] = [
 	{ id: "advanced", label: "Advanced", tone: "violet" },
 ];
 
-// Widget types of Glance v0.8.7.
+// Widget types of Glance v0.8.7 (a test checks this against @glaze/schemas).
 export const WIDGET_CATALOG: readonly CatalogEntry[] = [
 	{ type: "clock", label: "Clock", abbr: "CL", group: "basics" },
 	{ type: "weather", label: "Weather", abbr: "WE", group: "basics" },
@@ -63,6 +66,12 @@ export const WIDGET_CATALOG: readonly CatalogEntry[] = [
 		abbr: "TC",
 		group: "media",
 	},
+	{
+		type: "twitch-top-games",
+		label: "Twitch top games",
+		abbr: "TG",
+		group: "media",
+	},
 	{ type: "markets", label: "Markets", abbr: "MK", group: "media" },
 	{ type: "custom-api", label: "Custom API", abbr: "API", group: "advanced" },
 	{ type: "html", label: "HTML", abbr: "</>", group: "advanced" },
@@ -75,7 +84,24 @@ export const WIDGET_CATALOG: readonly CatalogEntry[] = [
 		abbr: "SP",
 		group: "advanced",
 	},
+	{
+		type: "calendar-legacy",
+		label: "Calendar (legacy)",
+		abbr: "LC",
+		group: "advanced",
+	},
 ];
+
+/**
+ * The options a widget from the library starts with: its type plus the
+ * starting options from its schema (see `newWidget` in overrides.ts), so it
+ * is valid right away. The title is left to Glance's own default.
+ * @param type - The widget type.
+ * @returns The widget to write.
+ */
+export function newWidgetOf(type: string): WidgetInput {
+	return { type, ...(widgetSchema(type)?.newWidget ?? {}) };
+}
 
 const BY_TYPE = new Map(WIDGET_CATALOG.map((entry) => [entry.type, entry]));
 

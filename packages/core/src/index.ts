@@ -12,12 +12,6 @@ export {
 	replaceSource,
 	serializeConfig,
 } from "./document.ts";
-export {
-	COLUMN_KEYS,
-	PAGE_KEYS,
-	WIDGET_BASE_KEYS,
-	WIDGET_TYPE_KEYS,
-} from "./glance-keys.ts";
 export { glazeLayoutIssues, validateLayout } from "./layout.ts";
 export { getModel } from "./model.ts";
 export {

@@ -1,26 +1,22 @@
 import {
-	COLUMN_KEYS,
 	findUnknownOptions,
 	type GlazeDocument,
 	getNodeRange,
 	type KnownKeys,
-	PAGE_KEYS,
 	parseConfig,
 	type ValidationIssue,
 	validateLayout,
-	WIDGET_BASE_KEYS,
-	WIDGET_TYPE_KEYS,
 	type YamlPath,
 } from "@glaze/core";
+import { glanceKeys } from "@glaze/schemas";
 import { type GlanceCommand, runGlanceValidate } from "./glance-validate.ts";
+import { findMissingOptions } from "./required-options.ts";
 
-/** The keys Glaze knows; anything else in a page, column or known widget is a warning. */
-const KNOWN_KEYS: KnownKeys = {
-	page: PAGE_KEYS,
-	column: COLUMN_KEYS,
-	widgetBase: WIDGET_BASE_KEYS,
-	widgetTypes: WIDGET_TYPE_KEYS,
-};
+/**
+ * The keys Glance reads (generated from its source, see @glaze/schemas);
+ * anything else in a page, column or widget is a warning.
+ */
+const KNOWN_KEYS: KnownKeys = glanceKeys();
 
 /** What `validateDraft` needs besides the text. */
 export interface ValidateOptions {
@@ -41,9 +37,11 @@ function at(doc: GlazeDocument, path: YamlPath | undefined) {
  * Checks a draft config, the same way for the code view and for Publish:
  * 1. YAML syntax (stops here when the YAML is broken);
  * 2. Glance's layout rules → errors;
- * 3. options Glance doesn't know → warnings (Glance ignores them), with a fix
+ * 3. options Glance requires that a widget lacks → errors, in plain words
+ *    ("Weather needs a location") instead of Glance's own message;
+ * 4. options Glance doesn't know → warnings (Glance ignores them), with a fix
  *    when a known key is close;
- * 4. `glance config:validate`, when `GLANCE_BIN` is set; otherwise one info.
+ * 5. `glance config:validate`, when `GLANCE_BIN` is set; otherwise one info.
  * @param text - The draft, not the file on disk.
  * @param options - Config path and Glance command.
  * @returns All issues, in that order.
@@ -75,6 +73,16 @@ export async function validateDraft(
 			message: issue.message,
 			path: issue.path,
 			...at(doc, issue.path),
+		});
+	}
+
+	for (const missing of findMissingOptions(doc)) {
+		issues.push({
+			severity: "error",
+			source: "glaze",
+			message: missing.message,
+			path: missing.path,
+			...at(doc, missing.path),
 		});
 	}
 
