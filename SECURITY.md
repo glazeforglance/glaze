@@ -22,4 +22,4 @@ Include what you found, how to reproduce it, and which version you tested. You'l
 ## Scope
 
 In scope: the Glaze server and web app, the Docker image, and how Glaze reads and writes config files.
-Out of scope: Glance itself (report those to [glanceapp/glance](https://github.com/glanceapp/glance)), and setups that expose Glaze to the internet without the protection described under "Security" in the README.
+Out of scope: Glance itself (report those to [glanceapp/glance](https://github.com/glanceapp/glance)), and setups that expose Glaze to the internet without the protection described in [docs/security.md](docs/security.md).
