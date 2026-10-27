@@ -36,12 +36,22 @@ export interface ListGeometry {
 
 /** Where the drop indicator is drawn, relative to its list's `rect`. */
 export interface IndicatorLine {
-	/** `horizontal` between stacked items, `vertical` between items in a row, `box` for an empty list. */
-	readonly kind: "horizontal" | "vertical" | "box";
+	/**
+	 * `horizontal` between stacked items, `vertical` between items in a row,
+	 * `box` for an empty list, `beside` on the left or right edge of an item
+	 * (the two will be put side by side).
+	 */
+	readonly kind: "horizontal" | "vertical" | "box" | "beside";
 	readonly x: number;
 	readonly y: number;
 	readonly width: number;
 	readonly height: number;
+}
+
+/** A "beside" position: the item under the pointer and which edge. */
+export interface BesideHit {
+	readonly index: number;
+	readonly side: "left" | "right";
 }
 
 /**
@@ -50,6 +60,12 @@ export interface IndicatorLine {
  * every pixel of hand tremor.
  */
 export const HYSTERESIS_PX = 12;
+
+/** Widest "beside" band on an item's left and right edge, in px. */
+export const BESIDE_BAND_PX = 56;
+
+/** The beside band is at most this share of the item's width. */
+const BESIDE_SHARE = 0.22;
 
 /** Gap between items in a list (Tailwind `gap-2`); the indicator sits in the middle of it. */
 export const LIST_GAP_PX = 8;
@@ -200,15 +216,60 @@ export function slotAt(
 }
 
 /**
- * Where to draw the indicator for a slot, relative to the list's top-left
- * corner: a line in the gap between two items, or a box over an empty list.
+ * Finds a "beside" position: the pointer is over an item, close to its left
+ * or right edge (a band of at most `BESIDE_BAND_PX`, and at most 22% of the
+ * item's width). The band of the `previous` beside position is widened by the
+ * hysteresis margin, so a pointer on the band's edge doesn't toggle.
+ * @param items - The list's item rectangles.
+ * @param point - The pointer.
+ * @param previous - The current beside position in this list, or `null`.
+ * @returns The item and edge, or `null` when the pointer isn't in a band.
+ */
+export function besideAt(
+	items: readonly Rect[],
+	point: Point,
+	previous: BesideHit | null,
+): BesideHit | null {
+	for (const [index, item] of items.entries()) {
+		if (!containsPoint(item, point)) continue;
+		const band = Math.min(BESIDE_BAND_PX, item.width * BESIDE_SHARE);
+		const grow = (side: BesideHit["side"]) =>
+			previous?.index === index && previous.side === side
+				? Math.min(band + HYSTERESIS_PX, item.width / 2)
+				: band;
+		if (point.x <= item.left + grow("left")) return { index, side: "left" };
+		if (point.x >= right(item) - grow("right")) return { index, side: "right" };
+		return null;
+	}
+	return null;
+}
+
+/**
+ * Where to draw the indicator, relative to the list's top-left corner: a
+ * line in the gap between two items, a box over an empty list, or (with
+ * `side`) a line on the left or right edge of item `slot`.
  * @param list - The measured list.
- * @param slot - The slot, 0..items.length.
+ * @param slot - The slot, 0..items.length; with `side`, the item's index.
+ * @param side - For a "beside" target: which edge of the item.
  * @returns The indicator's position and size.
  */
-export function indicatorLine(list: ListGeometry, slot: number): IndicatorLine {
+export function indicatorLine(
+	list: ListGeometry,
+	slot: number,
+	side?: BesideHit["side"],
+): IndicatorLine {
 	const { rect, items, layout } = list;
 	const half = LIST_GAP_PX / 2;
+	const item = items[slot];
+	if (side && item) {
+		return {
+			kind: "beside",
+			x: (side === "left" ? item.left : right(item)) - rect.left,
+			y: item.top - rect.top,
+			width: 0,
+			height: item.height,
+		};
+	}
 	if (items.length === 0) {
 		return { kind: "box", x: 0, y: 0, width: rect.width, height: rect.height };
 	}

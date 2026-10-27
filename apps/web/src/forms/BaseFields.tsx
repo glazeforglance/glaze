@@ -3,6 +3,7 @@ import { DurationField } from "./fields/DurationField.tsx";
 import { TextField } from "./fields/TextField.tsx";
 import { ToggleField } from "./fields/ToggleField.tsx";
 import { useWidgetForm } from "./use-widget-form.ts";
+import { WidthField } from "./WidthField.tsx";
 
 /**
  * Settings every widget has (Glance's `widgetBase`): title, title-url, cache.
@@ -36,13 +37,15 @@ export function BaseSettingsFields() {
 }
 
 /**
- * Style options every widget has: hide-header, css-class.
+ * Style options every widget has: its width (through a split-column),
+ * hide-header and css-class.
  * @returns The fields.
  */
 export function BaseStyleFields() {
 	const { hiddenBaseFields: hidden } = useWidgetForm();
 	return (
 		<>
+			<WidthField />
 			{!hidden.has("hide-header") && (
 				<ToggleField
 					name="hide-header"

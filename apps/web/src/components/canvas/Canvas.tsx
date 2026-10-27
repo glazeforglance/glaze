@@ -1,10 +1,13 @@
+import { Fragment } from "react";
 import { listsOfPage } from "../../lib/drop-target.ts";
 import { selectCurrentPage, useEditor } from "../../store/editor-store.ts";
 import { CodeErrorBanner } from "./CodeErrorBanner.tsx";
 import { ColumnCard } from "./ColumnCard.tsx";
+import { ColumnEdge } from "./ColumnEdge.tsx";
 import { EditNotice } from "./EditNotice.tsx";
 import { HeadWidgets } from "./HeadWidgets.tsx";
 import { PageHeader } from "./PageHeader.tsx";
+import { UndoNoticeBar } from "./UndoNoticeBar.tsx";
 
 /**
  * The center area: the open page with its head widgets and columns.
@@ -46,6 +49,7 @@ export function Canvas() {
 			<PageHeader page={page} />
 			<CodeErrorBanner />
 			<EditNotice />
+			<UndoNoticeBar />
 			{page.include !== null ? (
 				<p className="text-sm text-muted">
 					This page comes from <code className="font-mono">{page.include}</code>{" "}
@@ -56,11 +60,21 @@ export function Canvas() {
 					{headList && (
 						<HeadWidgets widgets={page.headWidgets} list={headList} />
 					)}
-					<div className="flex items-start gap-4">
+					{/* No gap: the 16px between columns is the column edge handle. */}
+					<div className="flex items-start">
 						{page.columns.map((column, index) => {
-							const list = columnLists[index];
+							const list = columnLists.find((c) => c.id === column.id);
 							return list ? (
-								<ColumnCard key={column.id} column={column} list={list} />
+								<Fragment key={column.id}>
+									{index > 0 && (
+										<ColumnEdge
+											columnIds={page.columns.map((c) => c.id)}
+											sizes={page.columns.map((c) => c.size)}
+											edge={index - 1}
+										/>
+									)}
+									<ColumnCard column={column} list={list} />
+								</Fragment>
 							) : null;
 						})}
 					</div>

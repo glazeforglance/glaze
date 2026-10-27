@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+	besideAt,
 	containsPoint,
 	indicatorLine,
 	type ListGeometry,
@@ -216,5 +217,54 @@ describe("indicatorLine", () => {
 			x: 80,
 			y: 134,
 		});
+	});
+});
+
+describe("besideAt", () => {
+	const items = [rect(0, 40, 0, 200), rect(48, 40, 0, 100)];
+
+	it("finds the left or right band of the item under the pointer", () => {
+		expect(besideAt(items, { x: 10, y: 20 }, null)).toEqual({
+			index: 0,
+			side: "left",
+		});
+		expect(besideAt(items, { x: 195, y: 20 }, null)).toEqual({
+			index: 0,
+			side: "right",
+		});
+		expect(besideAt(items, { x: 100, y: 20 }, null)).toBeNull();
+		// Between items: no beside target.
+		expect(besideAt(items, { x: 10, y: 44 }, null)).toBeNull();
+	});
+
+	it("uses a band of at most 22% of a narrow item", () => {
+		// 22px band on a 100px item.
+		expect(besideAt(items, { x: 21, y: 60 }, null)?.side).toBe("left");
+		expect(besideAt(items, { x: 24, y: 60 }, null)).toBeNull();
+	});
+
+	it("widens the previous band by the hysteresis margin", () => {
+		const previous = { index: 1, side: "left" } as const;
+		expect(besideAt(items, { x: 30, y: 60 }, previous)?.side).toBe("left");
+		expect(besideAt(items, { x: 36, y: 60 }, previous)).toBeNull();
+	});
+});
+
+describe("indicatorLine beside", () => {
+	it("puts the line on the item's edge, as tall as the item", () => {
+		const list: ListGeometry = {
+			id: "c1",
+			layout: "stack",
+			rect: rect(100, 300, 20, 220),
+			items: [rect(100, 40, 30), rect(148, 60, 30)],
+		};
+		expect(indicatorLine(list, 1, "left")).toEqual({
+			kind: "beside",
+			x: 10,
+			y: 48,
+			width: 0,
+			height: 60,
+		});
+		expect(indicatorLine(list, 1, "right")).toMatchObject({ x: 210 });
 	});
 });

@@ -5,6 +5,8 @@ export interface WidgetActionsProps {
 	readonly widgetId: string;
 	/** Widget title, for the buttons' accessible names. */
 	readonly title: string;
+	/** `corner`: over the block's top-right corner; `row`: a row of its own (narrow nested blocks). */
+	readonly placement?: "corner" | "row";
 }
 
 const ACTION =
@@ -16,11 +18,21 @@ const ACTION =
  * @param props - The widget and its title.
  * @returns The two buttons.
  */
-export function WidgetActions({ widgetId, title }: WidgetActionsProps) {
+export function WidgetActions({
+	widgetId,
+	title,
+	placement = "corner",
+}: WidgetActionsProps) {
 	const duplicateWidget = useEditor((state) => state.duplicateWidget);
 	const removeWidget = useEditor((state) => state.removeWidget);
 	return (
-		<div className="absolute top-2 right-2 flex gap-1">
+		<div
+			className={
+				placement === "corner"
+					? "absolute top-2 right-2 flex gap-1"
+					: "flex justify-end gap-1 px-1.5 pb-1.5"
+			}
+		>
 			<button
 				type="button"
 				aria-label={`Duplicate ${title}`}

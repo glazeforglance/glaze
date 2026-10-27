@@ -1,6 +1,7 @@
 import {
 	addColumn,
 	addPage,
+	addToSplitColumn,
 	addWidget,
 	type ColumnNode,
 	type ColumnSize,
@@ -26,15 +27,27 @@ import {
 	renamePage,
 	replaceSource,
 	setColumnSize,
+	setSplitColumns,
 	setWidgetOption,
 	setWidgetValue,
+	type SplitSide,
+	type SplitSource,
+	unwrapSplitColumn,
 	type ValidationIssue,
 	type WidgetInput,
+	type WidgetNode,
+	wrapInSplitColumn,
 	type YamlPath,
 } from "@glaze/core";
 import { useStore } from "zustand";
 import { createStore, type StoreApi } from "zustand/vanilla";
-import { findWidget, findWidgetByPath, nextPageName } from "../lib/model.ts";
+import {
+	findWidget,
+	findWidgetByPath,
+	nextPageName,
+	parentWidget,
+} from "../lib/model.ts";
+import type { WidgetWidth } from "../lib/widget-width.ts";
 
 /** The three main views of the editor. */
 export type EditorView = "design" | "code" | "preview";
@@ -45,6 +58,21 @@ export interface ValidationResult {
 	readonly text: string;
 	readonly issues: readonly ValidationIssue[];
 }
+
+/**
+ * A change Glaze made on its own (e.g. dissolving a split-column that was
+ * left with one widget), with the document from just before it, so the user
+ * can undo it from the notice.
+ */
+export interface UndoNotice {
+	readonly message: string;
+	readonly restore: GlazeDocument;
+}
+
+/** Where a widget in a drag & drop edit comes from. */
+export type WidgetSource =
+	| { readonly kind: "new"; readonly widget: WidgetInput }
+	| { readonly kind: "move"; readonly widgetId: string };
 
 /** Everything the editor shows, in one place. */
 export interface EditorState {
@@ -63,6 +91,8 @@ export interface EditorState {
 	readonly renamingPageId: string | null;
 	/** Message about an edit that was refused (e.g. a layout rule); the document is unchanged. */
 	readonly notice: string | null;
+	/** Message about a change Glaze made by itself, with a way to undo it. */
+	readonly undoNotice: UndoNotice | null;
 	readonly view: EditorView;
 	/**
 	 * Text in the code view that isn't valid YAML. While set, `doc` is the last
@@ -108,6 +138,11 @@ export interface EditorActions {
 	/** Selects a widget on the current page, or clears the selection with `null`. */
 	selectWidget(widgetId: string | null): void;
 	dismissNotice(): void;
+	/** Explains why something the user tried isn't possible (same place as refused edits). */
+	showNotice(message: string): void;
+	/** Restores the document from before the change in `undoNotice`. */
+	undoFromNotice(): void;
+	dismissUndoNotice(): void;
 
 	/** Adds a page at the end, opens it and starts renaming it. */
 	addPage(): void;
@@ -143,6 +178,24 @@ export interface EditorActions {
 	duplicateWidget(widgetId: string): void;
 	/** Removes a widget of the current page. */
 	removeWidget(widgetId: string): void;
+	/**
+	 * Puts a widget beside another one: into a new split-column, or into the
+	 * target's split-column when the target is one. Selects the placed widget.
+	 * @param source - A new widget from the library, or a widget to move.
+	 * @param targetId - The widget to put it beside.
+	 * @param side - Left or right of the target.
+	 */
+	dropBeside(source: WidgetSource, targetId: string, side: SplitSide): void;
+	/** Sets a split-column's `max-columns`: the width of every widget in it. */
+	setSplitColumns(splitId: string, columns: number): boolean;
+	/**
+	 * Gives a widget a width: `full`, or 1/n through its split-column. A widget
+	 * that isn't in one yet gets a split-column of its own; `full` takes it out
+	 * of its split-column again.
+	 */
+	setWidgetWidth(widgetId: string, width: WidgetWidth): boolean;
+	/** Dissolves a split-column: its widgets take its place, one below the other. */
+	unwrapSplit(splitId: string): boolean;
 
 	/*
 	 * Option edits for the inspector. Each returns whether the edit was applied,
@@ -189,6 +242,7 @@ const INITIAL_STATE: EditorState = {
 	selectedWidgetId: null,
 	renamingPageId: null,
 	notice: null,
+	undoNotice: null,
 	view: "design",
 	codeText: null,
 	codeError: null,
@@ -246,9 +300,46 @@ export function createEditorStore(): StoreApi<EditorStore> {
 				pages,
 				dirty: true,
 				notice: null,
+				undoNotice: null,
 				...selectAfter(pages),
 			});
 			return true;
+		};
+
+		/**
+		 * After a widget left a split-column: a split-column with one widget
+		 * left is dissolved, with a notice that can undo that.
+		 */
+		const unwrapIfSingle = (splitId: string | null): void => {
+			if (splitId === null) return;
+			const split = widgetOnPage(splitId);
+			const before = get().doc;
+			if (!split || split.children.length !== 1 || !before) return;
+			// Ids follow the remaining widget, so a selection on it stays.
+			const applied = runEdit((doc) => unwrapSplitColumn(doc, split.path));
+			if (applied) {
+				set({
+					undoNotice: {
+						message:
+							"The split-column had one widget left, so it was turned back into a normal widget.",
+						restore: before,
+					},
+				});
+			}
+		};
+
+		/** The split-column a widget is in, if any (to unwrap it after a move out). */
+		const splitParentId = (widget: WidgetNode): string | null => {
+			const page = selectCurrentPage(get());
+			const parent = page ? parentWidget(page, widget) : null;
+			return parent?.type === "split-column" ? parent.id : null;
+		};
+
+		/** Turns a store-level source into a core one. */
+		const coreSource = (source: WidgetSource): SplitSource | null => {
+			if (source.kind === "new") return source;
+			const widget = widgetOnPage(source.widgetId);
+			return widget ? { kind: "move", path: widget.path } : null;
 		};
 
 		/** Runs an option edit on a widget of the current page. Option edits keep widget ids. */
@@ -388,6 +479,32 @@ export function createEditorStore(): StoreApi<EditorStore> {
 
 			dismissNotice: () => set({ notice: null }),
 
+			showNotice: (message) => set({ notice: message }),
+
+			undoFromNotice: () => {
+				const { undoNotice, selectedWidgetId } = get();
+				if (!undoNotice) return;
+				const pages = getModel(undoNotice.restore);
+				const page =
+					pages.find((candidate) => candidate.id === get().selectedPageId) ??
+					null;
+				set({
+					doc: undoNotice.restore,
+					pages,
+					dirty: true,
+					notice: null,
+					undoNotice: null,
+					selectedWidgetId:
+						page &&
+						selectedWidgetId !== null &&
+						findWidget(page, selectedWidgetId)
+							? selectedWidgetId
+							: null,
+				});
+			},
+
+			dismissUndoNotice: () => set({ undoNotice: null }),
+
 			addPage: () => {
 				const name = nextPageName(get().pages);
 				runEdit(
@@ -471,11 +588,13 @@ export function createEditorStore(): StoreApi<EditorStore> {
 			moveWidget: (widgetId, toListPath, index) => {
 				const widget = widgetOnPage(widgetId);
 				if (!widget) return;
+				const fromSplit = splitParentId(widget);
 				// Ids follow their widgets through a move, so the selection stays on it.
-				runEdit(
+				const applied = runEdit(
 					(doc) => moveWidget(doc, widget.path, toListPath, index),
 					() => ({ selectedWidgetId: widgetId }),
 				);
+				if (applied) unwrapIfSingle(fromSplit);
 			},
 
 			addWidget: (widget, toListPath, index) => {
@@ -509,6 +628,68 @@ export function createEditorStore(): StoreApi<EditorStore> {
 				);
 			},
 
+			dropBeside: (source, targetId, side) => {
+				const target = widgetOnPage(targetId);
+				const from = coreSource(source);
+				if (!target || !from) return;
+				const moved =
+					source.kind === "move" ? widgetOnPage(source.widgetId) : null;
+				const fromSplit = moved ? splitParentId(moved) : null;
+				const before = new Set(allWidgetIds(selectCurrentPage(get())));
+				const applied = runEdit(
+					(doc) =>
+						target.type === "split-column"
+							? addToSplitColumn(
+									doc,
+									target.path,
+									from,
+									side === "left" ? 0 : undefined,
+								)
+							: wrapInSplitColumn(doc, target.path, from, side),
+					(pages) => {
+						if (source.kind === "move") {
+							return { selectedWidgetId: source.widgetId };
+						}
+						// The new widget is the one id that wasn't there before (besides a new split-column).
+						const page = pages.find((p) => p.id === get().selectedPageId);
+						const added = allWidgets(page).find(
+							(widget) =>
+								!before.has(widget.id) && widget.type === source.widget.type,
+						);
+						return { selectedWidgetId: added?.id ?? null };
+					},
+				);
+				if (applied && fromSplit !== targetId) unwrapIfSingle(fromSplit);
+			},
+
+			unwrapSplit: (splitId) =>
+				editWidget(splitId, (doc, path) => unwrapSplitColumn(doc, path)),
+
+			setSplitColumns: (splitId, columns) =>
+				editWidget(splitId, (doc, path) => setSplitColumns(doc, path, columns)),
+
+			setWidgetWidth: (widgetId, width) => {
+				const widget = widgetOnPage(widgetId);
+				const page = selectCurrentPage(get());
+				if (!widget || !page) return false;
+				const parent = parentWidget(page, widget);
+				if (parent?.type === "split-column") {
+					if (width !== "full") {
+						return get().setSplitColumns(parent.id, width);
+					}
+					// Full width: out of the split-column, right after it.
+					const index = parent.path[parent.path.length - 1];
+					if (typeof index !== "number") return false;
+					get().moveWidget(widgetId, parent.path.slice(0, -1), index + 1);
+					return true;
+				}
+				if (width === "full") return true;
+				return runEdit(
+					(doc) => wrapInSplitColumn(doc, widget.path, null, "left", width),
+					() => ({ selectedWidgetId: widgetId }),
+				);
+			},
+
 			setWidgetOption: (widgetId, key, value) =>
 				editWidget(widgetId, (doc, path) =>
 					setWidgetOption(doc, path, key, value),
@@ -538,6 +719,21 @@ export function createEditorStore(): StoreApi<EditorStore> {
 				),
 		};
 	});
+}
+
+/** Every widget on a page, nested ones included. */
+function allWidgets(page: PageNode | null | undefined): WidgetNode[] {
+	if (!page) return [];
+	const walk = (widgets: readonly WidgetNode[]): WidgetNode[] =>
+		widgets.flatMap((widget) => [widget, ...walk(widget.children)]);
+	return [
+		...walk(page.headWidgets),
+		...page.columns.flatMap((column) => walk(column.widgets)),
+	];
+}
+
+function allWidgetIds(page: PageNode | null): string[] {
+	return allWidgets(page).map((widget) => widget.id);
 }
 
 /** Selects the widget at `path` on the open page of the new model. */

@@ -29,6 +29,25 @@ export function DropIndicator({ drag, indicator }: DropIndicatorProps) {
 			</div>
 		);
 	}
+	if (kind === "beside") {
+		// A thick bar on the target's edge, with the label on the inside.
+		const left = indicator.side === "left";
+		return (
+			<div
+				aria-hidden="true"
+				style={{ left: x - 2, top: y, width: 4, height }}
+				className="pointer-events-none absolute z-10 rounded-full bg-accent shadow-[0_0_0_4px_rgb(245_181_74/0.2)]"
+			>
+				<span
+					className={`absolute top-1.5 rounded-[6px] bg-accent px-1.5 py-0.5 font-mono text-[10px] font-semibold whitespace-nowrap text-accent-ink ${
+						left ? "left-2" : "right-2"
+					}`}
+				>
+					side by side
+				</span>
+			</div>
+		);
+	}
 	const horizontal = kind === "horizontal";
 	return (
 		<div

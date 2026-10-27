@@ -52,6 +52,20 @@ export function findWidgetByPath(
 }
 
 /**
+ * Finds the group or split-column a widget is in.
+ * @param page - The page the widget is on.
+ * @param widget - The widget.
+ * @returns The container widget, or `null` for a widget in a column or head widgets.
+ */
+export function parentWidget(
+	page: PageNode,
+	widget: WidgetNode,
+): WidgetNode | null {
+	// A child sits at [...parent, "widgets", i]; a column's widget at [..., "columns", c, "widgets", i].
+	return findWidgetByPath(page, widget.path.slice(0, -2));
+}
+
+/**
  * Picks a short description for a widget block, e.g. `group · 3 tabs`.
  * @param widget - The widget.
  * @returns The text shown under the widget's title.

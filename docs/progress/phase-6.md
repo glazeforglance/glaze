@@ -38,17 +38,21 @@ changes and 0 flip-backs.
 - [x] Widths remembered per viewer in `localStorage` (`glaze:panel:<id>`, try/catch, default without storage)
 - [x] Collapse buttons for both panels (collapsed: a thin strip with an expand button)
 
-## 6c — Widget width (`split-column`)
+## 6c — Widget width (`split-column`) ✅
 
-- [ ] Core: `wrapInSplitColumn`, `addToSplitColumn`, `unwrapSplitColumn`, `setSplitColumns` (+ round-trip tests)
-- [ ] Layout validation covers the new rules (no split-column in group, head widgets can't split)
-- [ ] Drop beside a widget (left/right zones) → new split-column / add to existing one
-- [ ] Resize handle on split-column children: ½ / ⅓ / ¼ with snap label and shared-width notice
-- [ ] Column edge drag toggles small ↔ full, with a reason when not allowed
-- [ ] Auto-unwrap a split-column left with one child, with an undoable notice
-- [ ] Canvas: split-column children side by side (approximate), groups as tabs
-- [ ] Rules: none inside a group, no resize in a group, head widgets can't split
-- [ ] Style tab: Full / ½ / ⅓ / ¼ buttons
+- [x] Core: `wrapInSplitColumn` (also wraps a widget alone), `addToSplitColumn`, `unwrapSplitColumn`, `setSplitColumns` (+ round-trip tests: wrap → unwrap is byte for byte)
+- [x] Layout validation covers the new rules: `nested-group` (Glance) and `split-in-head` (a Glaze editing rule, refused by every edit but not a publish error, because Glance accepts it)
+- [x] Drop beside a widget (left/right zones) → new split-column / add to existing one
+- [x] Resize handle on split-column children: ½ / ⅓ / ¼ with snap label and shared-width notice
+- [x] Column edge drag toggles small ↔ full, with a reason when not allowed
+- [x] Auto-unwrap a split-column left with one child, with an undoable notice (restores the document from just before)
+- [x] Canvas: split-column children side by side (row by row, labelled approximate), groups as tabs
+- [x] Rules: none inside a group, no resize in a group, head widgets can't split
+- [x] Style tab: Full / ½ / ⅓ / ¼ buttons (for a split-column itself: its columns + "below each other again")
+
+Notes: there is no general undo yet, so the auto-unwrap notice keeps the document from before the
+unwrap. Keyboard drags stay in head widgets and columns; widths have keyboard controls in the
+Style tab and on the resize handle (a slider).
 
 ## 6d — Generated widget schemas
 

@@ -22,6 +22,7 @@ import {
 } from "../lib/dnd-geometry.ts";
 import { measureLists } from "../lib/dnd-measure.ts";
 import {
+	type DragSubject,
 	type DropTarget,
 	isArrowKey,
 	isNoOp,
@@ -36,7 +37,9 @@ import { useEditor } from "../store/editor-store.ts";
 const IDLE: DragState = { active: null, target: null, indicator: null };
 
 function sameTarget(a: DropTarget | null, b: DropTarget | null): boolean {
-	return a?.listId === b?.listId && a?.index === b?.index;
+	return (
+		a?.listId === b?.listId && a?.index === b?.index && a?.side === b?.side
+	);
 }
 
 function isDragData(value: unknown): value is DragData {
@@ -52,6 +55,13 @@ function sourceOf(active: ActiveDrag | null): DropTarget | null {
 	return active?.kind === "widget" ? active.source : null;
 }
 
+/** What the drop rules need to know about the drag. */
+function subjectOf(active: ActiveDrag): DragSubject {
+	return active.kind === "widget"
+		? { type: active.widgetType, widgetId: active.widgetId }
+		: { type: active.type, widgetId: null };
+}
+
 /** Measures the lists and works out where to draw the indicator for `target`. */
 function indicatorFor(target: DropTarget | null): DragIndicator | null {
 	if (!target) return null;
@@ -59,7 +69,11 @@ function indicatorFor(target: DropTarget | null): DragIndicator | null {
 		(candidate) => candidate.id === target.listId,
 	);
 	return list
-		? { listId: list.id, ...indicatorLine(list, target.index) }
+		? {
+				listId: list.id,
+				...indicatorLine(list, target.index, target.side),
+				...(target.side ? { side: target.side } : {}),
+			}
 		: null;
 }
 
@@ -98,6 +112,7 @@ export function useEditorDnd(lists: readonly WidgetList[]): {
 	const pointer = useRef<Point | null>(null);
 	const moveWidget = useEditor((store) => store.moveWidget);
 	const addWidget = useEditor((store) => store.addWidget);
+	const dropBeside = useEditor((store) => store.dropBeside);
 
 	useEffect(() => {
 		listsRef.current = lists;
@@ -117,6 +132,7 @@ export function useEditorDnd(lists: readonly WidgetList[]): {
 			measureLists(),
 			pointer.current,
 			current.target,
+			subjectOf(current.active),
 		);
 		if (sameTarget(target, current.target)) return;
 		update({ ...current, target, indicator: indicatorFor(target) });
@@ -148,6 +164,9 @@ export function useEditorDnd(lists: readonly WidgetList[]): {
 			? listsRef.current.find((candidate) => candidate.id === target.listId)
 			: undefined;
 		if (!target || !list) return "no drop area";
+		if (target.side) {
+			return `${list.label}, side by side with the widget at position ${target.index + 1} (${target.side})`;
+		}
 		return `${list.label}, position ${toCoreIndex(sourceOf(active), target) + 1}`;
 	};
 
@@ -192,8 +211,14 @@ export function useEditorDnd(lists: readonly WidgetList[]): {
 		}
 		const source = locateWidget(lists, data.widgetId);
 		if (!source) return;
-		// A keyboard drag starts "on" the widget itself, so the first arrow press moves from there.
-		const target = viaKeyboard.current ? source : null;
+		// A keyboard drag starts "on" the widget itself, so the first arrow press
+		// moves from there; inside a split-column or group it starts from scratch.
+		const inPlace = lists.find((list) => list.id === source.listId);
+		const target =
+			viaKeyboard.current &&
+			(inPlace?.kind === "column" || inPlace?.kind === "head")
+				? source
+				: null;
 		update({
 			active: { ...data, source },
 			target,
@@ -209,7 +234,21 @@ export function useEditorDnd(lists: readonly WidgetList[]): {
 			: undefined;
 		// The edit runs before the drag state is cleared; dnd-kit batches both
 		// into one render, so the widget never shows in its old place.
-		if (active && target && list) {
+		if (active && target && list && target.side) {
+			const targetId = list.widgetIds[target.index];
+			if (targetId !== undefined) {
+				dropBeside(
+					active.kind === "library"
+						? {
+								kind: "new",
+								widget: { type: active.type, title: active.label },
+							}
+						: { kind: "move", widgetId: active.widgetId },
+					targetId,
+					target.side,
+				);
+			}
+		} else if (active && target && list) {
 			if (active.kind === "library") {
 				addWidget(
 					{ type: active.type, title: active.label },

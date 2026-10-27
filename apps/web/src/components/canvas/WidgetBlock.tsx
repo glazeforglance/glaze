@@ -80,7 +80,7 @@ export function WidgetBlock({
 						nested
 							? "min-h-11 py-1.5 pl-2.5"
 							: `min-h-14 py-2 ${grip ? "pl-1" : "pl-3"}`
-					} ${selected ? "pr-20" : "pr-3"}`}
+					} ${selected && !nested ? "pr-20" : "pr-3"}`}
 				>
 					<Badge text={abbr} tone={tone} size={nested ? "sm" : "md"} />
 					<span className="min-w-0">
@@ -94,8 +94,17 @@ export function WidgetBlock({
 						</span>
 					</span>
 				</button>
-				{selected && <WidgetActions widgetId={widget.id} title={title} />}
-				{widget.children.length > 0 && <NestedWidgets parent={widget} />}
+				{selected && (
+					<WidgetActions
+						widgetId={widget.id}
+						title={title}
+						placement={nested ? "row" : "corner"}
+					/>
+				)}
+				{/* Also when empty, so widgets can be dropped into it. */}
+				{(widget.type === "split-column" || widget.type === "group") &&
+					widget.include === null &&
+					!widget.isAlias && <NestedWidgets parent={widget} />}
 			</div>
 		</div>
 	);
