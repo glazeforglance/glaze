@@ -24,6 +24,8 @@ jobs:
       - run: pnpm --filter web lint
       - run: pnpm test
       - run: pnpm build
+      # Fails when a logo file wasn't regenerated after docs/brand/glaze-logo.svg changed.
+      - run: pnpm brand --check
 
   docker:
     name: Docker image (amd64) + smoke test

@@ -53,6 +53,18 @@ CI runs the same checks, builds the Docker image and smoke-tests it.
 - No side effects (file system, network) in core; those belong in `apps/server`.
 - When in doubt about a Glance option, check the Glance v0.8.7 source (`internal/glance/*.go`, `yaml:"…"` struct tags).
 
+## Brand / logo
+
+[`docs/brand/glaze-logo.svg`](docs/brand/glaze-logo.svg) is the only source for the logo. To change it:
+
+1. Edit `docs/brand/glaze-logo.svg`.
+2. Run `pnpm brand`. It regenerates the favicon, the Apple touch icon, the 512 px PNG and the
+   social preview (fonts come from `docs/brand/fonts/`, Space Grotesk under the OFL).
+3. Commit the source together with the regenerated files.
+
+Don't edit the generated files by hand: CI runs `pnpm brand --check` and fails when they don't
+match the source.
+
 ## Never commit real keys
 
 Fixtures and tests use obviously fake values (`xxx`, `test-secret-…`). Keep your own config with

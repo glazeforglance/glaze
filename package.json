@@ -7,6 +7,7 @@
 	"license": "MIT",
 	"author": "Sean Klinge",
 	"scripts": {
+		"brand": "node scripts/brand.ts",
 		"dev": "pnpm --parallel --filter \"./apps/*\" dev",
 		"build": "pnpm -r --if-present build",
 		"test": "pnpm -r --if-present test",
@@ -21,6 +22,7 @@
 	},
 	"packageManager": "pnpm@12.15.0",
 	"devDependencies": {
-		"@biomejs/biome": "^2.6.3"
+		"@biomejs/biome": "^2.6.3",
+		"@resvg/resvg-js": "^2.6.2"
 	}
 }
