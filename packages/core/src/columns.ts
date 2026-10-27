@@ -80,3 +80,27 @@ export function setColumnSize(
 	if (!source.ok) return source;
 	return finishEdit(doc, source.value, null);
 }
+
+/**
+ * Explains why changing one column's size would break Glance's rule of
+ * 1 or 2 `full` columns per page, before trying the edit.
+ * @param sizes - The page's column sizes, in order.
+ * @param index - The column to change.
+ * @param size - Its new size.
+ * @returns A sentence for the user, or `null` when the change is allowed.
+ */
+export function columnSizeProblem(
+	sizes: readonly (string | null)[],
+	index: number,
+	size: ColumnSize,
+): string | null {
+	const next = sizes.map((current, i) => (i === index ? size : current));
+	const full = next.filter((current) => current === "full").length;
+	if (full === 0) {
+		return "A page needs at least one full column, so this one has to stay full.";
+	}
+	if (full > 2) {
+		return "A page can have at most two full columns; make another one small first.";
+	}
+	return null;
+}

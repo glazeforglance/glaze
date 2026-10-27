@@ -13,6 +13,20 @@ export type PathChange =
 			/** Target list, as a path in the document after the item was removed. */
 			readonly toSeq: YamlPath;
 			readonly toIndex: number;
+	  }
+	/** Takes an item out and keeps its ids under `as`, for a later `attach`. */
+	| {
+			readonly kind: "detach";
+			readonly seq: YamlPath;
+			readonly index: number;
+			readonly as: string;
+	  }
+	/** Inserts an item that was detached earlier (under `as`), with its ids. */
+	| {
+			readonly kind: "attach";
+			readonly seq: YamlPath;
+			readonly index: number;
+			readonly as: string;
 	  };
 
 /** Ids keyed by `pathKey(path)`, plus the counter for new ones. */
@@ -62,20 +76,55 @@ function removeSubtree(
 	return { kept, removed };
 }
 
+/** Ids of detached items, keyed by the `as` name, with paths relative to the item. */
+type Detached = Map<string, [YamlPath, string][]>;
+
 /**
  * Rewrites id paths so ids follow their nodes through a structural change.
  * @param ids - Ids keyed by path, before the change.
- * @param change - What happened to the sequence.
+ * @param change - What happened to the sequence, or several changes in order
+ *   (each one's paths are in the document after the previous ones). Items can
+ *   be detached and attached again elsewhere, e.g. into a new container.
  * @returns Ids keyed by path, after the change.
  */
 export function applyPathChange(
 	ids: ReadonlyMap<string, string>,
-	change: PathChange,
+	change: PathChange | readonly PathChange[],
 ): Map<string, string> {
 	let entries: [YamlPath, string][] = [...ids].map(([key, id]) => [
 		JSON.parse(key) as YamlPath,
 		id,
 	]);
+	const detached: Detached = new Map();
+	const changes: readonly PathChange[] = "kind" in change ? [change] : change;
+	for (const step of changes) entries = applyOne(entries, step, detached);
+	return new Map(entries.map(([path, id]) => [pathKey(path), id]));
+}
+
+function applyOne(
+	input: [YamlPath, string][],
+	change: PathChange,
+	detached: Detached,
+): [YamlPath, string][] {
+	let entries = input;
+	if (change.kind === "detach") {
+		const item = [...change.seq, change.index];
+		const { kept, removed } = removeSubtree(entries, item);
+		detached.set(
+			change.as,
+			removed.map(([path, id]) => [path.slice(item.length), id]),
+		);
+		return shift(kept, change.seq, change.index + 1, -1);
+	}
+	if (change.kind === "attach") {
+		entries = shift(entries, change.seq, change.index, 1);
+		const item = [...change.seq, change.index];
+		for (const [relative, id] of detached.get(change.as) ?? []) {
+			entries.push([[...item, ...relative], id]);
+		}
+		detached.delete(change.as);
+		return entries;
+	}
 	if (change.kind === "insert") {
 		entries = shift(entries, change.seq, change.index, 1);
 	} else if (change.kind === "remove") {
@@ -91,7 +140,28 @@ export function applyPathChange(
 			entries.push([[...toItem, ...path.slice(fromItem.length)], id]);
 		}
 	}
-	return new Map(entries.map(([path, id]) => [pathKey(path), id]));
+	return entries;
+}
+
+/**
+ * Where a path ends up after list item `index` of `seq` is taken out: later
+ * siblings (and everything inside them) move up by one.
+ * @param path - Any path in the document before the removal.
+ * @param seq - The list that loses an item.
+ * @param index - The removed item.
+ * @returns The path after the removal, or `null` when it was inside the removed item.
+ */
+export function pathAfterRemoval(
+	path: YamlPath,
+	seq: YamlPath,
+	index: number,
+): YamlPath | null {
+	if (startsWith(path, [...seq, index])) return null;
+	const at = path[seq.length];
+	if (!startsWith(path, seq) || typeof at !== "number" || at < index) {
+		return path;
+	}
+	return [...seq, at - 1, ...path.slice(seq.length + 1)];
 }
 
 /**

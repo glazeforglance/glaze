@@ -43,7 +43,15 @@ export function editError(
 
 // --- line helpers ---------------------------------------------------------
 
-function detectEol(src: string): string {
+/**
+ * Detects the line ending a source uses.
+ * @param src - YAML source.
+ * @returns `
+
+` when the source has any, else `
+`.
+ */
+export function detectEol(src: string): string {
 	return src.includes("\r\n") ? "\r\n" : "\n";
 }
 
@@ -106,8 +114,14 @@ function dedent(text: string, col: number): string {
 		.join("");
 }
 
-/** Adds `col` spaces to every non-blank line (optionally not the first one). */
-function indent(text: string, col: number, skipFirst = false): string {
+/**
+ * Adds `col` spaces to every non-blank line (optionally not the first one).
+ * @param text - Lines of text.
+ * @param col - Number of spaces to add.
+ * @param skipFirst - Leaves the first line alone.
+ * @returns The indented text.
+ */
+export function indent(text: string, col: number, skipFirst = false): string {
 	const pad = " ".repeat(col);
 	return splitLines(text)
 		.map((line, i) =>
@@ -612,6 +626,27 @@ export function setSeqItem(
 		text = text.replace(/\r?\n$/, "");
 	}
 	return ok(splice(src, span.dash, span.contentEnd, text));
+}
+
+/**
+ * Tells whether a block list separates its items with blank lines (judged
+ * from its first two items).
+ * @param src - Current source.
+ * @param yaml - `src`, parsed.
+ * @param seqPath - Path of the list.
+ * @returns True for a list like `- a
+
+- b`; false otherwise or when unknown.
+ */
+export function isSeparatedList(
+	src: string,
+	yaml: ParsedYaml,
+	seqPath: YamlPath,
+): boolean {
+	const node = getNodeAt(yaml, seqPath);
+	if (!isSeq(node) || node.items.length < 2) return false;
+	const layout = seqLayout(src, node);
+	return layout.ok && layout.value.separated;
 }
 
 /**

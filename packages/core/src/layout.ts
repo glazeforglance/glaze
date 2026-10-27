@@ -103,6 +103,41 @@ function checkPage(
 	checkWidgetList(yaml, page, "head-widgets", path, false, issues);
 }
 
+/**
+ * Glaze's own editing rules on top of Glance's: rules for things Glance
+ * accepts, but that the editor doesn't create, so they are never reported as
+ * errors on publish. Edits that add one of these are refused (see `finishEdit`).
+ * - No `split-column` in `head-widgets`: head widgets stay one row.
+ * @param yaml - The parsed document.
+ * @returns Every broken editing rule.
+ */
+export function glazeLayoutIssues(yaml: ParsedYaml): LayoutIssue[] {
+	const issues: LayoutIssue[] = [];
+	const pages = resolveNode(yaml, getNodeAt(yaml, ["pages"]));
+	if (!isSeq(pages)) return issues;
+	pages.items.forEach((item, pageIndex) => {
+		const page = resolveNode(yaml, item);
+		if (!isMap(page)) return;
+		const head = resolveNode(yaml, getMapValue(yaml, page, "head-widgets"));
+		if (!isSeq(head)) return;
+		head.items.forEach((widgetItem, index) => {
+			const widget = resolveNode(yaml, widgetItem);
+			if (
+				isMap(widget) &&
+				readString(yaml, widget, "type") === "split-column"
+			) {
+				issues.push({
+					code: "split-in-head",
+					message:
+						"Head widgets can't be split; put the split-column in a column instead",
+					path: ["pages", pageIndex, "head-widgets", index],
+				});
+			}
+		});
+	});
+	return issues;
+}
+
 function checkWidgetList(
 	yaml: ParsedYaml,
 	parent: YAMLMap,

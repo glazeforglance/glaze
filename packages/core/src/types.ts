@@ -18,6 +18,11 @@ export interface WidgetNode {
 	readonly include: string | null;
 	/** Child widgets of a `group` or `split-column`. */
 	readonly children: readonly WidgetNode[];
+	/**
+	 * For a `split-column`: the number of columns Glance draws (`max-columns`,
+	 * at least 2, as Glance enforces). `null` for other widgets.
+	 */
+	readonly maxColumns: number | null;
 }
 
 /** A column of a page. */
@@ -48,7 +53,9 @@ export type LayoutIssueCode =
 	| "too-many-columns"
 	| "invalid-column-size"
 	| "full-column-count"
-	| "nested-group";
+	| "nested-group"
+	/** A `split-column` in `head-widgets` (Glaze keeps head widgets one row). */
+	| "split-in-head";
 
 /** A broken Glance layout rule. */
 export interface LayoutIssue {

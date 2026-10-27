@@ -135,7 +135,15 @@ function buildWidget(
 			type !== null && CONTAINER_TYPES.has(type)
 				? buildWidgetList(yaml, own, "widgets", path, idOf)
 				: [],
+		maxColumns:
+			type === "split-column" && map ? readMaxColumns(yaml, map) : null,
 	};
+}
+
+/** `max-columns` as Glance uses it: anything below 2 (or missing) becomes 2. */
+function readMaxColumns(yaml: ParsedYaml, map: YAMLMap): number {
+	const value = Number(readString(yaml, map, "max-columns"));
+	return Number.isInteger(value) && value >= 2 ? value : 2;
 }
 
 function listItems(map: YAMLMap | null, key: string): unknown[] {

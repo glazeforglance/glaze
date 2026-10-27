@@ -5,7 +5,7 @@ import {
 	type PathChange,
 	startsWith,
 } from "./ids.ts";
-import { validateYamlLayout } from "./layout.ts";
+import { glazeLayoutIssues, validateYamlLayout } from "./layout.ts";
 import { pathKey } from "./model.ts";
 import { err, ok, type Result } from "./result.ts";
 import type { EditError, LayoutIssue, YamlPath } from "./types.ts";
@@ -22,16 +22,17 @@ function countByCode(issues: readonly LayoutIssue[]): Map<string, number> {
 /**
  * Turns edited source into the next `GlazeDocument`, or refuses the edit.
  * The edit is refused when the text no longer parses, or when it adds layout
- * issues: a document that already had issues can still be edited elsewhere.
+ * issues (Glance's rules or Glaze's editing rules): a document that already
+ * had issues can still be edited elsewhere.
  * @param previous - Document before the edit.
  * @param source - Edited source text.
- * @param change - Structural change, so ids can follow their nodes.
+ * @param change - Structural change(s), so ids can follow their nodes.
  * @returns The new document, or why the edit was refused.
  */
 export function finishEdit(
 	previous: GlazeDocument,
 	source: string,
-	change: PathChange | null,
+	change: PathChange | readonly PathChange[] | null,
 ): Result<GlazeDocument, EditError> {
 	const parsed = parseChecked(source);
 	if (!parsed.ok) {
@@ -42,8 +43,14 @@ export function finishEdit(
 			),
 		);
 	}
-	const before = countByCode(validateYamlLayout(previous.yaml));
-	const afterIssues = validateYamlLayout(parsed.value);
+	const before = countByCode([
+		...validateYamlLayout(previous.yaml),
+		...glazeLayoutIssues(previous.yaml),
+	]);
+	const afterIssues = [
+		...validateYamlLayout(parsed.value),
+		...glazeLayoutIssues(parsed.value),
+	];
 	const after = countByCode(afterIssues);
 	const added = afterIssues.filter(
 		(issue) => (after.get(issue.code) ?? 0) > (before.get(issue.code) ?? 0),

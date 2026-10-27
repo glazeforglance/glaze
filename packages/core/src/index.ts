@@ -1,6 +1,11 @@
 export const GLAZE_VERSION = "0.0.0";
 
-export { addColumn, removeColumn, setColumnSize } from "./columns.ts";
+export {
+	addColumn,
+	columnSizeProblem,
+	removeColumn,
+	setColumnSize,
+} from "./columns.ts";
 export {
 	type GlazeDocument,
 	parseConfig,
@@ -13,7 +18,7 @@ export {
 	WIDGET_BASE_KEYS,
 	WIDGET_TYPE_KEYS,
 } from "./glance-keys.ts";
-export { validateLayout } from "./layout.ts";
+export { glazeLayoutIssues, validateLayout } from "./layout.ts";
 export { getModel } from "./model.ts";
 export {
 	type EnvMatch,
@@ -36,6 +41,15 @@ export {
 } from "./ranges.ts";
 export { renameKey } from "./rename-key.ts";
 export { getNodeSource } from "./source.ts";
+export {
+	addToSplitColumn,
+	MIN_SPLIT_COLUMNS,
+	setSplitColumns,
+	type SplitSide,
+	type SplitSource,
+	unwrapSplitColumn,
+	wrapInSplitColumn,
+} from "./split-column.ts";
 export { err, ok, type Result } from "./result.ts";
 export type { NodeKind } from "./model.ts";
 export type {
