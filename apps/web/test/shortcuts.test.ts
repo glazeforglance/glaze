@@ -38,6 +38,8 @@ describe("handleShortcut", () => {
 		expect(editorStore.getState().view).toBe("code");
 		handleShortcut(key({ key: "3", metaKey: true }));
 		expect(editorStore.getState().view).toBe("preview");
+		handleShortcut(key({ key: "4", ctrlKey: true }));
+		expect(editorStore.getState().view).toBe("settings");
 		handleShortcut(key({ key: "1", ctrlKey: true }));
 		expect(editorStore.getState().view).toBe("design");
 	});
@@ -52,7 +54,7 @@ describe("handleShortcut", () => {
 
 	it("ignores other keys, extra modifiers and keys while a dialog is open", () => {
 		expect(handleShortcut(key({ key: "2" }))).toBe(false);
-		expect(handleShortcut(key({ key: "4", ctrlKey: true }))).toBe(false);
+		expect(handleShortcut(key({ key: "5", ctrlKey: true }))).toBe(false);
 		expect(
 			handleShortcut(key({ key: "s", ctrlKey: true, shiftKey: true })),
 		).toBe(false);
