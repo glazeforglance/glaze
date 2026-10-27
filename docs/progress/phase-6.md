@@ -83,14 +83,14 @@ error), and a missing iframe `height` gives 50 px.
 - [x] Head widgets fully editable on the canvas: add ("+ Widget" menu, no split-column), move, remove, select, forms like any widget
 - [x] Core: value edits for any map (`setValueAt` & co. for a widget, a page or the document root), so page settings and the Settings view share the widget forms' minimal edits; forms read and write through a `FormTarget`
 
-## 6g — Global Settings view
+## 6g — Global Settings view ✅
 
-- [ ] Settings view next to Design / Code / Preview
-- [ ] Server section with a warning when Glaze's access to Glance changes
-- [ ] Auth: users, bcrypt password hashes, secret-key generator, warnings
-- [ ] Document head editor with a script warning
-- [ ] Branding
-- [ ] Theme (basic) with HSL pickers and presets
+- [x] Settings view next to Design / Code / Preview (Ctrl/Cmd+4), one form on the document root
+- [x] Server section, with hints when port or base URL no longer match `GLANCE_URL`
+- [x] Login: users (add / remove / rename), passwords stored as bcrypt `password-hash` via `POST /api/glance/password-hash` (`GLANCE_BIN password:hash`, else bcryptjs at Glance's cost 10), secret key like `glance secret:make` (64 random bytes, base64), generated automatically for the first user; hashes only shown shortened; a confirm explains that a new key logs everyone out
+- [x] Document head editor with a script warning
+- [x] Branding (every field of the `branding` struct)
+- [x] Theme (basic): HSL pickers with hex, light, multipliers, custom CSS file, disable picker, presets (add / remove / rename / edit)
 
 ## 6h — Verification
 

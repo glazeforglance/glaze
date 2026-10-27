@@ -210,3 +210,26 @@ describe("GET /api/settings", () => {
 		});
 	});
 });
+
+describe("POST /api/glance/password-hash", () => {
+	const post = async (body: unknown) =>
+		(await testApp({ configPath })).request("/api/glance/password-hash", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify(body),
+		});
+
+	it("returns a bcrypt hash and is never cached", async () => {
+		const res = await post({ password: "correct horse" });
+		expect(res.status).toBe(200);
+		expect(res.headers.get("Cache-Control")).toBe("no-store");
+		const body = (await res.json()) as { hash: string; via: string };
+		expect(body.hash).toMatch(/^\$2[ab]\$10\$/);
+		expect(body.via).toBe("bcryptjs");
+	});
+
+	it("refuses a password Glance refuses, and a bad body", async () => {
+		expect((await post({ password: "short" })).status).toBe(400);
+		expect((await post({ secret: "nope" })).status).toBe(400);
+	});
+});

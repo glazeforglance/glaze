@@ -4,6 +4,7 @@ import { CodeWorkspace } from "./components/code/CodeWorkspace.tsx";
 import { EditorDndContext } from "./components/dnd/EditorDndContext.tsx";
 import { Inspector } from "./components/inspector/Inspector.tsx";
 import { PreviewPane } from "./components/preview/PreviewPane.tsx";
+import { SettingsView } from "./components/settings/SettingsView.tsx";
 import { WidgetLibrary } from "./components/library/WidgetLibrary.tsx";
 import { TopBar } from "./components/top-bar/TopBar.tsx";
 import { Button } from "./components/ui/Button.tsx";
@@ -53,6 +54,7 @@ function Editor() {
 			<div className="flex min-h-0 flex-1">
 				{codeMounted && <CodeWorkspace active={view === "code"} />}
 				{view === "preview" && <PreviewPane />}
+				{view === "settings" && <SettingsView />}
 				{view === "design" && (
 					<>
 						<EditorDndContext>

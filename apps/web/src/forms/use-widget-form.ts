@@ -34,6 +34,8 @@ export interface FormTarget {
 	remove(path: YamlPath): boolean;
 	insert(listPath: YamlPath, value: unknown, index?: number): boolean;
 	move(listPath: YamlPath, fromIndex: number, toIndex: number): boolean;
+	/** Renames a key of the map at `mapPath`, keeping its value and comments. */
+	rename(mapPath: YamlPath, from: string, to: string): boolean;
 }
 
 /**
@@ -69,6 +71,13 @@ export function widgetTarget(widgetId: string): FormTarget {
 			store().insertWidgetListItem(widgetId, listPath, value, index),
 		move: (listPath, fromIndex, toIndex) =>
 			store().moveWidgetListItem(widgetId, listPath, fromIndex, toIndex),
+		rename: (mapPath, from, to) => {
+			const page = selectCurrentPage(store());
+			const widget = page ? findWidget(page, widgetId) : null;
+			return widget
+				? store().renameKey([...widget.path, ...mapPath], from, to)
+				: false;
+		},
 	};
 }
 
@@ -102,6 +111,8 @@ export function mapTarget(basePath: () => YamlPath | null): FormTarget {
 			withBase((base) =>
 				store().moveListItemAt(base, listPath, fromIndex, toIndex),
 			),
+		rename: (mapPath, from, to) =>
+			withBase((base) => store().renameKey([...base, ...mapPath], from, to)),
 	};
 }
 
@@ -319,6 +330,7 @@ export interface WidgetMap {
 	readonly readOnly: boolean;
 	add(key: string, value: unknown): boolean;
 	remove(key: string): boolean;
+	rename(from: string, to: string): boolean;
 	override(): void;
 }
 
@@ -358,6 +370,7 @@ export function useWidgetMap(name: string): WidgetMap {
 		// Removing the last entry removes the map's key.
 		remove: (entryKey) =>
 			target.remove(entries.length === 1 ? path : [...path, entryKey]),
+		rename: (from, to) => target.rename(path, from, to),
 		override: () => {
 			if (!option || typeof key !== "string") return;
 			target.set([key], option.value);

@@ -7,6 +7,7 @@ import {
 	writeAsset,
 } from "./assets.ts";
 import { hashText, readConfig, writeFileSafely } from "./config-store.ts";
+import { hashGlancePassword } from "./glance-password.ts";
 import type { GlanceCommand } from "./glance-validate.ts";
 import type { RateLimiter } from "./rate-limit.ts";
 import { csrfProtection, securityHeaders } from "./security.ts";
@@ -81,6 +82,8 @@ function textOf(body: unknown): string | null {
  * - `GET /api/files/:name` → `{ name, text, version }`
  * - `PUT /api/files/:name` with `{ text, baseVersion }` → `{ version }`; 409 on conflict
  * - `GET /api/settings` → `{ glanceUrl, glanceValidation }`
+ * - `POST /api/glance/password-hash` with `{ password }` → `{ hash, via }`:
+ *   a bcrypt hash for Glance's `auth.users` (400 for a password Glance refuses)
  * - with `webDist`: the web app on every other GET (see `installWebApp`)
  * @param options - Where the config file lives and how to reach Glance.
  * @returns The Hono app.
@@ -306,6 +309,27 @@ export function createApp(options: AppOptions): Hono {
 			return c.json({ ...written.error, error: code, message }, status);
 		}
 		return c.json(written.value);
+	});
+
+	app.post("/api/glance/password-hash", async (c) => {
+		const body: unknown = await c.req.json().catch(() => null);
+		const password = field(body, "password");
+		if (typeof password !== "string") {
+			return c.json(
+				{ error: "bad-request", message: "Expected JSON { password: string }" },
+				400,
+			);
+		}
+		const hashed = await hashGlancePassword(password, glance);
+		if (!hashed.ok) {
+			return c.json(
+				{ error: hashed.error.code, message: hashed.error.message },
+				400,
+			);
+		}
+		// Never cached: the answer relates to a password.
+		c.header("Cache-Control", "no-store");
+		return c.json(hashed.value);
 	});
 
 	app.get("/api/settings", (c) =>

@@ -2,7 +2,7 @@ import { VIEWS } from "../../lib/views.ts";
 import { useEditor } from "../../store/editor-store.ts";
 
 /**
- * Switch between Design, Code and Preview (also Ctrl/Cmd + 1, 2, 3).
+ * Switch between Design, Code, Preview and Settings (also Ctrl/Cmd + 1–4).
  * @returns The segmented control.
  */
 export function ViewSwitch() {

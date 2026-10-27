@@ -390,6 +390,25 @@ export async function fetchSettings(): Promise<Result<Settings, ApiError>> {
 	});
 }
 
+/**
+ * Hashes a password for Glance's `auth.users` on the server (with Glance's
+ * own `password:hash` when available, else bcrypt at Glance's cost). The
+ * password goes to Glaze's API only, and is never stored.
+ * @param password - The new password.
+ * @returns The bcrypt hash, or why it couldn't be made (e.g. too short).
+ */
+export async function hashGlancePassword(
+	password: string,
+): Promise<Result<string, ApiError>> {
+	const result = await requestJson(
+		"/api/glance/password-hash",
+		jsonInit("POST", { password }),
+	);
+	if (!result.ok) return result;
+	const hash = field(result.value, "hash");
+	return typeof hash === "string" ? ok(hash) : err(BAD_RESPONSE);
+}
+
 /** The login state, as `GET /api/auth/session` reports it. */
 export interface Session {
 	readonly authenticated: boolean;

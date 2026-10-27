@@ -53,8 +53,8 @@ import {
 } from "../lib/model.ts";
 import type { WidgetWidth } from "../lib/widget-width.ts";
 
-/** The three main views of the editor. */
-export type EditorView = "design" | "code" | "preview";
+/** The main views of the editor. */
+export type EditorView = "design" | "code" | "preview" | "settings";
 
 /** Validation results, with the draft they belong to. */
 export interface ValidationResult {

@@ -50,7 +50,34 @@ export function MapField({
 	const [open, setOpen] = useState<string | null>(null);
 	const [draft, setDraft] = useState("");
 	const [draftError, setDraftError] = useState<string | null>(null);
+	// The entry being renamed, with the new name typed so far.
+	const [renaming, setRenaming] = useState<{
+		from: string;
+		to: string;
+		error: string | null;
+	} | null>(null);
 	const keys = map.entries.map(([key]) => key);
+
+	const onRename = () => {
+		if (!renaming) return;
+		const to = renaming.to.trim();
+		if (to === renaming.from) {
+			setRenaming(null);
+			return;
+		}
+		const message = checkNewMapKey(
+			to,
+			keys.filter((key) => key !== renaming.from),
+		);
+		if (message !== null) {
+			setRenaming({ ...renaming, error: message });
+			return;
+		}
+		if (map.rename(renaming.from, to)) {
+			if (open === renaming.from) setOpen(to);
+			setRenaming(null);
+		}
+	};
 
 	const onAdd = (event: FormEvent) => {
 		event.preventDefault();
@@ -83,19 +110,61 @@ export function MapField({
 					return (
 						<li key={key} className="rounded-md border border-line bg-card">
 							<div className="flex min-h-11 items-center gap-1 py-1 pr-1 pl-3">
+								{renaming?.from === key ? (
+									<input
+										aria-label={`New ${keyLabel.toLowerCase()} for ${key}`}
+										value={renaming.to}
+										// Focus moves into the input that replaces the button just pressed.
+										autoFocus
+										spellCheck={false}
+										onChange={(event) =>
+											setRenaming({
+												from: key,
+												to: event.target.value,
+												error: null,
+											})
+										}
+										onBlur={onRename}
+										onKeyDown={(event) => {
+											if (event.key === "Enter") {
+												event.preventDefault();
+												onRename();
+											} else if (event.key === "Escape") {
+												event.preventDefault();
+												setRenaming(null);
+											}
+										}}
+										className={`${INPUT_CLASS} ${borderClass(renaming.error !== null)} min-h-9 flex-1 font-mono text-[13px]`}
+									/>
+								) : (
+									<button
+										type="button"
+										aria-expanded={isOpen}
+										aria-controls={bodyId}
+										disabled={!editable}
+										title={
+											editable ? undefined : "Edit this one in the YAML tab"
+										}
+										onClick={() => setOpen(isOpen ? null : key)}
+										className="flex min-h-9 min-w-0 flex-1 cursor-pointer items-center gap-2 text-left disabled:cursor-default"
+									>
+										<ChevronDownIcon
+											className={`size-3 shrink-0 text-muted transition-transform ${isOpen ? "" : "-rotate-90"}`}
+										/>
+										<span className="truncate font-mono text-sm">{key}</span>
+									</button>
+								)}
 								<button
 									type="button"
-									aria-expanded={isOpen}
-									aria-controls={bodyId}
-									disabled={!editable}
-									title={editable ? undefined : "Edit this one in the YAML tab"}
-									onClick={() => setOpen(isOpen ? null : key)}
-									className="flex min-h-9 min-w-0 flex-1 cursor-pointer items-center gap-2 text-left disabled:cursor-default"
+									aria-label={`Rename ${key}`}
+									title="Rename"
+									disabled={map.disabled || !editable}
+									onClick={() =>
+										setRenaming({ from: key, to: key, error: null })
+									}
+									className={`${ICON_BUTTON} font-mono text-[11px]`}
 								>
-									<ChevronDownIcon
-										className={`size-3 shrink-0 text-muted transition-transform ${isOpen ? "" : "-rotate-90"}`}
-									/>
-									<span className="truncate font-mono text-sm">{key}</span>
+									Aa
 								</button>
 								<button
 									type="button"
@@ -116,6 +185,11 @@ export function MapField({
 					);
 				})}
 			</ul>
+			{renaming?.error && (
+				<p role="alert" className="mt-1 text-xs text-danger">
+					{renaming.error}
+				</p>
+			)}
 			{/* A nested <form> isn't allowed, so this is a group that handles Enter itself. */}
 			<div className="mt-2 flex gap-2">
 				<input

@@ -80,4 +80,21 @@ describe("page settings", () => {
 		expect(text(editorStore)).toContain("branding:\n  hide-footer: true\n");
 		expect(target.remove(["branding", "hide-footer"])).toBe(true);
 	});
+
+	it("adds a Glance user with a hash and a secret key, as the Login section does", () => {
+		editorStore.getState().load(CONFIG, "v1");
+		const target = mapTarget(() => []);
+		const hash = "$2a$10$abcdefghijklmnopqrstuuMd7SCiNe0Y6s1MbUCl0bk0KOFk9nGla";
+		expect(
+			target.set(["auth", "users", "anna"], { "password-hash": hash }),
+		).toBe(true);
+		expect(target.set(["auth", "secret-key"], "c2VjcmV0")).toBe(true);
+		expect(
+			text(editorStore).endsWith(
+				`auth:\n  users:\n    anna:\n      password-hash: ${hash}\n  secret-key: c2VjcmV0\n`,
+			),
+		).toBe(true);
+		expect(target.rename(["auth", "users"], "anna", "annie")).toBe(true);
+		expect(text(editorStore)).toContain("    annie:\n      password-hash:");
+	});
 });
