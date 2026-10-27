@@ -3,12 +3,14 @@ import { WidgetForm } from "../../forms/WidgetForm.tsx";
 import { useScrollMemory } from "../../hooks/use-scroll-memory.ts";
 import { findWidget } from "../../lib/model.ts";
 import { selectCurrentPage, useEditor } from "../../store/editor-store.ts";
+import { SidePanel } from "../layout/SidePanel.tsx";
 import { InspectorHeader } from "./InspectorHeader.tsx";
 import { type InspectorTab, InspectorTabs } from "./InspectorTabs.tsx";
 import { YamlView } from "./YamlView.tsx";
 
 /**
- * The right sidebar: details of the selected widget.
+ * The right sidebar: details of the selected widget. Resizable (280–560 px)
+ * and collapsible.
  * @returns The sidebar element.
  */
 export function Inspector() {
@@ -24,40 +26,49 @@ export function Inspector() {
 	);
 
 	return (
-		<aside
-			ref={scrollRef}
-			onScroll={onScroll}
-			aria-label="Inspector"
-			className="flex w-[330px] shrink-0 flex-col overflow-y-auto border-l border-line bg-bg px-5 py-5"
+		<SidePanel
+			id="inspector"
+			side="right"
+			label="inspector"
+			defaultWidth={330}
+			min={280}
+			max={560}
 		>
-			{widget === null ? (
-				<p className="mt-10 text-center text-sm text-muted">
-					Select a widget to see its settings.
-				</p>
-			) : (
-				<>
-					<InspectorHeader widget={widget} />
-					<InspectorTabs value={tab} onChange={setTab} />
-					<div
-						role="tabpanel"
-						id={`inspector-panel-${tab}`}
-						aria-labelledby={`inspector-tab-${tab}`}
-						className="pt-4"
-					>
-						{tab === "yaml" ? (
-							<YamlView widget={widget} />
-						) : (
-							// Keyed by id: a new widget gets a fresh form, an edit keeps this one.
-							<WidgetForm
-								key={widget.id}
-								widget={widget}
-								tab={tab}
-								onShowYaml={() => setTab("yaml")}
-							/>
-						)}
-					</div>
-				</>
-			)}
-		</aside>
+			<aside
+				ref={scrollRef}
+				onScroll={onScroll}
+				aria-label="Inspector"
+				className="flex min-w-0 flex-1 flex-col overflow-y-auto border-l border-line bg-bg px-5 pt-5 pb-14"
+			>
+				{widget === null ? (
+					<p className="mt-10 text-center text-sm text-muted">
+						Select a widget to see its settings.
+					</p>
+				) : (
+					<>
+						<InspectorHeader widget={widget} />
+						<InspectorTabs value={tab} onChange={setTab} />
+						<div
+							role="tabpanel"
+							id={`inspector-panel-${tab}`}
+							aria-labelledby={`inspector-tab-${tab}`}
+							className="pt-4"
+						>
+							{tab === "yaml" ? (
+								<YamlView widget={widget} />
+							) : (
+								// Keyed by id: a new widget gets a fresh form, an edit keeps this one.
+								<WidgetForm
+									key={widget.id}
+									widget={widget}
+									tab={tab}
+									onShowYaml={() => setTab("yaml")}
+								/>
+							)}
+						</div>
+					</>
+				)}
+			</aside>
+		</SidePanel>
 	);
 }

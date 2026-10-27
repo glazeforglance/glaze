@@ -31,12 +31,12 @@ cross-container moves reshuffle state mid-drag (another flicker source) and 6c's
 "beside" zones are simpler as lines. Browser check: 20 random fast drags gave 0 layout
 changes and 0 flip-backs.
 
-## 6b — Resizable side panels
+## 6b — Resizable side panels ✅
 
-- [ ] Generalised `SplitHandle` (separator role, aria values, arrows ±16 px, Home/End)
-- [ ] Library 200–420 px, inspector 280–560 px, double-click resets
-- [ ] Widths remembered per viewer in `localStorage` (try/catch, default without storage)
-- [ ] Collapse buttons for both panels
+- [x] Generalised `SplitHandle` → `components/ui/ResizeHandle.tsx` (separator role, aria values, arrows ±16 px, Home/End); the code/preview split uses it too
+- [x] Library 200–420 px, inspector 280–560 px, double-click resets
+- [x] Widths remembered per viewer in `localStorage` (`glaze:panel:<id>`, try/catch, default without storage)
+- [x] Collapse buttons for both panels (collapsed: a thin strip with an expand button)
 
 ## 6c — Widget width (`split-column`)
 

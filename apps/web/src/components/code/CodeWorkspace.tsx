@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { PreviewPane } from "../preview/PreviewPane.tsx";
 import { CodePanel } from "./CodePanel.tsx";
-import { SplitHandle } from "./SplitHandle.tsx";
+import { ResizeHandle } from "../ui/ResizeHandle.tsx";
 
 const STORAGE_KEY = "glaze:code-split";
 const CODE_PANE_ID = "code-pane";
@@ -12,6 +12,7 @@ interface SplitSettings {
 }
 
 const DEFAULT_SPLIT: SplitSettings = { ratio: 0.52, previewOpen: true };
+const SPLIT_BOUNDS = { min: 0.25, max: 0.8 };
 
 // Only a per-browser convenience; storage can be blocked, so never rely on it.
 function readSplit(): SplitSettings {
@@ -76,11 +77,21 @@ export function CodeWorkspace({ active }: { readonly active: boolean }) {
 			{/* Only while visible: a hidden iframe would keep loading Glance for nothing. */}
 			{split.previewOpen && active && (
 				<>
-					<SplitHandle
-						ratio={split.ratio}
+					<ResizeHandle
+						value={split.ratio}
+						{...SPLIT_BOUNDS}
+						step={0.05}
+						direction={1}
+						fromPointer={(start, deltaX, container) =>
+							start + deltaX / container.width
+						}
+						ariaValue={(ratio) => Math.round(ratio * 100)}
 						onChange={(ratio) => update({ ratio })}
+						onReset={() => update({ ratio: DEFAULT_SPLIT.ratio })}
 						onDragChange={setResizing}
+						label="Resize code and preview"
 						controls={CODE_PANE_ID}
+						className="relative"
 					/>
 					<div className="flex min-h-0 min-w-0 flex-1">
 						<PreviewPane

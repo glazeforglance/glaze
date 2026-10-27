@@ -163,3 +163,16 @@ export function UserIcon({ className = "size-4" }: IconProps) {
 		</svg>
 	);
 }
+
+/** A window with a side bar: collapse or expand a side panel. */
+export function PanelIcon({
+	className = "size-4",
+	side,
+}: IconProps & { readonly side: "left" | "right" }) {
+	return (
+		<svg viewBox="0 0 16 16" className={className} aria-hidden="true">
+			<rect x="2" y="3" width="12" height="10" rx="1.5" {...STROKE} />
+			<path d={side === "left" ? "M6 3v10" : "M10 3v10"} {...STROKE} />
+		</svg>
+	);
+}
