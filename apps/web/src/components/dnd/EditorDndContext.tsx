@@ -1,4 +1,4 @@
-import { DndContext, DragOverlay, MeasuringStrategy } from "@dnd-kit/core";
+import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { type ReactNode, useMemo } from "react";
 import { useEditorDnd } from "../../hooks/use-editor-dnd.ts";
 import { listsOfPage } from "../../lib/drop-target.ts";
@@ -21,11 +21,7 @@ export function EditorDndContext({ children }: EditorDndContextProps) {
 	const { state, dndProps } = useEditorDnd(lists);
 
 	return (
-		<DndContext
-			{...dndProps}
-			// The drop indicator pushes widgets down, so drop areas must be re-measured during the drag.
-			measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
-		>
+		<DndContext {...dndProps}>
 			<DragStateContext value={state}>{children}</DragStateContext>
 			{/* No drop animation: the widget is re-rendered in its new place right away. */}
 			<DragOverlay dropAnimation={null}>

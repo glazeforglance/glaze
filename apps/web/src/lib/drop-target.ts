@@ -1,4 +1,10 @@
 import type { PageNode, YamlPath } from "@glaze/core";
+import {
+	type ListGeometry,
+	type Point,
+	slotAt,
+	stickyListAtPoint,
+} from "./dnd-geometry.ts";
 
 /** A list of widgets that accepts drops: a column, or the page's head widgets. */
 export interface WidgetList {
@@ -28,11 +34,6 @@ export interface DropTarget {
 	readonly listId: string;
 	readonly index: number;
 }
-
-/** What the pointer or keyboard is over. */
-export type OverItem =
-	| { readonly kind: "widget"; readonly id: string; readonly below: boolean }
-	| { readonly kind: "list"; readonly id: string };
 
 /**
  * Lists the drop targets of a page: head widgets first, then the columns.
@@ -75,24 +76,30 @@ export function locateWidget(
 }
 
 /**
- * Turns "what is under the dragged item" into a drop position.
- * Over a widget: before it, or after it when the dragged item is over its lower half.
- * Over a list (empty space or its end zone): at the end of that list.
+ * Finds the drop position under the pointer: the innermost list it is over,
+ * and the slot in that list. Both have hysteresis around the `previous`
+ * target: the pointer stays in its list until it is clearly outside it
+ * (`stickyListAtPoint`), and keeps its slot until it has clearly passed the
+ * next item's midpoint (`slotAt`).
  * @param lists - The page's lists.
- * @param over - What the dragged item is over.
- * @returns The drop position, or `null` when `over` isn't a known widget or list.
+ * @param geometry - The same lists as measured on screen, items in display order.
+ * @param point - The pointer, in viewport coordinates.
+ * @param previous - The current target, or `null`.
+ * @returns The drop position, or `null` when the pointer is over no list.
  */
-export function targetFromOver(
+export function pointerTarget(
 	lists: readonly WidgetList[],
-	over: OverItem,
+	geometry: readonly ListGeometry[],
+	point: Point,
+	previous: DropTarget | null,
 ): DropTarget | null {
-	if (over.kind === "list") {
-		const list = lists.find((candidate) => candidate.id === over.id);
-		return list ? { listId: list.id, index: list.widgetIds.length } : null;
-	}
-	const found = locateWidget(lists, over.id);
-	if (!found) return null;
-	return { listId: found.listId, index: found.index + (over.below ? 1 : 0) };
+	const measured = stickyListAtPoint(geometry, point, previous?.listId ?? null);
+	if (!measured || !lists.some((list) => list.id === measured.id)) return null;
+	const kept = previous?.listId === measured.id ? previous.index : null;
+	return {
+		listId: measured.id,
+		index: slotAt(measured.items, measured.layout, point, kept),
+	};
 }
 
 /**
@@ -147,8 +154,8 @@ export function isArrowKey(code: string): code is ArrowKey {
 }
 
 /**
- * Moves a keyboard drag one step. Navigation is logical, not geometric, so the
- * drop indicator pushing widgets around can't make it skip or get stuck:
+ * Moves a keyboard drag one step. Navigation is logical, not geometric, so it
+ * can't skip a position or get stuck between two widgets of different heights:
  * - Up/Down move one position within a column (Left/Right within head widgets);
  * - Left/Right jump to the neighbouring column, at about the same position;
  * - Up from the top of a column goes to the end of the head widgets,

@@ -1,4 +1,5 @@
 import { createContext, useContext } from "react";
+import type { IndicatorLine } from "../../lib/dnd-geometry.ts";
 import type { DropTarget } from "../../lib/drop-target.ts";
 import type { BadgeTone } from "../../lib/widget-catalog.ts";
 
@@ -22,20 +23,22 @@ export type ActiveDrag =
 	  })
 	| (DragLook & { readonly kind: "library"; readonly type: string });
 
-/** Data a widget droppable registers: which way its list runs. */
-export interface DropData {
-	readonly axis: "x" | "y";
+/** The drop indicator: which list draws it, and where (relative to that list). */
+export interface DragIndicator extends IndicatorLine {
+	readonly listId: string;
 }
 
 /** The drag in progress, shared with the lists that draw the drop indicator. */
 export interface DragState {
 	readonly active: ActiveDrag | null;
 	readonly target: DropTarget | null;
+	readonly indicator: DragIndicator | null;
 }
 
 export const DragStateContext = createContext<DragState>({
 	active: null,
 	target: null,
+	indicator: null,
 });
 
 /**

@@ -1,8 +1,6 @@
 import {
 	type Announcements,
 	type DndContextProps,
-	type DragEndEvent,
-	type DragMoveEvent,
 	type DragStartEvent,
 	type KeyboardCoordinateGetter,
 	KeyboardSensor,
@@ -14,30 +12,28 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type {
 	ActiveDrag,
 	DragData,
+	DragIndicator,
 	DragState,
-	DropData,
 } from "../components/dnd/drag-state.ts";
 import {
-	coordinatesBefore,
-	editorCollision,
-	endDropId,
-	INDICATOR_DROP_ID,
-	toOverItem,
+	indicatorLine,
+	type Point,
+	previewPosition,
 } from "../lib/dnd-geometry.ts";
+import { measureLists } from "../lib/dnd-measure.ts";
 import {
 	type DropTarget,
 	isArrowKey,
-	isHeadList,
 	isNoOp,
 	locateWidget,
 	nextKeyboardTarget,
-	targetFromOver,
+	pointerTarget,
 	toCoreIndex,
 	type WidgetList,
 } from "../lib/drop-target.ts";
 import { useEditor } from "../store/editor-store.ts";
 
-const IDLE: DragState = { active: null, target: null };
+const IDLE: DragState = { active: null, target: null, indicator: null };
 
 function sameTarget(a: DropTarget | null, b: DropTarget | null): boolean {
 	return a?.listId === b?.listId && a?.index === b?.index;
@@ -52,17 +48,25 @@ function isDragData(value: unknown): value is DragData {
 	);
 }
 
-function axisOf(value: unknown): DropData["axis"] {
-	return typeof value === "object" &&
-		value !== null &&
-		"axis" in value &&
-		value.axis === "x"
-		? "x"
-		: "y";
-}
-
 function sourceOf(active: ActiveDrag | null): DropTarget | null {
 	return active?.kind === "widget" ? active.source : null;
+}
+
+/** Measures the lists and works out where to draw the indicator for `target`. */
+function indicatorFor(target: DropTarget | null): DragIndicator | null {
+	if (!target) return null;
+	const list = measureLists().find(
+		(candidate) => candidate.id === target.listId,
+	);
+	return list
+		? { listId: list.id, ...indicatorLine(list, target.index) }
+		: null;
+}
+
+function pointOf(event: Event | null): Point | null {
+	return event instanceof MouseEvent
+		? { x: event.clientX, y: event.clientY }
+		: null;
 }
 
 /**
@@ -70,10 +74,12 @@ function sourceOf(active: ActiveDrag | null): DropTarget | null {
  * the live drop target, screen reader announcements, and turning a drop into
  * a `moveWidget` / `addWidget` call on the store.
  *
- * Pointer drags find their target from what is under the pointer. Keyboard
- * drags track it logically with `nextKeyboardTarget`; their preview is only
- * moved for show, because the drop indicator shifts widgets around and
- * geometry would then point at the wrong spot.
+ * The drop indicator is drawn over the lists, never in the layout, so nothing
+ * moves while dragging. Pointer drags measure the lists on every pointer move
+ * (and scroll) and pick the slot with hysteresis (`pointerTarget`); dnd-kit's
+ * own droppables and collision detection aren't used. Keyboard drags track
+ * the target logically with `nextKeyboardTarget` and only move the preview
+ * for show. A drop always lands exactly where the indicator was.
  * @param lists - Drop targets of the open page.
  * @returns The drag state (for the indicator) and props for `<DndContext>`.
  */
@@ -88,6 +94,8 @@ export function useEditorDnd(lists: readonly WidgetList[]): {
 	const viaKeyboard = useRef(false);
 	// Last announced position, so a pointer drag only announces actual changes.
 	const announced = useRef<string | null>(null);
+	// The pointer during a pointer drag, in viewport coordinates.
+	const pointer = useRef<Point | null>(null);
 	const moveWidget = useEditor((store) => store.moveWidget);
 	const addWidget = useEditor((store) => store.addWidget);
 
@@ -99,6 +107,40 @@ export function useEditorDnd(lists: readonly WidgetList[]): {
 		latest.current = next;
 		setState(next);
 	}, []);
+
+	/** Recomputes a pointer drag's target from the pointer and the lists as they are on screen now. */
+	const refreshPointerTarget = useCallback(() => {
+		const current = latest.current;
+		if (!current.active || viaKeyboard.current || !pointer.current) return;
+		const target = pointerTarget(
+			listsRef.current,
+			measureLists(),
+			pointer.current,
+			current.target,
+		);
+		if (sameTarget(target, current.target)) return;
+		update({ ...current, target, indicator: indicatorFor(target) });
+	}, [update]);
+
+	const dragging = state.active !== null;
+	useEffect(() => {
+		if (!dragging || viaKeyboard.current) return;
+		// Capture on window runs before dnd-kit's own listeners, so its
+		// announcements already see the new target.
+		const onMove = (event: PointerEvent) => {
+			pointer.current = { x: event.clientX, y: event.clientY };
+			refreshPointerTarget();
+		};
+		// Scrolling moves the lists under a resting pointer.
+		const onScroll = () => refreshPointerTarget();
+		window.addEventListener("pointermove", onMove, { capture: true });
+		window.addEventListener("scroll", onScroll, { capture: true });
+		refreshPointerTarget();
+		return () => {
+			window.removeEventListener("pointermove", onMove, { capture: true });
+			window.removeEventListener("scroll", onScroll, { capture: true });
+		};
+	}, [dragging, refreshPointerTarget]);
 
 	/** Describes a drop target by the position the widget will *end up* at. */
 	const describe = (target: DropTarget | null, active: ActiveDrag | null) => {
@@ -122,18 +164,12 @@ export function useEditorDnd(lists: readonly WidgetList[]): {
 				event.code,
 			);
 			if (!next) return undefined;
-			update({ ...current, target: next });
-			// Move the preview next to the new position (only visual).
-			const list = listsRef.current.find((c) => c.id === next.listId);
-			if (!list || !context.collisionRect) return undefined;
-			const dropId = list.widgetIds[next.index] ?? endDropId(list.id);
-			const rect = context.droppableRects.get(dropId);
-			if (!rect) return undefined;
-			return coordinatesBefore(
-				rect,
-				context.collisionRect,
-				isHeadList(list) ? "x" : "y",
-			);
+			const indicator = indicatorFor(next);
+			update({ ...current, target: next, indicator });
+			// Move the preview onto the indicator (only visual).
+			const list = measureLists().find((c) => c.id === next.listId);
+			if (!list || !indicator || !context.collisionRect) return undefined;
+			return previewPosition(list, indicator, context.collisionRect);
 		},
 		[update],
 	);
@@ -149,65 +185,46 @@ export function useEditorDnd(lists: readonly WidgetList[]): {
 		if (!isDragData(data)) return;
 		viaKeyboard.current = activatorEvent instanceof KeyboardEvent;
 		announced.current = null;
+		pointer.current = pointOf(activatorEvent);
 		if (data.kind === "library") {
-			update({ active: data, target: null });
+			update({ active: data, target: null, indicator: null });
 			return;
 		}
 		const source = locateWidget(lists, data.widgetId);
 		if (!source) return;
 		// A keyboard drag starts "on" the widget itself, so the first arrow press moves from there.
+		const target = viaKeyboard.current ? source : null;
 		update({
 			active: { ...data, source },
-			target: viaKeyboard.current ? source : null,
+			target,
+			indicator: indicatorFor(target),
 		});
 	};
 
-	const pointerTarget = ({
-		active,
-		over,
-	}: DragMoveEvent | DragEndEvent): DropTarget | null => {
-		if (!over) return null;
-		// Over the indicator itself: it pushed the widgets away, keep the position it shows.
-		if (over.id === INDICATOR_DROP_ID) return latest.current.target;
-		return targetFromOver(
-			lists,
-			toOverItem(
-				over.id,
-				over.rect,
-				active.rect.current.translated,
-				axisOf(over.data.current),
-			),
-		);
-	};
-
-	const onDragMove = (event: DragMoveEvent) => {
-		const current = latest.current;
-		if (!current.active || viaKeyboard.current) return;
-		const target = pointerTarget(event);
-		if (!sameTarget(target, current.target)) update({ ...current, target });
-	};
-
-	const onDragEnd = (event: DragEndEvent) => {
-		const { active } = latest.current;
-		// A pointer drop is recomputed from the drop event: the last move may not be processed yet.
-		const target = viaKeyboard.current
-			? latest.current.target
-			: pointerTarget(event);
+	const onDragEnd = () => {
+		const { active, target } = latest.current;
 		announced.current = target ? describe(target, active) : null;
-		update(IDLE);
-		if (!active || !target) return;
-		const list = lists.find((candidate) => candidate.id === target.listId);
-		if (!list) return;
-		if (active.kind === "library") {
-			addWidget(
-				{ type: active.type, title: active.label },
-				list.path,
-				target.index,
-			);
-			return;
+		const list = target
+			? lists.find((candidate) => candidate.id === target.listId)
+			: undefined;
+		// The edit runs before the drag state is cleared; dnd-kit batches both
+		// into one render, so the widget never shows in its old place.
+		if (active && target && list) {
+			if (active.kind === "library") {
+				addWidget(
+					{ type: active.type, title: active.label },
+					list.path,
+					target.index,
+				);
+			} else if (!isNoOp(active.source, target)) {
+				moveWidget(
+					active.widgetId,
+					list.path,
+					toCoreIndex(active.source, target),
+				);
+			}
 		}
-		if (isNoOp(active.source, target)) return;
-		moveWidget(active.widgetId, list.path, toCoreIndex(active.source, target));
+		update(IDLE);
 	};
 
 	const labelOf = (data: unknown): string =>
@@ -237,10 +254,7 @@ export function useEditorDnd(lists: readonly WidgetList[]): {
 		state,
 		dndProps: {
 			sensors,
-			collisionDetection: editorCollision,
 			onDragStart,
-			onDragMove,
-			onDragOver: onDragMove,
 			onDragEnd,
 			onDragCancel: () => update(IDLE),
 			accessibility: {
