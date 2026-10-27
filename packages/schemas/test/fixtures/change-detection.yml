@@ -1,0 +1,7 @@
+# Written after the examples in Glance v0.8.7's docs/configuration.md.
+# Every key, token and domain is fake.
+type: change-detection
+instance-url: https://changes.example.test
+token: ${CHANGE_DETECTION_TOKEN}
+watches:
+  - 00000000-0000-4000-8000-000000000000

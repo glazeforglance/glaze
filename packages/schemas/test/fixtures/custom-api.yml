@@ -1,0 +1,20 @@
+# Written after the examples in Glance v0.8.7's docs/configuration.md.
+# Every key, token and domain is fake.
+type: custom-api
+title: Random fact
+cache: 6h
+url: https://facts.example.test/api/random
+headers:
+  Accept: application/json
+parameters:
+  language: en
+subrequests:
+  stats:
+    url: https://facts.example.test/api/stats
+options:
+  show-source: true
+template: |
+  <p class="size-h4 color-paragraph">{{ .JSON.String "text" }}</p>
+  {{ if .Options.BoolOr "show-source" false }}
+  <p class="size-h6">{{ .JSON.String "source" }}</p>
+  {{ end }}

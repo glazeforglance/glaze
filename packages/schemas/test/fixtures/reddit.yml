@@ -1,0 +1,12 @@
+# Written after the examples in Glance v0.8.7's docs/configuration.md.
+# Every key, token and domain is fake.
+type: reddit
+subreddit: selfhosted
+style: vertical-cards
+show-thumbnails: true
+sort-by: top
+top-period: week
+limit: 10
+proxy:
+  url: http://proxy.example.test:8080
+  timeout: 10s

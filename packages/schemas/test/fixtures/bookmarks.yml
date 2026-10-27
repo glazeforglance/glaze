@@ -1,0 +1,19 @@
+# Written after the examples in Glance v0.8.7's docs/configuration.md.
+# Every key, token and domain is fake.
+type: bookmarks
+groups:
+  - title: General
+    links:
+      - title: Mail
+        url: https://mail.example.test/
+        icon: si:gmail
+      - title: Notes
+        url: https://notes.example.test/
+        same-tab: true
+  - title: Homelab
+    color: 10 70 50
+    links:
+      - title: Router
+        url: http://192.0.2.1/
+        description: The admin page
+        icon: auto-invert di:openwrt.png

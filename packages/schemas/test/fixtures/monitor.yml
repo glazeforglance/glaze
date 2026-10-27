@@ -1,0 +1,20 @@
+# Written after the examples in Glance v0.8.7's docs/configuration.md.
+# Every key, token and domain is fake.
+type: monitor
+cache: 1m
+title: Services
+style: compact
+sites:
+  - title: Jellyfin
+    url: https://jellyfin.example.test/
+    icon: si:jellyfin
+  - title: Router
+    url: https://router.example.test/
+    check-url: http://192.0.2.1/
+    timeout: 5s
+    allow-insecure: true
+    alt-status-codes:
+      - 401
+    basic-auth:
+      username: admin
+      password: ${ROUTER_PASSWORD}

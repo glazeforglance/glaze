@@ -92,24 +92,28 @@ error), and a missing iframe `height` gives 50 px.
 - [x] Branding (every field of the `branding` struct)
 - [x] Theme (basic): HSL pickers with hex, light, multipliers, custom CSS file, disable picker, presets (add / remove / rename / edit)
 
-## 6h — Verification
+## 6h — Verification ✅
 
-- [ ] Fixtures per widget type from Glance's docs (fake keys and domains)
-- [ ] Round-trip test: form state → core edits → YAML, no unintended diff
-- [ ] New-widget output passes validation
-- [ ] CI integration test with the Glance v0.8.7 binary (`config:validate`)
-- [ ] Coverage test: every generated field is reachable in a form
-- [ ] Manual check list (below)
+- [x] Fixtures per widget type (`packages/schemas/test/fixtures/*.yml`, all 28), written after Glance's docs; fake keys and domains
+- [x] Round-trip (`apps/web/test/fixtures-roundtrip.test.ts`): every fixture passes the form validation; changing any scalar through the form edits changes exactly one line and keeps every comment; every fixture can be built option by option through the form target
+- [x] New-widget output passes Glaze's checks (only the extension, whose URL can't be guessed, is reported, in plain words)
+- [x] CI integration test with the Glance v0.8.7 binary (cached download, `GLANCE_BIN`): `glance config:validate` accepts every fixture and every new widget, and refuses a broken one (`apps/server/test/glance-integration.test.ts`; ran locally with the Windows binary: 5/5)
+- [x] Coverage test (`apps/web/test/forms/coverage.test.ts`): renders every widget form with every option filled and a field probe; fails with the list of unreachable fields (none)
+- [x] Manual check list (below)
 
 ### Manual check list
 
-- [ ] Drag 20 widgets around quickly: no flicker
-- [ ] Build a split-column by dropping beside a widget
-- [ ] Resize it to ⅓
-- [ ] Resize both side panels
-- [ ] Edit page settings and every Settings section
-- [ ] Publish
-- [ ] Glance renders it
+Checked in the built-in browser with scripted pointer and keyboard events, against a
+scratch copy of the demo config and a real Glance v0.8.7 (not `.dev/`). Worth one pass by
+hand with a real mouse.
+
+- [x] Drag 20 widgets around quickly: no flicker (0 layout changes, 0 flip-backs)
+- [x] Build a split-column by dropping beside a widget
+- [x] Resize it to ⅓ (handle drag and keyboard)
+- [x] Resize both side panels (drag, keys, Home/End, double-click, collapse, remembered after reload)
+- [x] Edit page settings and every Settings section (incl. adding a Glance user with a hashed password)
+- [x] Publish (0 errors, 0 warnings; the diff only touched the edited lines, comments and `${VARS}` kept)
+- [x] Glance renders it (split-column with `data-max-columns="3"`, new logo text)
 
 ## 6i — Docs
 

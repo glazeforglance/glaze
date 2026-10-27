@@ -1,0 +1,8 @@
+# Written after the examples in Glance v0.8.7's docs/configuration.md.
+# Every key, token and domain is fake.
+type: lobsters
+sort-by: new
+limit: 15
+tags:
+  - linux
+  - programming

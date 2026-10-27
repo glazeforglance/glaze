@@ -1,0 +1,8 @@
+# Written after the examples in Glance v0.8.7's docs/configuration.md.
+# Every key, token and domain is fake.
+type: clock
+hour-format: 24h
+timezones:
+  - timezone: Europe/Paris
+    label: Paris
+  - timezone: America/New_York # east coast

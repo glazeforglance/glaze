@@ -1,0 +1,9 @@
+# Written after the examples in Glance v0.8.7's docs/configuration.md.
+# Every key, token and domain is fake.
+type: split-column
+max-columns: 2
+widgets:
+  - type: hacker-news
+    collapse-after: 3
+  - type: lobsters
+    collapse-after: 3

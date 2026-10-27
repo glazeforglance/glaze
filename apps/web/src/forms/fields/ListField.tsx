@@ -64,7 +64,8 @@ export function ListField({
 	const id = useId();
 	const list = useWidgetList(name);
 	const [open, setOpen] = useState<ReadonlySet<number>>(() => new Set());
-	const isOpen = (index: number) => !collapsible || open.has(index);
+	const isOpen = (index: number) =>
+		!collapsible || open.has(index) || list.expandAll;
 	const toggle = (index: number) =>
 		setOpen((current) => {
 			const next = new Set(current);

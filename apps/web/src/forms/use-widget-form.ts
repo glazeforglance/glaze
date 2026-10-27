@@ -18,6 +18,7 @@ import type { z } from "zod";
 import { findWidget } from "../lib/model.ts";
 import { editorStore, selectCurrentPage } from "../store/editor-store.ts";
 import { planCommit } from "./commit.ts";
+import { useFieldProbe } from "./field-probe.ts";
 import { toSubPath, valueAt } from "./paths.ts";
 import { validateField } from "./validate.ts";
 
@@ -207,6 +208,7 @@ export function useWidgetField(
 	rules: FieldRules = {},
 ): WidgetField {
 	const { target, schema, options, readOnly, form } = useWidgetForm();
+	useFieldProbe(name);
 	const { field, fieldState } = useController({ name, control: form.control });
 	const path = toSubPath(name);
 	const [key] = path;
@@ -275,6 +277,8 @@ export interface WidgetList {
 	readonly path: YamlPath;
 	readonly status: FieldStatus;
 	readonly disabled: boolean;
+	/** True while a test probe renders the form: show every item, open. */
+	readonly expandAll: boolean;
 	readonly readOnly: boolean;
 	add(value: unknown, index?: number): boolean;
 	remove(index: number): boolean;
@@ -292,6 +296,7 @@ export interface WidgetList {
 export function useWidgetList(name: string): WidgetList {
 	const { target, options, readOnly, form } = useWidgetForm();
 	const watched: unknown = useWatch({ control: form.control, name });
+	const probing = useFieldProbe(name);
 	const items = Array.isArray(watched) ? watched : [];
 	const path = toSubPath(name);
 	const [key] = path;
@@ -308,6 +313,7 @@ export function useWidgetList(name: string): WidgetList {
 		status,
 		disabled: readOnly || status === "inherited",
 		readOnly,
+		expandAll: probing,
 		add: (value, index) => target.insert(path, value, index),
 		// Removing the last item removes the key, instead of leaving `sites:` empty.
 		remove: (index) =>
@@ -327,6 +333,8 @@ export interface WidgetMap {
 	readonly path: YamlPath;
 	readonly status: FieldStatus;
 	readonly disabled: boolean;
+	/** True while a test probe renders the form: show every item, open. */
+	readonly expandAll: boolean;
 	readonly readOnly: boolean;
 	add(key: string, value: unknown): boolean;
 	remove(key: string): boolean;
@@ -343,6 +351,7 @@ export interface WidgetMap {
 export function useWidgetMap(name: string): WidgetMap {
 	const { target, options, readOnly, form } = useWidgetForm();
 	const watched: unknown = useWatch({ control: form.control, name });
+	const probing = useFieldProbe(name);
 	const entries =
 		typeof watched === "object" && watched !== null && !Array.isArray(watched)
 			? Object.entries(watched)
@@ -362,6 +371,7 @@ export function useWidgetMap(name: string): WidgetMap {
 		status,
 		disabled: readOnly || status === "inherited",
 		readOnly,
+		expandAll: probing,
 		add: (entryKey, value) =>
 			// A missing map is written whole; an existing one gets one more key.
 			entries.length === 0

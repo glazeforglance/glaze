@@ -1,0 +1,7 @@
+# Written after the examples in Glance v0.8.7's docs/configuration.md.
+# Every key, token and domain is fake.
+type: hacker-news
+limit: 15
+collapse-after: 5
+sort-by: best
+extra-sort-by: engagement

@@ -1,0 +1,11 @@
+# Written after the examples in Glance v0.8.7's docs/configuration.md.
+# Every key, token and domain is fake.
+type: videos
+style: grid-cards
+collapse-after-rows: 3
+include-shorts: false
+channels:
+  - UCaAaAaAaAaAaAaAaAaAaAaA
+  - UCbBbBbBbBbBbBbBbBbBbBbB
+playlists:
+  - PLcCcCcCcCcCcCcCcCcCcCcCcCcCcCcCcC

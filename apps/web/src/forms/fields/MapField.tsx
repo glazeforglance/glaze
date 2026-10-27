@@ -105,7 +105,7 @@ export function MapField({
 			<ul aria-labelledby={`${id}-label`} className="flex flex-col gap-2">
 				{map.entries.map(([key]) => {
 					const editable = isFormSafeKey(key);
-					const isOpen = open === key && editable;
+					const isOpen = (open === key || map.expandAll) && editable;
 					const bodyId = `${id}-${key}`;
 					return (
 						<li key={key} className="rounded-md border border-line bg-card">

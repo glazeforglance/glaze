@@ -1,0 +1,14 @@
+# Written after the examples in Glance v0.8.7's docs/configuration.md.
+# Every key, token and domain is fake.
+type: rss
+style: horizontal-cards
+thumbnail-height: 10.5
+limit: 20
+collapse-after: 3
+feeds:
+  - url: https://feeds.example.test/selfhosted.xml
+    title: Self-hosted
+  - url: https://feeds.example.test/news.xml
+    limit: 4
+    headers:
+      User-Agent: Glaze fixture

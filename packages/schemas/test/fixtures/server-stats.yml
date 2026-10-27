@@ -1,0 +1,10 @@
+# Written after the examples in Glance v0.8.7's docs/configuration.md.
+# Every key, token and domain is fake.
+type: server-stats
+servers:
+  - type: local
+    name: Services
+    hide-mountpoints-by-default: true
+    mountpoints:
+      "/srv":
+        name: Storage

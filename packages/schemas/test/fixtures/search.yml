@@ -1,0 +1,12 @@
+# Written after the examples in Glance v0.8.7's docs/configuration.md.
+# Every key, token and domain is fake.
+type: search
+search-engine: duckduckgo
+new-tab: true
+bangs:
+  - title: YouTube
+    shortcut: "!yt"
+    url: https://www.youtube.com/results?search_query={QUERY}
+  - title: Wiki
+    shortcut: "!w"
+    url: https://wiki.example.test/search?q={QUERY}
