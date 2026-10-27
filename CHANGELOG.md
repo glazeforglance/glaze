@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-10-27
+
 ### Changed
 
 - **The project moved to the `glazeforglance` organization**: the repository is now [glazeforglance/glaze](https://github.com/glazeforglance/glaze) and the image is `ghcr.io/glazeforglance/glaze`. The old `ghcr.io/klingesean/glaze` image no longer receives updates, so switch your compose file to the new name.
@@ -53,6 +55,7 @@ The first release: a visual editor that runs next to Glance v0.8.7 and edits its
 - **Docker image** `ghcr.io/klingesean/glaze` for `linux/amd64` and `linux/arm64`: non-root (uid 1000), with the checksum-verified Glance v0.8.7 binary for validation, a health check and a compose example.
 - CI (typecheck, lint, tests, build, Docker smoke test) and a tag-driven release workflow.
 
-[Unreleased]: https://github.com/glazeforglance/glaze/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/glazeforglance/glaze/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/glazeforglance/glaze/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/glazeforglance/glaze/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/glazeforglance/glaze/releases/tag/v0.1.0
