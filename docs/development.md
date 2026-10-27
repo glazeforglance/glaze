@@ -40,11 +40,11 @@ sh docker/smoke-test.sh glaze:smoke
 
 ## Keyboard shortcuts
 
-| Keys                     | Action                       |
-| ------------------------ | ---------------------------- |
-| `Ctrl/Cmd + S`           | Review and publish           |
-| `Ctrl/Cmd + 1 / 2 / 3`   | Design / Code / Preview view |
-| `Ctrl/Cmd + F` (in code) | Search in the file           |
+| Keys                       | Action                                  |
+| -------------------------- | --------------------------------------- |
+| `Ctrl/Cmd + S`             | Review and publish                      |
+| `Ctrl/Cmd + 1 / 2 / 3 / 4` | Design / Code / Preview / Settings view |
+| `Ctrl/Cmd + F` (in code)   | Search in the file                      |
 
 ## Project structure
 
@@ -54,12 +54,31 @@ glaze/
 │  ├─ web/        # React app (Vite)
 │  └─ server/     # API server (Hono): auth, reads and writes glance.yml
 ├─ packages/
-│  └─ core/       # shared types and the YAML document model
+│  ├─ core/       # shared types and the YAML document model
+│  └─ schemas/    # widget, page and config schemas generated from the Glance source
 ├─ docker/        # Dockerfile, compose example, smoke test
 ├─ docs/          # design document, guides, screenshots (+ demo config)
-├─ scripts/       # brand, release and screenshot scripts
+├─ scripts/       # schema generator, brand, release and screenshot scripts
 ├─ package.json
 └─ pnpm-workspace.yaml
+```
+
+## Widget schemas
+
+Every form comes from `packages/schemas`, generated from the Glance source:
+
+```bash
+pnpm schemas                    # download Glance v0.8.7 and regenerate
+pnpm schemas --source ../glance # use a local Glance checkout
+pnpm schemas --check            # CI: fail when the committed files are stale
+```
+
+Labels, help texts, enums the code doesn't spell out and the options a new widget starts with live in [`packages/schemas/overrides.ts`](../packages/schemas/overrides.ts); never edit `src/generated/` by hand. The generator fails when an override no longer matches Glance, so a new Glance version shows up as a clear list of things to update. See [DESIGN.md §8](DESIGN.md) for how it works.
+
+To run the integration test against Glance itself (CI does this with v0.8.7), point `GLANCE_BIN` at a Glance binary:
+
+```bash
+GLANCE_BIN=/path/to/glance pnpm --filter server test
 ```
 
 ## Screenshots
@@ -81,7 +100,7 @@ The live preview shot (`code-preview.png`) needs Glance: set `GLANCE_BIN` to a G
 | Frontend           | React 19, TypeScript, Vite, Tailwind CSS                          |
 | Drag & drop        | dnd-kit                                                           |
 | State              | Zustand                                                           |
-| Forms & validation | React Hook Form + Zod                                             |
+| Forms & validation | React Hook Form + Zod, generated from `@glaze/schemas`            |
 | Code editor        | CodeMirror 6                                                      |
 | YAML               | [`yaml`](https://eemeli.org/yaml/) (Document API, keeps comments) |
 | Server             | Node.js + Hono, bundled with esbuild                              |

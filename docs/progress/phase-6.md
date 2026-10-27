@@ -1,4 +1,4 @@
-# Phase 6: a complete visual editor
+# Phase 6: a complete visual editor ✅
 
 Goal: a user never has to touch YAML. Every option Glance v0.8.7 knows can be set through the UI,
 and everything the UI writes is valid for Glance. The YAML view stays as an escape hatch.
@@ -115,12 +115,13 @@ hand with a real mouse.
 - [x] Publish (0 errors, 0 warnings; the diff only touched the edited lines, comments and `${VARS}` kept)
 - [x] Glance renders it (split-column with `data-max-columns="3"`, new logo text)
 
-## 6i — Docs
+## 6i — Docs ✅
 
-- [ ] DESIGN.md: roadmap, widget width out of Extras, `@glaze/schemas` + generator under §8, §12 answer
-- [ ] README "Why Glaze?" and roadmap
-- [ ] CHANGELOG `[Unreleased]`
-- [ ] Screenshots re-taken and checked
+- [x] DESIGN.md: phase 6 in the roadmap (✅; "Edit page" button and multiple users are now phase 7, the Extras phase 8), widget width moved out of the Extras (height, widget builder and theme editor stay), a "Phase 6" features section, verified Glance facts (§4), `@glaze/schemas` and the generator under §8, repo layout, and the answer to §12.5
+- [x] README "Why Glaze?" ("every Glance option has a form", widgets side by side) and roadmap
+- [x] CHANGELOG `[Unreleased]`
+- [x] docs/development.md: Ctrl/Cmd+4, `pnpm schemas`, the Glance integration test
+- [x] Screenshots re-taken (`pnpm screenshots` with Glance v0.8.7) and checked; the demo config now has a split-column on the Homelab page
 
 ## Notes for the next session
 

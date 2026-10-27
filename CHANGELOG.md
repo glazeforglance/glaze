@@ -6,6 +6,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+A complete visual editor: every option Glance v0.8.7 knows can be set without touching YAML.
+
+### Added
+
+- **A form for every widget.** All 28 Glance widget types (custom-api, server-stats, dns-stats, videos, …) have a form, generated from Glance's own source by `pnpm schemas` into the new `@glaze/schemas` package, with hand-written labels, help texts and groups. New field types: icons with a source picker, HSL colors with a hex input, code editors for HTML and Go templates, "one of several forms" options and free-form values (custom-api `body`). Options Glance doesn't know are kept and listed under "Other options".
+- **custom-api editor:** request, headers, parameters, body, subrequests, options, and the template with highlighting and a cheat sheet of Glance's template functions.
+- **Widgets side by side.** Drop a widget on the left or right edge of another to put both in a `split-column`; drag the right edge of a widget in a split-column to ½, ⅓ or ¼ (or use the Width buttons in the Style tab). A split-column left with one widget is dissolved, with an undo.
+- **Column width by dragging** the edge between columns (small ↔ full, where Glance allows it).
+- **Page settings** in the inspector (click the page title): name, URL path (suggested and checked for clashes), width, navigation width and layout switches.
+- **Settings view** (Ctrl/Cmd+4) for the server, Glance's login (users with bcrypt password hashes, secret key), document head, branding and theme with presets.
+- **+ Widget menu** in every column and in the head widgets.
+- **Resizable and collapsible side panels**; the widths are remembered.
+- Groups show as tabs on the canvas; split-columns show their columns.
+
+### Changed
+
+- Drag & drop no longer flickers: the drop indicator is a line drawn over the widgets instead of a box between them, and a drop lands exactly where it shows.
+- Unknown-option warnings now cover every widget type, and a missing required option blocks Publish with a plain sentence ("Weather needs a location").
+- New widgets from the library start with valid example options instead of only a title.
+
 ## [0.1.2] - 2026-10-27
 
 ### Changed

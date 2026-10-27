@@ -1,6 +1,6 @@
 # Glaze: design document
 
-> Status: v0.1.0 · phases 0–5 done
+> Status: v0.1.2 · phases 0–6 done
 > Target: Glance **v0.8.7**
 
 ---
@@ -65,9 +65,16 @@ These facts come from the Glance v0.8.7 source (`github.com/glanceapp/glance`). 
 **Special widgets**
 
 - `group`: widgets as tabs. No `group` or `split-column` inside it. Children automatically get `hide-header`.
-- `split-column`: widgets side by side, with `max-columns` (minimum 2).
+- `split-column`: widgets side by side, with `max-columns` (Glance raises anything below 2 to 2). It draws `max-columns` equal-width columns and places the widgets as masonry (each in the shortest column), collapsing to one column on narrow screens. One widget in a split-column is valid: it takes 1/`max-columns` of the width.
 - `custom-api`: `url` (optional!), `method`, `headers`, `parameters`, `body`, `body-type`, `skip-json-validation`, `subrequests`, `options`, `template`, `frameless`. Glance waits at most 5 seconds for a response (not configurable). Templates have functions such as `now`, `offsetNow`, `parseTime`, `formatTime`, `sortByTime`, `findSubmatch`, `concat`, `add`/`sub`/`mul`/`div`/`mod` and `.Options.StringOr`.
 - `docker-containers`: `containers:` sets labels per container name (icon, description, url…) without touching Docker labels.
+
+**Defaults and checks that live in code, not in struct tags** (examples; the generator in §8 reads them)
+
+- Most defaults and enum checks are in each widget's `initialize()`: e.g. `limit <= 0` becomes 15, `sort-by` outside `top`/`new`/`best` becomes `top`, a missing `location` is an error.
+- dns-stats: an empty `service` is an error in v0.8.7 (the docs name `pihole` as the default).
+- iframe: a missing `height` ends up as 50 px (the docs say 300).
+- `glance password:hash` uses bcrypt with Go's default cost (10) and refuses passwords under 6 characters; `glance secret:make` prints 64 random bytes as standard base64. User names need at least 3 characters.
 
 **Other capabilities**
 
@@ -122,7 +129,7 @@ These facts come from the Glance v0.8.7 source (`github.com/glanceapp/glance`). 
 
 ### v0.2
 
-- All widgets, with forms generated automatically from the Glance source (§8).
+- All widgets, with forms generated automatically from the Glance source (§8). **Done in phase 6** (below).
 - Library of custom CSS presets (for example a "dark cards" style).
 - "Edit page" button in Glance via `document.head`.
 - Undo/redo and a version history (`.glaze/history/`).
@@ -133,22 +140,33 @@ These facts come from the Glance v0.8.7 source (`github.com/glanceapp/glance`). 
 - Templates ("Calm", "Homelab", "Media").
 - Secrets management: keys as `${VAR}` in a `.env` file, never as plain text in the YAML.
 
+### Phase 6: the complete visual editor (done)
+
+Nothing requires YAML any more; the code view stays as an escape hatch.
+
+- **Forms for every option** Glance v0.8.7 reads: all 28 widget types (`@glaze/schemas`, §8), page settings in the inspector, and a Settings view for the global sections (server, login, document head, branding, theme with presets). Unknown keys are kept and listed under "Other options".
+- **Glance's login** from the Settings view: users, passwords stored as bcrypt `password-hash` (Glance's `password:hash` when available, otherwise bcrypt at Glance's cost), and a secret key made like `glance secret:make`.
+- **Widget width** through `split-column` (moved here from the Extras): drop a widget on the left or right edge of another to put them side by side; a selected widget in a split-column has a handle that snaps to ½ / ⅓ / ¼ (`max-columns` 2 / 3 / 4); the Style tab has the same as buttons. Every widget in a split-column shares the width (Glance draws equal columns), and the editor says so. A split-column left with one widget after a drag is dissolved, with a notice that can undo that. No split-columns inside a group or in head widgets, and no resizing inside a group.
+- **Column width:** dragging the edge between page columns switches `small` ↔ `full` where Glance's rule (1 or 2 full columns) allows it, and says why when it doesn't.
+- **Drag & drop without flicker:** the drop indicator is drawn over the lists (never in the layout) from measured rects, with hysteresis around midpoints and list edges.
+- **Resizable, collapsible side panels**, remembered per browser.
+- **Plain-language validation:** a missing required option blocks Publish with a sentence ("Weather needs a location") instead of Glance's raw error.
+
 ### Extras (final phase)
 
 Three bigger tools that build on the editor. Each one still compiles down to plain Glance config (YAML + one CSS file), so principle 3 holds: nothing Glaze makes needs Glaze to keep working.
 
-**1. Widget size: width and height inside a column**
+**1. Widget height inside a column**
 
-Glance has no size options per widget (§4), so Glaze translates sizes into things Glance does understand:
+Glance has no size options per widget (§4). Width is done (through `split-column`, phase 6); height is translated into something Glance does understand:
 
-- **Width** → `split-column`. Dragging a widget's right edge snaps to _full / ½ / ⅓_ of the column. Glaze then wraps the widget and its neighbour(s) in a `split-column` with the matching `max-columns`, or unwraps it again when the widget goes back to full width. The canvas shows the snap points while dragging.
 - **Height** → `css-class` + generated CSS. Dragging the bottom edge snaps to _auto / S / M / L / XL_ (or a custom px value in the inspector). Glaze adds a class such as `glaze-h-320` to the widget's `css-class` (keeping any classes that were already there) and writes the rule to a **Glaze-managed CSS file** (`assets/glaze.css`, linked through `theme.custom-css-file` or appended to an existing custom CSS file between `/* glaze:start */ … /* glaze:end */` markers):
 
   ```css
   .glaze-h-320 .widget-content { height: 320px; overflow-y: auto; }
   ```
-- Rules: no resizing inside `group` (tabs share one height), `split-column` keeps Glance's limits, and unused generated classes are cleaned up on Publish.
-- The inspector's Style tab gets the same controls (width segmented control, height select + px input) for keyboard users.
+- Rules: no resizing inside `group` (tabs share one height), and unused generated classes are cleaned up on Publish.
+- The inspector's Style tab gets the same control (height select + px input) for keyboard users, next to the width buttons from phase 6.
 
 **2. Widget builder**
 
@@ -197,7 +215,7 @@ Like the theme generators of daisyUI or shadcn/ui, but for Glance's theme option
 2. **Code + live preview:** the YAML editor on the left with file tabs (`glance.yml`, `custom.css`, `design.js`), syntax highlighting and inline errors ("unknown option `stlye`: did you mean `style`? [Fix]"). Live preview on the right with a desktop/phone toggle. Clicking a widget in the preview jumps to it in the code.
 3. **Users:** list of users with role, visible pages and the status of their Glance instance. Detail panel with username, password, a checkbox per page, a starting template and "Edit layout".
 4. **Button in Glance:** an "Edit page" pill next to the status label, with a tooltip. Opens Glaze directly on that page.
-5. **Widget size (in the editor):** a selected widget gets resize handles on its right and bottom edges. While dragging, snap lines show ½ / ⅓ width and S–XL height, with a small label ("½ · 320px").
+5. **Widget size (in the editor):** a selected widget in a split-column has a handle on its right edge that snaps to ½ / ⅓ / ¼ with a label ("⅓ · 3 columns"); done in phase 6. A bottom handle for S–XL height follows with the Extras.
 6. **Widget builder:** same three-panel layout as the editor (block library, canvas, inspector with Data / Block / Template tabs) plus a JSON explorer under the Data tab. Top bar: widget name, column-width toggle, "Fetch sample", **Save** and "Add to page".
 7. **Theme editor:** preset list on the left, a sample Glance page in the middle, and color pickers + sliders on the right. Top bar: dark/light and desktop/phone toggles, Import, Export and **Publish**.
 
@@ -241,19 +259,19 @@ Browser
 
 ## 8. Tech stack
 
-| Part         | Choice                                  | Why                                                                               |
-| ------------ | --------------------------------------- | --------------------------------------------------------------------------------- |
-| Language     | TypeScript (strict)                     | Types catch mistakes in the config structure.                                     |
-| Frontend     | React 19 + Vite                         | Fast to develop; Vite produces a static build the Node server can serve.          |
-| Drag & drop  | `@dnd-kit/core` + `@dnd-kit/sortable`   | The standard for sortable drag & drop in React, accessible and keyboard-friendly. |
-| State        | Zustand                                 | Simple, little boilerplate. Undo/redo via middleware (`zundo`).                   |
-| YAML         | npm `yaml` (eemeli), **Document API**   | Keeps comments, anchors and order when editing (`doc.setIn([...], value)`).       |
-| Forms        | React Hook Form + Zod                   | One Zod schema per widget that both validates and drives the form.                |
-| Code editor  | CodeMirror 6 + `@codemirror/lang-yaml`  | Lighter than Monaco; per-line error markers.                                      |
-| Backend      | Node + Hono                             | Small and fast, TypeScript end to end.                                            |
-| Auth (Glaze) | Signed session cookie + scrypt hash     | Glaze writes config, so it always sits behind a login (see §9).                   |
-| Tests        | Vitest (+ Playwright for the editor)    | Above all: "parse → edit → serialize changes nothing else".                       |
-| Deployment   | Docker multi-stage build → single image | One container next to Glance; compose example in the README.                      |
+| Part         | Choice                                       | Why                                                                                |
+| ------------ | -------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Language     | TypeScript (strict)                          | Types catch mistakes in the config structure.                                      |
+| Frontend     | React 19 + Vite                              | Fast to develop; Vite produces a static build the Node server can serve.           |
+| Drag & drop  | `@dnd-kit/core` + own drop geometry          | dnd-kit for sensors, keyboard and announcements; targets come from measured rects. |
+| State        | Zustand                                      | Simple, little boilerplate. Undo/redo via middleware (`zundo`).                    |
+| YAML         | npm `yaml` (eemeli), **Document API**        | Keeps comments, anchors and order when editing (`doc.setIn([...], value)`).        |
+| Forms        | React Hook Form + Zod, from `@glaze/schemas` | Generated schemas drive both the form and its Zod validation.                      |
+| Code editor  | CodeMirror 6 + `@codemirror/lang-yaml`       | Lighter than Monaco; per-line error markers.                                       |
+| Backend      | Node + Hono                                  | Small and fast, TypeScript end to end.                                             |
+| Auth (Glaze) | Signed session cookie + scrypt hash          | Glaze writes config, so it always sits behind a login (see §9).                    |
+| Tests        | Vitest (+ Playwright for the editor)         | Above all: "parse → edit → serialize changes nothing else".                        |
+| Deployment   | Docker multi-stage build → single image      | One container next to Glance; compose example in the README.                       |
 
 **Core idea: the document model**
 The UI works on a simplified model (pages → columns → widgets with an `id`). Every change is translated into a small edit of the YAML `Document`, never "regenerate the whole file". That's how comments survive.
@@ -282,8 +300,17 @@ interface PageNode {
 }
 ```
 
-**Generating widget schemas**
-A script (`scripts/generate-widget-schemas.ts`) reads the Glance Go source (`internal/glance/widget-*.go`), extracts each struct's fields with `yaml:"…"` tags and their Go types, and writes a JSON schema or Zod definition per widget. For a new Glance version you rerun the script and see what changed in the diff. Labels and help texts come from a separate translation file.
+**Generating widget schemas** (`@glaze/schemas`, phase 6)
+
+`pnpm schemas` (`scripts/generate-widget-schemas.ts`) downloads the Glance source of a tag (default `v0.8.7`; `--source <checkout>` reads a local one) and writes `packages/schemas/src/generated/`: one schema per widget type, the shared `widgetBase` fields, the page fields and the config sections, plus `GENERATED_FROM`. For a new Glance version you rerun it and read the diff.
+
+- **Parsing** (`scripts/schema-gen/go-parse.ts`): a small Go lexer (with Go's semicolon insertion) and parser for struct types, constants, package-level map literals, method bodies and the widget factory in `widget.go` (aliases such as `stocks` → `markets` included). Struct fields follow yaml.v3: the tag name wins, `-` and unexported fields are skipped, a field without a tag uses its lowercased name, and `,inline` merges fields (also from `pkg/sysinfo`).
+- **Custom YAML types** are handled in an explicit table (`CUSTOM_TYPES` in `build.ts`): `durationField` → duration, `hslColorField` → color, `customIconField` → icon, `proxyOptionsField` and `releaseRequest` → union of a string and an object, `queryParametersField` → map of string-or-list, `orderedYAMLMap` → map, `widgets` → child widgets, `template.HTML` → HTML code. Any other type with an `UnmarshalYAML` fails the generator.
+- **Code facts** (`analyze.ts`): defaults (`if x <= 0 { x = 15 }`), enums (`x != "a" && x != "b"`, `switch` on constants, lookups in map literals; a lookup followed by `!ok` means only those values), required options (`if x == "" { return errors… }`), and each widget's own title and refresh interval.
+- **Overrides** (`packages/schemas/overrides.ts`, hand-written): labels, help texts, enums the code doesn't spell out, defaults from the docs, field order, groups (Settings / Style tab), warnings, and the options a new widget starts with. The generator fails when an override names a field that doesn't exist, when an override's enum drops a value the code accepts, and when the code compares an option with fixed words but no override says what it is.
+- **CI** runs `pnpm schemas --check`: the committed files must match the source plus overrides.
+- **Uses:** the forms (one generic `SchemaForm`, with a few hand-made fields where they're clearly better, e.g. docker container labels), their Zod validation, the unknown-option check for every widget type, and plain-language errors for missing required options.
+- **Tests:** a fixture per widget type, a round-trip of every fixture through the form edits, a coverage test that every option is reachable in a form, and `glance config:validate` (Glance v0.8.7 in CI) on every fixture and every new widget.
 
 ---
 
@@ -317,8 +344,8 @@ A script (`scripts/generate-widget-schemas.ts`) reads the Glance Go source (`int
   ├─ apps/web/          React app (Vite)
   ├─ apps/server/       Node API (Hono)
   ├─ packages/core/     document model, YAML edits, layout rules (shared, well tested)
-  ├─ packages/schemas/  generated widget schemas (planned)
-  ├─ scripts/           generators (planned)
+  ├─ packages/schemas/  widget, page and config schemas generated from the Glance source
+  ├─ scripts/           generators (schemas, brand assets), release and screenshot scripts
   ├─ docker/            Dockerfile, compose example, smoke test
   └─ README.md, LICENSE, CONTRIBUTING.md
   ```
@@ -331,16 +358,17 @@ A script (`scripts/generate-widget-schemas.ts`) reads the Glance Go source (`int
 
 ## 11. Roadmap
 
-| Phase | Scope                                                         | Done when…                                                                                        | Status  |
-| ----- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------- |
-| 0     | Project setup: monorepo, Vite + React + TS, Hono, lint/format | `pnpm dev` starts the app and the API                                                             | ✅ done |
-| 1     | `packages/core`: parse → model → edit → serialize, with tests | A large real-world `glance.yml` round-trips without changes                                       | ✅ done |
-| 2     | Editor: pages, columns, drag & drop widgets (dnd-kit)         | Moving a widget produces a correct YAML diff                                                      | ✅ done |
-| 3     | Inspector + forms for 10 widgets                              | Monitor/bookmarks fully editable without YAML                                                     | ✅ done |
-| 4     | Code view + live preview + validation                         | Errors show up on the right line                                                                  | ✅ done |
-| 5     | Auth, Docker image, README → **v0.1 release**                 | Installable next to Glance                                                                        | ✅ done |
-| 6     | "Edit page" button, generated schemas, multiple users         | See §5 (v0.2 / v0.3)                                                                              |         |
-| 7     | Extras: widget size, widget builder, theme editor             | A resized widget, a builder widget and a theme all survive a round-trip and render in real Glance |         |
+| Phase | Scope                                                                                                                              | Done when…                                                                                        | Status  |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------- |
+| 0     | Project setup: monorepo, Vite + React + TS, Hono, lint/format                                                                      | `pnpm dev` starts the app and the API                                                             | ✅ done |
+| 1     | `packages/core`: parse → model → edit → serialize, with tests                                                                      | A large real-world `glance.yml` round-trips without changes                                       | ✅ done |
+| 2     | Editor: pages, columns, drag & drop widgets (dnd-kit)                                                                              | Moving a widget produces a correct YAML diff                                                      | ✅ done |
+| 3     | Inspector + forms for 10 widgets                                                                                                   | Monitor/bookmarks fully editable without YAML                                                     | ✅ done |
+| 4     | Code view + live preview + validation                                                                                              | Errors show up on the right line                                                                  | ✅ done |
+| 5     | Auth, Docker image, README → **v0.1 release**                                                                                      | Installable next to Glance                                                                        | ✅ done |
+| 6     | Complete visual editor: forms for every option, widget width, flicker-free drag & drop, resizable panels, page and global settings | Every Glance option has a form; every fixture and new widget passes `glance config:validate`      | ✅ done |
+| 7     | "Edit page" button, multiple users                                                                                                 | See §5 (v0.2 / v0.3)                                                                              |         |
+| 8     | Extras: widget height, widget builder, theme editor                                                                                | A resized widget, a builder widget and a theme all survive a round-trip and render in real Glance |         |
 
 ---
 
@@ -350,6 +378,6 @@ A script (`scripts/generate-widget-schemas.ts`) reads the Glance Go source (`int
 2. Multiple users: build route A (one Glance per user), or first try a pull request for route B in Glance?
 3. ~~Publish straight to `glance.yml`, or first to a draft (`glance.draft.yml`) with "Publish" as a separate step?~~ **Answered (phase 4–5): the draft lives in the browser.** Every edit (design, forms, code view, asset files) stays in the editor until Publish; nothing is written on the way, and there's no `glance.draft.yml`. Publish shows a review, the server validates the text again (YAML, layout, unknown options and `glance config:validate`) and only then writes `glance.yml` (temp file + rename), refusing broken YAML always and other errors unless forced. A changed file on disk is a conflict, not an overwrite.
 4. Use `$include` to put every page in its own file (clearer, fewer conflicts)?
-5. Widget size: when a widget becomes ½ width but has no neighbour to share the row with, should Glaze leave empty space (a `split-column` with one widget) or refuse the resize?
+5. ~~Widget size: when a widget becomes ½ width but has no neighbour to share the row with, should Glaze leave empty space (a `split-column` with one widget) or refuse the resize?~~ **Answered (phase 6): it depends on how you got there.** Choosing ½ / ⅓ / ¼ for a lone widget (Style tab) wraps it in a one-widget `split-column`: Glance renders that fine, the rest of the row stays empty, and the hint says to drop a widget beside it. Dragging the last-but-one widget out of a split-column is different: the one left behind didn't ask for a width, so the split-column is dissolved, with a notice that can undo it.
 6. Glaze-managed CSS: always a separate `assets/glaze.css`, or a marked block inside the user's existing custom CSS file? Glance accepts only one `custom-css-file`, so a separate file means adding an `@import` to the existing one.
 7. Widget builder preview: is a TypeScript renderer of our own block tree enough, or do we want a "render in Glance" preview (e.g. a hidden scratch page) for hand-edited templates?

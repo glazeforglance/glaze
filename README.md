@@ -20,7 +20,8 @@ Drag, drop and configure your pages instead of hand-writing YAML.
 Glance is a fast, beautiful self-hosted dashboard, configured entirely through one `glance.yml`. Glaze runs next to it and gives you a visual editor on top of that same file:
 
 - **Drag & drop layout:** pages, columns and widgets, following Glance's own layout rules, so what you build is always something Glance can render.
-- **Forms instead of YAML:** click a widget and fill in a form. No more guessing option names or fighting indentation.
+- **Every Glance option has a form:** all 28 widget types, page settings and the global settings (server, login, branding, theme), generated from Glance's own source. No more guessing option names or fighting indentation.
+- **Widgets side by side:** drop a widget beside another and drag its edge to ½, ⅓ or ¼, the way Glance's `split-column` does it.
 - **Your YAML stays yours:** Glaze edits `glance.yml` in place and keeps your comments, anchors and ordering intact.
 - **Code view with live preview:** switch to the YAML at any time, with the real Glance next to it.
 - **Validation before writing:** YAML syntax, layout rules, unknown options with one-click fixes, and `glance config:validate` itself.
@@ -133,8 +134,8 @@ Anyone who can use Glaze can change your dashboard config, including the API key
 
 ## Roadmap
 
-- **Available:** the visual editor with drag & drop, forms for the 10 most used widgets, the code view with live preview, validation, and the Docker image with a login.
-- **Next:** a theme editor, an "Edit page" button in Glance, forms for every widget, widget sizes, and a widget builder.
+- **Available:** the visual editor with drag & drop, a form for every Glance option (widgets, pages, global settings, Glance's own login), widget widths through split-columns, the code view with live preview, validation, and the Docker image with a login.
+- **Next:** an "Edit page" button in Glance, widget heights, a theme editor, and a widget builder.
 - **Later:** multiple users, each with their own login.
 
 The details and the reasoning behind them are in [docs/DESIGN.md](docs/DESIGN.md).

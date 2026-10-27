@@ -113,9 +113,14 @@ pages:
               - title: Paperless
                 url: https://docs.homelab.local
                 icon: si:paperlessngx
-          - type: docker-containers
-            running-only: true
-            format-container-names: true
+          # Side by side: two equal columns inside this column.
+          - type: split-column
+            max-columns: 2
+            widgets:
+              - type: docker-containers
+                running-only: true
+                format-container-names: true
+              - type: server-stats
 
       - size: small
         widgets:
