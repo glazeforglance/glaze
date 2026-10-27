@@ -1,7 +1,6 @@
 import type { ColumnNode } from "@glaze/core";
 import type { WidgetList as WidgetListModel } from "../../lib/drop-target.ts";
-import { Button } from "../ui/Button.tsx";
-import { PlusIcon } from "../ui/icons.tsx";
+import { AddWidgetMenu } from "./AddWidgetMenu.tsx";
 import { ColumnSizeMenu } from "./ColumnSizeMenu.tsx";
 import { WidgetList } from "./WidgetList.tsx";
 
@@ -34,16 +33,7 @@ export function ColumnCard({ column, list }: ColumnCardProps) {
 				list={list}
 				widgets={column.widgets}
 				layout="stack"
-				footer={
-					<Button
-						variant="dashed"
-						unavailable="Coming soon"
-						className="min-h-10"
-					>
-						<PlusIcon />
-						Widget
-					</Button>
-				}
+				footer={<AddWidgetMenu list={list} />}
 			/>
 		</section>
 	);

@@ -116,7 +116,7 @@ export function Menu({
 					role="menu"
 					aria-label={label}
 					onKeyDown={onKeyDown}
-					className={`absolute top-full z-30 mt-1 min-w-44 rounded-md border border-line-strong bg-card p-1 shadow-xl shadow-black/50 ${
+					className={`absolute top-full z-30 mt-1 max-h-80 min-w-44 overflow-y-auto rounded-md border border-line-strong bg-card p-1 shadow-xl shadow-black/50 ${
 						align === "right" ? "right-0" : "left-0"
 					}`}
 				>

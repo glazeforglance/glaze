@@ -19,12 +19,21 @@ export {
 	type EnvReference,
 	type EnvReferenceKind,
 	findEnvReferences,
+	getMapOptions,
 	getWidgetOptions,
 	type OptionSource,
 	type WidgetOption,
 	type WidgetOptions,
 } from "./options.ts";
-export { addPage, movePage, removePage, renamePage } from "./pages.ts";
+export {
+	addPage,
+	movePage,
+	RESERVED_SLUGS,
+	removePage,
+	renamePage,
+	slugFromName,
+	slugProblem,
+} from "./pages.ts";
 export {
 	findPathAtOffset,
 	getNodeRange,
@@ -79,8 +88,12 @@ export {
 	type UnknownOption,
 } from "./unknown-options.ts";
 export {
+	insertListItemAt,
 	insertWidgetListItem,
+	moveListItemAt,
 	moveWidgetListItem,
+	removeValueAt,
 	removeWidgetValue,
+	setValueAt,
 	setWidgetValue,
 } from "./widget-values.ts";

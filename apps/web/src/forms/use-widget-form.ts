@@ -1,5 +1,6 @@
 import {
 	type EnvReference,
+	getMapOptions,
 	getWidgetOptions,
 	type WidgetNode,
 	type WidgetOption,
@@ -20,9 +21,95 @@ import { planCommit } from "./commit.ts";
 import { toSubPath, valueAt } from "./paths.ts";
 import { validateField } from "./validate.ts";
 
-/** Everything the fields of one widget form share. */
+/**
+ * What a form edits: a widget, or another map in the document (a page, or
+ * the document root for the Settings view). Fields read and write through it,
+ * so the same field components work everywhere.
+ */
+export interface FormTarget {
+	/** The current values, read from the store right now (not from the last render). */
+	values(): Record<string, unknown> | null;
+	/** Sets a value at a path below the target, e.g. `["sites", 2, "url"]`. */
+	set(path: YamlPath, value: unknown): boolean;
+	remove(path: YamlPath): boolean;
+	insert(listPath: YamlPath, value: unknown, index?: number): boolean;
+	move(listPath: YamlPath, fromIndex: number, toIndex: number): boolean;
+}
+
+/**
+ * A form target for a widget of the current page. Widget ids survive edits,
+ * so the widget is looked up again for every read and write.
+ * @param widgetId - The widget's Glaze id.
+ * @returns The target.
+ */
+export function widgetTarget(widgetId: string): FormTarget {
+	const store = () => editorStore.getState();
+	return {
+		values: () => {
+			const state = store();
+			const page = selectCurrentPage(state);
+			const widget = page ? findWidget(page, widgetId) : null;
+			if (!state.doc || !widget) return null;
+			const options = getWidgetOptions(state.doc, widget.path);
+			return options.ok ? optionValues(options.value.options) : null;
+		},
+		set: (path, value) => {
+			const [key] = path;
+			return path.length === 1 && typeof key === "string"
+				? store().setWidgetOption(widgetId, key, value)
+				: store().setWidgetValue(widgetId, path, value);
+		},
+		remove: (path) => {
+			const [key] = path;
+			return path.length === 1 && typeof key === "string"
+				? store().removeWidgetOption(widgetId, key)
+				: store().removeWidgetValue(widgetId, path);
+		},
+		insert: (listPath, value, index) =>
+			store().insertWidgetListItem(widgetId, listPath, value, index),
+		move: (listPath, fromIndex, toIndex) =>
+			store().moveWidgetListItem(widgetId, listPath, fromIndex, toIndex),
+	};
+}
+
+/**
+ * A form target for a page or the document root.
+ * @param basePath - Returns the map's path now (a page's path changes when pages move), or `null` when it's gone.
+ * @returns The target.
+ */
+export function mapTarget(basePath: () => YamlPath | null): FormTarget {
+	const store = () => editorStore.getState();
+	const withBase = (edit: (base: YamlPath) => boolean): boolean => {
+		const base = basePath();
+		return base === null ? false : edit(base);
+	};
+	return {
+		values: () => {
+			const { doc } = store();
+			const base = basePath();
+			if (!doc || base === null) return null;
+			const options = getMapOptions(doc, base);
+			return options.ok ? optionValues(options.value.options) : null;
+		},
+		set: (path, value) =>
+			withBase((base) => store().setValueAt(base, path, value)),
+		remove: (path) => withBase((base) => store().removeValueAt(base, path)),
+		insert: (listPath, value, index) =>
+			withBase((base) =>
+				store().insertListItemAt(base, listPath, value, index),
+			),
+		move: (listPath, fromIndex, toIndex) =>
+			withBase((base) =>
+				store().moveListItemAt(base, listPath, fromIndex, toIndex),
+			),
+	};
+}
+
+/** Everything the fields of one form share. */
 export interface WidgetFormApi {
-	readonly widget: WidgetNode;
+	/** The widget being edited, or `null` for a page or settings form. */
+	readonly widget: WidgetNode | null;
+	readonly target: FormTarget;
 	readonly schema: z.ZodType;
 	readonly options: ReadonlyMap<string, WidgetOption>;
 	/** True for alias widgets: every field is shown but can't be changed. */
@@ -68,16 +155,6 @@ export function optionValues(
 	);
 }
 
-/** Reads the widget's values from the store right now, not from the last render. */
-function currentValues(widgetId: string): Record<string, unknown> | null {
-	const state = editorStore.getState();
-	const page = selectCurrentPage(state);
-	const widget = page ? findWidget(page, widgetId) : null;
-	if (!state.doc || !widget) return null;
-	const options = getWidgetOptions(state.doc, widget.path);
-	return options.ok ? optionValues(options.value.options) : null;
-}
-
 /** Where a field's top-level option comes from. */
 export type FieldStatus = "own" | "inherited" | "unset";
 
@@ -118,7 +195,7 @@ export function useWidgetField(
 	name: string,
 	rules: FieldRules = {},
 ): WidgetField {
-	const { widget, schema, options, readOnly, form } = useWidgetForm();
+	const { target, schema, options, readOnly, form } = useWidgetForm();
 	const { field, fieldState } = useController({ name, control: form.control });
 	const path = toSubPath(name);
 	const [key] = path;
@@ -135,7 +212,7 @@ export function useWidgetField(
 		) ?? [];
 
 	const commit = (value: unknown = form.getValues(name)): boolean => {
-		const values = currentValues(widget.id);
+		const values = target.values();
 		if (!values || typeof key !== "string") return false;
 		const message = validateField(schema, values, path, value);
 		if (message !== null) {
@@ -149,15 +226,8 @@ export function useWidgetField(
 			glanceDefault: rules.glanceDefault,
 		});
 		if (plan.kind === "none") return true;
-		const store = editorStore.getState();
 		const applied =
-			path.length === 1
-				? plan.kind === "set"
-					? store.setWidgetOption(widget.id, key, plan.value)
-					: store.removeWidgetOption(widget.id, key)
-				: plan.kind === "set"
-					? store.setWidgetValue(widget.id, path, plan.value)
-					: store.removeWidgetValue(widget.id, path);
+			plan.kind === "set" ? target.set(path, plan.value) : target.remove(path);
 		if (!applied) {
 			// Show the document's value again, and why the edit was refused right
 			// at the field (the canvas notice may be out of view).
@@ -183,7 +253,7 @@ export function useWidgetField(
 		},
 		override: () => {
 			if (!option || typeof key !== "string") return;
-			editorStore.getState().setWidgetOption(widget.id, key, option.value);
+			target.set([key], option.value);
 		},
 	};
 }
@@ -209,7 +279,7 @@ export interface WidgetList {
  * @returns The items and list actions.
  */
 export function useWidgetList(name: string): WidgetList {
-	const { widget, options, readOnly, form } = useWidgetForm();
+	const { target, options, readOnly, form } = useWidgetForm();
 	const watched: unknown = useWatch({ control: form.control, name });
 	const items = Array.isArray(watched) ? watched : [];
 	const path = toSubPath(name);
@@ -220,7 +290,6 @@ export function useWidgetList(name: string): WidgetList {
 			? "own"
 			: "inherited"
 		: "unset";
-	const store = () => editorStore.getState();
 
 	return {
 		items,
@@ -228,22 +297,14 @@ export function useWidgetList(name: string): WidgetList {
 		status,
 		disabled: readOnly || status === "inherited",
 		readOnly,
-		add: (value, index) =>
-			store().insertWidgetListItem(widget.id, path, value, index),
-		remove: (index) => {
-			// Removing the last item removes the key, instead of leaving `sites:` empty.
-			if (items.length === 1) {
-				return path.length === 1 && typeof key === "string"
-					? store().removeWidgetOption(widget.id, key)
-					: store().removeWidgetValue(widget.id, path);
-			}
-			return store().removeWidgetValue(widget.id, [...path, index]);
-		},
-		move: (fromIndex, toIndex) =>
-			store().moveWidgetListItem(widget.id, path, fromIndex, toIndex),
+		add: (value, index) => target.insert(path, value, index),
+		// Removing the last item removes the key, instead of leaving `sites:` empty.
+		remove: (index) =>
+			target.remove(items.length === 1 ? path : [...path, index]),
+		move: (fromIndex, toIndex) => target.move(path, fromIndex, toIndex),
 		override: () => {
 			if (!option || typeof key !== "string") return;
-			store().setWidgetOption(widget.id, key, option.value);
+			target.set([key], option.value);
 		},
 	};
 }
@@ -268,7 +329,7 @@ export interface WidgetMap {
  * @returns The entries and map actions.
  */
 export function useWidgetMap(name: string): WidgetMap {
-	const { widget, options, readOnly, form } = useWidgetForm();
+	const { target, options, readOnly, form } = useWidgetForm();
 	const watched: unknown = useWatch({ control: form.control, name });
 	const entries =
 		typeof watched === "object" && watched !== null && !Array.isArray(watched)
@@ -282,8 +343,6 @@ export function useWidgetMap(name: string): WidgetMap {
 			? "own"
 			: "inherited"
 		: "unset";
-	const store = () => editorStore.getState();
-	const isTopLevel = path.length === 1 && typeof key === "string";
 
 	return {
 		entries,
@@ -291,22 +350,17 @@ export function useWidgetMap(name: string): WidgetMap {
 		status,
 		disabled: readOnly || status === "inherited",
 		readOnly,
-		add: (entryKey, value) => {
+		add: (entryKey, value) =>
 			// A missing map is written whole; an existing one gets one more key.
-			if (entries.length === 0 && isTopLevel) {
-				return store().setWidgetOption(widget.id, key, { [entryKey]: value });
-			}
-			return store().setWidgetValue(widget.id, [...path, entryKey], value);
-		},
-		remove: (entryKey) => {
-			if (entries.length === 1 && isTopLevel) {
-				return store().removeWidgetOption(widget.id, key);
-			}
-			return store().removeWidgetValue(widget.id, [...path, entryKey]);
-		},
+			entries.length === 0
+				? target.set(path, { [entryKey]: value })
+				: target.set([...path, entryKey], value),
+		// Removing the last entry removes the map's key.
+		remove: (entryKey) =>
+			target.remove(entries.length === 1 ? path : [...path, entryKey]),
 		override: () => {
 			if (!option || typeof key !== "string") return;
-			store().setWidgetOption(widget.id, key, option.value);
+			target.set([key], option.value);
 		},
 	};
 }

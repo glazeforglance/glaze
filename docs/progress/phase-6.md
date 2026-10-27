@@ -77,10 +77,11 @@ error), and a missing iframe `height` gives 50 px.
 - [x] `${ENV}` values shown as ENV chips, never resolved
 - [x] The server's unknown-option check covers all 28 types (keys from `@glaze/schemas`; core's hand-kept lists moved to its test fixtures)
 
-## 6f — Page settings and head widgets
+## 6f — Page settings and head widgets ✅
 
-- [ ] Page settings in the inspector (name, slug with suggestion + uniqueness, width, nav width, toggles)
-- [ ] Head widgets fully editable on the canvas
+- [x] Page settings in the inspector (click the page title or "Page settings"): name, URL path with Glance's own slug rule as a suggestion and a clash/reserved check, width (with the column limit it implies, refused with Glance's rule when there are too many columns), navigation width and the three switches
+- [x] Head widgets fully editable on the canvas: add ("+ Widget" menu, no split-column), move, remove, select, forms like any widget
+- [x] Core: value edits for any map (`setValueAt` & co. for a widget, a page or the document root), so page settings and the Settings view share the widget forms' minimal edits; forms read and write through a `FormTarget`
 
 ## 6g — Global Settings view
 

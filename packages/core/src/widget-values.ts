@@ -1,7 +1,8 @@
 /*
- * Edits below a widget's top-level options, e.g. one monitor site's `url`.
- * They patch only the touched node, so comments and the formatting of
- * neighbouring list items stay as they are.
+ * Edits of values inside a map: below a widget's options (one monitor
+ * site's `url`), a page's options, or the top-level sections of the config
+ * (`server.port`, `theme.presets`). They patch only the touched node, so
+ * comments and the formatting of neighbouring list items stay as they are.
  */
 import {
 	isAlias,
@@ -55,31 +56,62 @@ function ownPair(map: YAMLMap, key: string) {
 }
 
 /**
- * Walks `subPath` from the widget, refusing paths that would edit an anchor
- * through a merge key or an alias. It stops at the first missing map key and
- * returns the segments after it in `rest`.
+ * The keys below a base map that hold pages, columns or widgets. Those have
+ * Glaze ids, which only the structural edits (addWidget, movePage, …) keep
+ * in step, so value edits may not touch them.
+ * @param basePath - The document root (`[]`), a page, or a widget.
+ * @returns The protected keys, or why the path can't be a base.
+ */
+function structuralKeys(
+	basePath: YamlPath,
+): Result<readonly string[], EditError> {
+	if (basePath.length === 0) return ok(["pages"]);
+	if (
+		basePath.length === 2 &&
+		basePath[0] === "pages" &&
+		typeof basePath[1] === "number"
+	) {
+		return ok(["columns", "head-widgets"]);
+	}
+	const item = splitItemPath(basePath, WIDGET_LISTS);
+	if (!item.ok) {
+		return err(
+			editError(
+				"invalid-path",
+				`${JSON.stringify(basePath)} is not the document root, a page or a widget`,
+			),
+		);
+	}
+	return ok(WIDGET_LISTS);
+}
+
+/**
+ * Walks `subPath` from a base map (the document root, a page or a widget),
+ * refusing paths that would edit an anchor through a merge key or an alias,
+ * or that lead into pages, columns or child widgets. It stops at the first
+ * missing map key and returns the segments after it in `rest`.
  */
 function resolveTarget(
 	doc: GlazeDocument,
-	widgetPath: YamlPath,
+	basePath: YamlPath,
 	subPath: YamlPath,
 ): Result<Target, EditError> {
-	const item = splitItemPath(widgetPath, WIDGET_LISTS);
-	if (!item.ok) return item;
+	const protectedKeys = structuralKeys(basePath);
+	if (!protectedKeys.ok) return protectedKeys;
 	const [first] = subPath;
 	if (first === undefined) {
 		return err(editError("invalid-path", "The sub-path is empty"));
 	}
-	if (WIDGET_LISTS.some((key) => key === first)) {
-		// Child widgets have ids; only the widget edits keep those in step.
+	if (protectedKeys.value.some((key) => key === first)) {
+		// Pages, columns and widgets have ids; only the structural edits keep those in step.
 		return err(
 			editError(
 				"invalid-path",
-				"Child widgets are edited with addWidget, moveWidget and removeWidget",
+				`"${first}" holds pages, columns or widgets; edit those with their own edits (addWidget, moveWidget, …)`,
 			),
 		);
 	}
-	const widget = getNodeAt(doc.yaml, widgetPath);
+	const widget = getNodeAt(doc.yaml, basePath);
 	if (isAlias(widget)) {
 		return err(
 			editError(
@@ -92,19 +124,17 @@ function resolveTarget(
 		return err(
 			editError(
 				"unsupported-structure",
-				"This widget is an include; edit the included file instead",
+				"This item is an include; edit the included file instead",
 			),
 		);
 	}
 	if (!isMap(widget)) {
-		return err(
-			editError("not-found", `No widget at ${JSON.stringify(widgetPath)}`),
-		);
+		return err(editError("not-found", `No map at ${JSON.stringify(basePath)}`));
 	}
 	const where = (i: number) => JSON.stringify(subPath.slice(0, i + 1));
 	let current: unknown = widget;
 	for (const [i, segment] of subPath.entries()) {
-		const parent = [...widgetPath, ...subPath.slice(0, i)];
+		const parent = [...basePath, ...subPath.slice(0, i)];
 		const isLast = i === subPath.length - 1;
 		let child: unknown;
 		if (isMap(current)) {
@@ -197,25 +227,25 @@ function nestValue(keys: readonly string[], value: unknown): unknown {
 }
 
 /**
- * Sets a value below a widget: a map key (`["sites", 2, "url"]`) or a list
+ * Sets a value below a widget, a page or the document root: a map key (`["sites", 2, "url"]`) or a list
  * item (`["repositories", 0]`). One-line scalars are replaced in place, so a
  * trailing comment and the quote style survive; other values replace that
  * node's block. Missing keys are added, also nested ones: setting
  * `["sites", 0, "basic-auth", "username"]` creates `basic-auth`. Missing list
  * items are never created.
  * @param doc - The document to edit.
- * @param widgetPath - Path of the widget.
- * @param subPath - Path below the widget; not into child `widgets`.
+ * @param basePath - The map the sub-path starts at: a widget, a page, or `[]` for the document root.
+ * @param subPath - Path below it; not into pages, columns or child widgets.
  * @param value - Plain JS value.
  * @returns The new document, or why the value couldn't be set.
  */
-export function setWidgetValue(
+export function setValueAt(
 	doc: GlazeDocument,
-	widgetPath: YamlPath,
+	basePath: YamlPath,
 	subPath: YamlPath,
 	value: unknown,
 ): Result<GlazeDocument, EditError> {
-	const target = resolveTarget(doc, widgetPath, subPath);
+	const target = resolveTarget(doc, basePath, subPath);
 	if (!target.ok) return target;
 	const { parent, last, rest } = target.value;
 	const keys = rest.filter((segment) => typeof segment === "string");
@@ -231,7 +261,7 @@ export function setWidgetValue(
 	const next = finishEdit(doc, source.value, null);
 	if (!next.ok) return next;
 	// Safety net: the patched text must read back as exactly the requested value.
-	const written = getNodeAt(next.value.yaml, [...widgetPath, ...subPath]);
+	const written = getNodeAt(next.value.yaml, [...basePath, ...subPath]);
 	const actual: unknown = isNode(written)
 		? written.toJS(next.value.yaml)
 		: written;
@@ -247,19 +277,19 @@ export function setWidgetValue(
 }
 
 /**
- * Removes a value below a widget: a map key with its block, or a list item.
+ * Removes a value below a widget, a page or the document root: a map key with its block, or a list item.
  * Comment lines directly above a removed list item go with it.
  * @param doc - The document to edit.
- * @param widgetPath - Path of the widget.
- * @param subPath - Path below the widget, e.g. `["sites", 1, "icon"]` or `["sites", 1]`.
+ * @param basePath - The map the sub-path starts at: a widget, a page, or `[]` for the document root.
+ * @param subPath - Path below it, e.g. `["sites", 1, "icon"]` or `["sites", 1]`.
  * @returns The new document, or why the value couldn't be removed.
  */
-export function removeWidgetValue(
+export function removeValueAt(
 	doc: GlazeDocument,
-	widgetPath: YamlPath,
+	basePath: YamlPath,
 	subPath: YamlPath,
 ): Result<GlazeDocument, EditError> {
-	const target = resolveTarget(doc, widgetPath, subPath);
+	const target = resolveTarget(doc, basePath, subPath);
 	if (!target.ok) return target;
 	const { parent, last, node, rest } = target.value;
 	if (node === undefined || rest.length > 0) {
@@ -278,23 +308,23 @@ export function removeWidgetValue(
 }
 
 /**
- * Inserts an item into a list below a widget, matching the indentation (and
+ * Inserts an item into a list below a widget, a page or the document root, matching the indentation (and
  * blank-line spacing) of its siblings. Creates the list when it's missing.
  * @param doc - The document to edit.
- * @param widgetPath - Path of the widget.
- * @param listSubPath - Path of the list below the widget, e.g. `["sites"]`.
+ * @param basePath - The map the sub-path starts at: a widget, a page, or `[]` for the document root.
+ * @param listSubPath - Path of the list below it, e.g. `["sites"]`.
  * @param value - The new item, as a plain JS value.
  * @param index - Position in the list; defaults to the end.
  * @returns The new document, or why the item couldn't be added.
  */
-export function insertWidgetListItem(
+export function insertListItemAt(
 	doc: GlazeDocument,
-	widgetPath: YamlPath,
+	basePath: YamlPath,
 	listSubPath: YamlPath,
 	value: unknown,
 	index?: number,
 ): Result<GlazeDocument, EditError> {
-	const resolved = resolveTarget(doc, widgetPath, listSubPath);
+	const resolved = resolveTarget(doc, basePath, listSubPath);
 	if (!resolved.ok) return resolved;
 	const target = requireFullPath(resolved.value, listSubPath);
 	if (!target.ok) return target;
@@ -307,7 +337,7 @@ export function insertWidgetListItem(
 	const source = insertSeqItem(
 		doc.source,
 		doc.yaml,
-		[...widgetPath, ...listSubPath],
+		[...basePath, ...listSubPath],
 		at,
 		renderItem(value, eol),
 	);
@@ -316,23 +346,23 @@ export function insertWidgetListItem(
 }
 
 /**
- * Moves an item within a list below a widget. The item keeps its text,
+ * Moves an item within a list below a widget, a page or the document root. The item keeps its text,
  * including the comment lines directly above it.
  * @param doc - The document to edit.
- * @param widgetPath - Path of the widget.
- * @param listSubPath - Path of the list below the widget, e.g. `["sites"]`.
+ * @param basePath - The map the sub-path starts at: a widget, a page, or `[]` for the document root.
+ * @param listSubPath - Path of the list below it, e.g. `["sites"]`.
  * @param fromIndex - Index of the item.
  * @param toIndex - New position, counted without the moved item.
  * @returns The new document, or why the item couldn't be moved.
  */
-export function moveWidgetListItem(
+export function moveListItemAt(
 	doc: GlazeDocument,
-	widgetPath: YamlPath,
+	basePath: YamlPath,
 	listSubPath: YamlPath,
 	fromIndex: number,
 	toIndex: number,
 ): Result<GlazeDocument, EditError> {
-	const target = resolveTarget(doc, widgetPath, listSubPath);
+	const target = resolveTarget(doc, basePath, listSubPath);
 	if (!target.ok) return target;
 	const { node } = target.value;
 	if (!isSeq(node)) {
@@ -355,6 +385,84 @@ export function moveWidgetListItem(
 		);
 	}
 	if (fromIndex === toIndex) return ok(doc);
-	const list = [...widgetPath, ...listSubPath];
+	const list = [...basePath, ...listSubPath];
 	return moveItem(doc, list, fromIndex, list, toIndex);
+}
+
+/**
+ * Sets a value below a widget's options (see `setValueAt`).
+ * @param doc - The document to edit.
+ * @param widgetPath - Path of the widget.
+ * @param subPath - Path below the widget; not into child `widgets`.
+ * @param value - Plain JS value.
+ * @returns The new document, or why the value couldn't be set.
+ */
+export function setWidgetValue(
+	doc: GlazeDocument,
+	widgetPath: YamlPath,
+	subPath: YamlPath,
+	value: unknown,
+): Result<GlazeDocument, EditError> {
+	const item = splitItemPath(widgetPath, WIDGET_LISTS);
+	return item.ok ? setValueAt(doc, widgetPath, subPath, value) : item;
+}
+
+/**
+ * Removes a value below a widget's options (see `removeValueAt`).
+ * @param doc - The document to edit.
+ * @param widgetPath - Path of the widget.
+ * @param subPath - Path below the widget.
+ * @returns The new document, or why the value couldn't be removed.
+ */
+export function removeWidgetValue(
+	doc: GlazeDocument,
+	widgetPath: YamlPath,
+	subPath: YamlPath,
+): Result<GlazeDocument, EditError> {
+	const item = splitItemPath(widgetPath, WIDGET_LISTS);
+	return item.ok ? removeValueAt(doc, widgetPath, subPath) : item;
+}
+
+/**
+ * Inserts an item into a list option of a widget (see `insertListItemAt`).
+ * @param doc - The document to edit.
+ * @param widgetPath - Path of the widget.
+ * @param listSubPath - Path of the list below the widget, e.g. `["sites"]`.
+ * @param value - The new item.
+ * @param index - Position in the list; defaults to the end.
+ * @returns The new document, or why the item couldn't be added.
+ */
+export function insertWidgetListItem(
+	doc: GlazeDocument,
+	widgetPath: YamlPath,
+	listSubPath: YamlPath,
+	value: unknown,
+	index?: number,
+): Result<GlazeDocument, EditError> {
+	const item = splitItemPath(widgetPath, WIDGET_LISTS);
+	return item.ok
+		? insertListItemAt(doc, widgetPath, listSubPath, value, index)
+		: item;
+}
+
+/**
+ * Moves an item within a list option of a widget (see `moveListItemAt`).
+ * @param doc - The document to edit.
+ * @param widgetPath - Path of the widget.
+ * @param listSubPath - Path of the list below the widget.
+ * @param fromIndex - Index of the item.
+ * @param toIndex - New position, counted without the moved item.
+ * @returns The new document, or why the item couldn't be moved.
+ */
+export function moveWidgetListItem(
+	doc: GlazeDocument,
+	widgetPath: YamlPath,
+	listSubPath: YamlPath,
+	fromIndex: number,
+	toIndex: number,
+): Result<GlazeDocument, EditError> {
+	const item = splitItemPath(widgetPath, WIDGET_LISTS);
+	return item.ok
+		? moveListItemAt(doc, widgetPath, listSubPath, fromIndex, toIndex)
+		: item;
 }

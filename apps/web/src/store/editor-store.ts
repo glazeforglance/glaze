@@ -9,7 +9,9 @@ import {
 	type EditError,
 	type GlazeDocument,
 	getModel,
+	insertListItemAt,
 	insertWidgetListItem,
+	moveListItemAt,
 	movePage,
 	moveWidget,
 	moveWidgetListItem,
@@ -20,6 +22,7 @@ import {
 	type Result,
 	removeColumn,
 	removePage,
+	removeValueAt,
 	removeWidget,
 	removeWidgetOption,
 	removeWidgetValue,
@@ -28,6 +31,7 @@ import {
 	replaceSource,
 	setColumnSize,
 	setSplitColumns,
+	setValueAt,
 	setWidgetOption,
 	setWidgetValue,
 	type SplitSide,
@@ -87,6 +91,8 @@ export interface EditorState {
 	readonly dirty: boolean;
 	readonly selectedPageId: string | null;
 	readonly selectedWidgetId: string | null;
+	/** True while the inspector shows the open page's settings instead of a widget. */
+	readonly pageSettingsOpen: boolean;
 	/** Page whose tab is being renamed inline. */
 	readonly renamingPageId: string | null;
 	/** Message about an edit that was refused (e.g. a layout rule); the document is unchanged. */
@@ -137,6 +143,9 @@ export interface EditorActions {
 	selectPage(pageId: string): void;
 	/** Selects a widget on the current page, or clears the selection with `null`. */
 	selectWidget(widgetId: string | null): void;
+	/** Shows the open page's settings in the inspector (and deselects the widget). */
+	openPageSettings(): void;
+	closePageSettings(): void;
 	dismissNotice(): void;
 	/** Explains why something the user tried isn't possible (same place as refused edits). */
 	showNotice(message: string): void;
@@ -223,6 +232,25 @@ export interface EditorActions {
 		fromIndex: number,
 		toIndex: number,
 	): boolean;
+
+	/*
+	 * The same edits for a page (`["pages", 0]`) or the document root (`[]`),
+	 * for page settings and the Settings view.
+	 */
+	setValueAt(basePath: YamlPath, subPath: YamlPath, value: unknown): boolean;
+	removeValueAt(basePath: YamlPath, subPath: YamlPath): boolean;
+	insertListItemAt(
+		basePath: YamlPath,
+		listSubPath: YamlPath,
+		value: unknown,
+		index?: number,
+	): boolean;
+	moveListItemAt(
+		basePath: YamlPath,
+		listSubPath: YamlPath,
+		fromIndex: number,
+		toIndex: number,
+	): boolean;
 }
 
 export type EditorStore = EditorState & EditorActions;
@@ -240,6 +268,7 @@ const INITIAL_STATE: EditorState = {
 	dirty: false,
 	selectedPageId: null,
 	selectedWidgetId: null,
+	pageSettingsOpen: false,
 	renamingPageId: null,
 	notice: null,
 	undoNotice: null,
@@ -471,11 +500,25 @@ export function createEditorStore(): StoreApi<EditorStore> {
 			selectPage: (pageId) =>
 				set((state) =>
 					state.pages.some((page) => page.id === pageId)
-						? { selectedPageId: pageId, selectedWidgetId: null }
+						? {
+								selectedPageId: pageId,
+								selectedWidgetId: null,
+								pageSettingsOpen: false,
+							}
 						: state,
 				),
 
-			selectWidget: (widgetId) => set({ selectedWidgetId: widgetId }),
+			selectWidget: (widgetId) =>
+				set(
+					widgetId === null
+						? { selectedWidgetId: null }
+						: { selectedWidgetId: widgetId, pageSettingsOpen: false },
+				),
+
+			openPageSettings: () =>
+				set({ pageSettingsOpen: true, selectedWidgetId: null }),
+
+			closePageSettings: () => set({ pageSettingsOpen: false }),
 
 			dismissNotice: () => set({ notice: null }),
 
@@ -716,6 +759,22 @@ export function createEditorStore(): StoreApi<EditorStore> {
 			moveWidgetListItem: (widgetId, listSubPath, fromIndex, toIndex) =>
 				editWidget(widgetId, (doc, path) =>
 					moveWidgetListItem(doc, path, listSubPath, fromIndex, toIndex),
+				),
+
+			setValueAt: (basePath, subPath, value) =>
+				runEdit((doc) => setValueAt(doc, basePath, subPath, value)),
+
+			removeValueAt: (basePath, subPath) =>
+				runEdit((doc) => removeValueAt(doc, basePath, subPath)),
+
+			insertListItemAt: (basePath, listSubPath, value, index) =>
+				runEdit((doc) =>
+					insertListItemAt(doc, basePath, listSubPath, value, index),
+				),
+
+			moveListItemAt: (basePath, listSubPath, fromIndex, toIndex) =>
+				runEdit((doc) =>
+					moveListItemAt(doc, basePath, listSubPath, fromIndex, toIndex),
 				),
 		};
 	});

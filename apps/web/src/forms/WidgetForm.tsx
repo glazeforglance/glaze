@@ -16,6 +16,7 @@ import {
 	type BaseFieldKey,
 	optionValues,
 	type WidgetFormApi,
+	widgetTarget,
 	WidgetFormContext,
 } from "./use-widget-form.ts";
 
@@ -71,6 +72,7 @@ export function WidgetForm({ widget, tab, onShowYaml }: WidgetFormProps) {
 	if (parentType === "group") hiddenBaseFields.add("hide-header");
 	const api: WidgetFormApi = {
 		widget,
+		target: widgetTarget(widget.id),
 		schema: schemaFor(widget.type),
 		options,
 		readOnly,

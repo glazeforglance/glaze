@@ -23,7 +23,7 @@ export function BaseSettingsFields({
 				<TextField
 					name="title"
 					label={parentType === "group" ? "Tab name" : "Title"}
-					placeholder={catalogEntry(widget.type).label}
+					placeholder={catalogEntry(widget?.type ?? null).label}
 				/>
 			)}
 			{!hidden.has("title-url") && (

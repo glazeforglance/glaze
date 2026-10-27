@@ -1,5 +1,6 @@
 import type { WidgetNode } from "@glaze/core";
 import type { WidgetList as WidgetListModel } from "../../lib/drop-target.ts";
+import { AddWidgetMenu } from "./AddWidgetMenu.tsx";
 import { WidgetList } from "./WidgetList.tsx";
 
 export interface HeadWidgetsProps {
@@ -30,7 +31,16 @@ export function HeadWidgets({ widgets, list }: HeadWidgetsProps) {
 					</span>
 				)}
 			</h2>
-			<WidgetList list={list} widgets={widgets} layout="row" />
+			<WidgetList
+				list={list}
+				widgets={widgets}
+				layout="row"
+				footer={
+					<div className="mt-1 w-40">
+						<AddWidgetMenu list={list} />
+					</div>
+				}
+			/>
 		</section>
 	);
 }

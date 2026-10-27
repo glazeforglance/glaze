@@ -110,3 +110,54 @@ export function movePage(
 	}
 	return moveItem(doc, PAGES, item.value.index, PAGES, toIndex);
 }
+
+// Glance's own rule (titleToSlug in utils.go): lower case, runs of white
+// space become "-", and dashes at either end are dropped.
+const WHITESPACE = /\s+/g;
+
+/** Slugs Glance reserves for its own pages (glance.go). */
+export const RESERVED_SLUGS: readonly string[] = ["login", "logout"];
+
+/**
+ * The slug Glance makes from a page name when `slug` isn't set.
+ * @param name - The page name.
+ * @returns The slug, e.g. "My Home" → "my-home".
+ */
+export function slugFromName(name: string): string {
+	return name
+		.toLowerCase()
+		.replace(WHITESPACE, "-")
+		.replace(/^-+|-+$/g, "");
+}
+
+/**
+ * Explains why a page's slug (written, or made from its name) won't work.
+ * @param pages - Every page's name and slug, in order.
+ * @param index - The page to check.
+ * @returns A sentence for the user, or `null` when the slug is fine.
+ */
+export function slugProblem(
+	pages: readonly {
+		readonly name: string | null;
+		readonly slug: string | null;
+	}[],
+	index: number,
+): string | null {
+	const slugOf = (page: { name: string | null; slug: string | null }) =>
+		page.slug !== null && page.slug !== ""
+			? page.slug
+			: slugFromName(page.name ?? "");
+	const page = pages[index];
+	if (!page) return null;
+	const slug = slugOf(page);
+	if (RESERVED_SLUGS.includes(slug)) {
+		return `"${slug}" is reserved by Glance; pick another URL path.`;
+	}
+	const other = pages.findIndex(
+		(candidate, i) => i !== index && slugOf(candidate) === slug,
+	);
+	if (other !== -1) {
+		return `Page ${other + 1} already uses the URL path "${slug}"; Glance would only show one of them.`;
+	}
+	return null;
+}

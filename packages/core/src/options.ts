@@ -158,20 +158,33 @@ export function getWidgetOptions(
 ): Result<WidgetOptions, EditError> {
 	const item = splitItemPath(widgetPath, WIDGET_LISTS);
 	if (!item.ok) return item;
-	const node = getNodeAt(doc.yaml, widgetPath);
+	return getMapOptions(doc, widgetPath);
+}
+
+/**
+ * Reads every key of a map (a widget, a page, or the document root with
+ * `[]`), including those that only come from a merge key, the same way as
+ * `getWidgetOptions`.
+ * @param doc - The document to read.
+ * @param mapPath - Path of the map.
+ * @returns The options, or why they couldn't be read.
+ */
+export function getMapOptions(
+	doc: GlazeDocument,
+	mapPath: YamlPath,
+): Result<WidgetOptions, EditError> {
+	const node = getNodeAt(doc.yaml, mapPath);
 	if (readInclude(node) !== null) {
 		return err(
 			editError(
 				"unsupported-structure",
-				"This widget is an include; edit the included file instead",
+				"This item is an include; edit the included file instead",
 			),
 		);
 	}
 	const map = resolveNode(doc.yaml, node);
 	if (!isMap(map)) {
-		return err(
-			editError("not-found", `No widget at ${JSON.stringify(widgetPath)}`),
-		);
+		return err(editError("not-found", `No map at ${JSON.stringify(mapPath)}`));
 	}
 	const options = new Map<string, WidgetOption>();
 	for (const pair of map.items) {

@@ -26,7 +26,8 @@ export function WidthField() {
 	const unwrapSplit = useEditor((state) => state.unwrapSplit);
 	const id = useId();
 	const buttons = useRef<(HTMLButtonElement | null)[]>([]);
-	if (!page) return null;
+	// Only in widget forms (page and settings forms have no widget).
+	if (!page || !widget) return null;
 
 	const parent = parentWidget(page, widget);
 	const inHead = widget.path[widget.path.length - 2] === "head-widgets";

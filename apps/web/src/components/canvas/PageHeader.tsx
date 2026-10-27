@@ -15,9 +15,19 @@ export interface PageHeaderProps {
 export function PageHeader({ page }: PageHeaderProps) {
 	const count = page.columns.length;
 	const addColumn = useEditor((state) => state.addColumn);
+	const openPageSettings = useEditor((state) => state.openPageSettings);
 	return (
 		<div className="mb-6 flex flex-wrap items-center gap-3">
-			<h1 className="text-2xl font-bold">{page.name ?? "Untitled page"}</h1>
+			<h1 className="text-2xl font-bold">
+				<button
+					type="button"
+					onClick={openPageSettings}
+					title="Page settings"
+					className="cursor-pointer rounded-sm text-left hover:text-accent"
+				>
+					{page.name ?? "Untitled page"}
+				</button>
+			</h1>
 			<p className="font-mono text-xs text-muted">
 				{page.slug ? `/${page.slug} · ` : ""}
 				{count} {count === 1 ? "column" : "columns"}
@@ -29,9 +39,7 @@ export function PageHeader({ page }: PageHeaderProps) {
 					<PlusIcon />
 					Add column
 				</Button>
-				<Button unavailable="Page settings arrive in phase 3">
-					Page settings
-				</Button>
+				<Button onClick={openPageSettings}>Page settings</Button>
 			</div>
 		</div>
 	);
