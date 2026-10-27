@@ -76,8 +76,9 @@ export function SidePanel({
 				aria-controls={contentId}
 				title={`Hide the ${label}`}
 				onClick={() => panel.setCollapsed(true)}
-				className={`${TOGGLE_CLASS} absolute bottom-3 z-10 border border-line bg-bg ${
-					side === "left" ? "right-3" : "left-3"
+				// On the panel's edge, half over the canvas, so it never covers the panel's content.
+				className={`${TOGGLE_CLASS} absolute top-2 z-30 border border-line bg-bg ${
+					side === "left" ? "-right-3.5" : "-left-3.5"
 				}`}
 			>
 				<PanelIcon side={side} />

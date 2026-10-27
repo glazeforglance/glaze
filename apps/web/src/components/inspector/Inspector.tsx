@@ -40,7 +40,7 @@ export function Inspector() {
 				ref={scrollRef}
 				onScroll={onScroll}
 				aria-label="Inspector"
-				className="flex min-w-0 flex-1 flex-col overflow-y-auto border-l border-line bg-bg px-5 pt-5 pb-14"
+				className="flex min-w-0 flex-1 flex-col overflow-y-auto border-l border-line bg-bg px-5 py-5"
 			>
 				{widget === null && pageSettingsOpen && page ? (
 					<PageSettings page={page} />

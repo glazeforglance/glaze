@@ -47,6 +47,8 @@ export function WidgetBlock({
 	const selected = useEditor((state) => state.selectedWidgetId === widget.id);
 	const selectWidget = useEditor((state) => state.selectWidget);
 	const { title, abbr, tone } = widgetDisplay(widget);
+	// Children of a split-column sit in narrow cells: the title needs the badge's room.
+	const compact = nested && grip !== undefined;
 
 	return (
 		<div
@@ -82,16 +84,21 @@ export function WidgetBlock({
 							: `min-h-14 py-2 ${grip ? "pl-1" : "pl-3"}`
 					} ${selected && !nested ? "pr-20" : "pr-3"}`}
 				>
-					<Badge text={abbr} tone={tone} size={nested ? "sm" : "md"} />
+					{!compact && (
+						<Badge text={abbr} tone={tone} size={nested ? "sm" : "md"} />
+					)}
 					<span className="min-w-0">
 						<span
-							className={`block truncate font-semibold ${nested ? "text-[13px]" : "text-sm"}`}
+							// Nested blocks are narrow: the title may take two lines instead.
+							className={`font-semibold ${nested ? "line-clamp-2 text-[13px] break-words" : "block truncate text-sm"}`}
 						>
 							{title}
 						</span>
-						<span className="block truncate font-mono text-[11px] text-muted">
-							{widgetSubtitle(widget)}
-						</span>
+						{!nested && (
+							<span className="block truncate font-mono text-[11px] text-muted">
+								{widgetSubtitle(widget)}
+							</span>
+						)}
 					</span>
 				</button>
 				{selected && (

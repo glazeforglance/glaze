@@ -234,9 +234,12 @@ function ItemHeading({
 }) {
 	return (
 		<span className="flex min-w-0 flex-1 items-baseline gap-2">
-			<span className="truncate text-sm font-semibold">{title}</span>
+			{/* The title keeps its room; the subtitle gets what is left. */}
+			<span className="max-w-[75%] shrink-0 truncate text-sm font-semibold">
+				{title}
+			</span>
 			{subtitle && (
-				<span className="truncate font-mono text-[11px] text-faint">
+				<span className="min-w-0 truncate font-mono text-[11px] text-faint">
 					{subtitle}
 				</span>
 			)}

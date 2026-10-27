@@ -24,7 +24,7 @@ export function WidgetLibrary() {
 		>
 			<aside
 				aria-label="Widget library"
-				className="flex min-w-0 flex-1 flex-col gap-4 overflow-y-auto border-r border-line bg-bg px-4 pt-4 pb-14"
+				className="flex min-w-0 flex-1 flex-col gap-4 overflow-y-auto border-r border-line bg-bg px-4 py-4"
 			>
 				<LibrarySearch value={query} onChange={setQuery} />
 				{groups.length === 0 ? (
