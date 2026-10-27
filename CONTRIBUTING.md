@@ -65,6 +65,10 @@ CI runs the same checks, builds the Docker image and smoke-tests it.
 Don't edit the generated files by hand: CI runs `pnpm brand --check` and fails when they don't
 match the source.
 
+## Releases
+
+Maintainers: how to version and publish a release is in [`RELEASING.md`](RELEASING.md).
+
 ## Never commit real keys
 
 Fixtures and tests use obviously fake values (`xxx`, `test-secret-…`). Keep your own config with

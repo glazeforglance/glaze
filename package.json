@@ -10,7 +10,9 @@
 		"brand": "node scripts/brand.ts",
 		"dev": "pnpm --parallel --filter \"./apps/*\" dev",
 		"build": "pnpm -r --if-present build",
-		"test": "pnpm -r --if-present test",
+		"release:prepare": "node scripts/release.ts",
+		"test": "pnpm -r --if-present test && pnpm test:scripts",
+		"test:scripts": "node --test \"scripts/test/*.test.ts\"",
 		"typecheck": "pnpm -r --if-present typecheck"
 	},
 	"devEngines": {
