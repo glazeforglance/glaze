@@ -18,18 +18,21 @@ pre-release on GitHub.
 
 1. `main` is clean and CI is green.
 2. Every user-facing change is under `## [Unreleased]` in [CHANGELOG.md](CHANGELOG.md).
-3. `pnpm release:prepare X.Y.Z`: sets the version in every `package.json`, dates the
+3. If the UI changed, run `pnpm build` and `pnpm screenshots` and commit the new images in
+   `docs/screenshots/` (needs `pnpm exec playwright install chromium` once; set `GLANCE_BIN` for
+   the live preview shot).
+4. `pnpm release:prepare X.Y.Z`: sets the version in every `package.json`, dates the
    CHANGELOG section and updates its links. It refuses a dirty tree, another branch than `main`,
    a version that isn't higher, or an empty Unreleased section.
-4. Review the diff.
-5. `git commit -am "chore(release): vX.Y.Z"`
-6. `git push`
-7. Wait for CI.
-8. `git tag -a vX.Y.Z -m "Glaze vX.Y.Z"`
-9. `git push origin vX.Y.Z`
-10. Watch the Release workflow in Actions.
-11. Verify the image tags on GHCR (`X.Y.Z`, `X.Y`, `latest`) and the GitHub Release.
-12. Update your own deployment.
+5. Review the diff.
+6. `git commit -am "chore(release): vX.Y.Z"`
+7. `git push`
+8. Wait for CI.
+9. `git tag -a vX.Y.Z -m "Glaze vX.Y.Z"`
+10. `git push origin vX.Y.Z`
+11. Watch the Release workflow in Actions.
+12. Verify the image tags on GHCR (`X.Y.Z`, `X.Y`, `latest`) and the GitHub Release.
+13. Update your own deployment.
 
 ## What the Release workflow checks
 
@@ -46,7 +49,7 @@ pre-release on GitHub.
    git push origin :refs/tags/vX.Y.Z
    ```
 3. Delete the draft GitHub Release if one exists.
-4. Tag again (steps 8–9 above).
+4. Tag again (steps 9–10 above).
 
 If images were already pushed for that tag, prefer releasing `X.Y.Z+1` over re-using the tag:
 people may already have pulled the first image.

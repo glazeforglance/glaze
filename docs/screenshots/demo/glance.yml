@@ -1,0 +1,161 @@
+# Demo dashboard for Glaze's screenshots (`pnpm screenshots`).
+# Everything here is made up: hosts live on homelab.local / example.com,
+# and secrets come from the environment instead of this file.
+
+pages:
+  - name: Home
+    columns:
+      - size: small
+        widgets:
+          - type: clock
+            hour-format: 24h
+            timezones:
+              - timezone: America/New_York
+                label: New York
+              - timezone: Asia/Tokyo
+                label: Tokyo
+          - type: weather
+            location: Amsterdam, Netherlands
+            units: metric
+            hour-format: 24h
+
+      - size: full
+        widgets:
+          - type: search
+            search-engine: duckduckgo
+            placeholder: Search the web or your homelab…
+            bangs:
+              - title: Wiki
+                shortcut: "!w"
+                url: https://wiki.homelab.local/search?q={QUERY}
+              - title: Photos
+                shortcut: "!p"
+                url: https://photos.homelab.local/search?query={QUERY}
+
+          - type: releases
+            title: Updates
+            # Read from the environment, never written here.
+            token: ${GITHUB_TOKEN}
+            show-source-icon: true
+            limit: 8
+            collapse-after: 5
+            repositories:
+              - glanceapp/glance
+              - immich-app/immich
+              - jellyfin/jellyfin
+              - home-assistant/core
+
+      - size: small
+        widgets:
+          - type: calendar
+            first-day-of-week: monday
+          - type: bookmarks
+            groups:
+              - title: Homelab
+                links:
+                  - title: Router
+                    url: https://router.homelab.local
+                  - title: NAS
+                    url: https://nas.homelab.local
+                  - title: Proxmox
+                    url: https://pve.homelab.local:8006
+              - title: Docs
+                links:
+                  - title: Runbook
+                    url: https://wiki.homelab.local/runbook
+                  - title: Network map
+                    url: https://wiki.homelab.local/network
+                  - title: Status page
+                    url: https://status.example.com
+
+  - name: Homelab
+    columns:
+      - size: small
+        widgets:
+          - type: monitor
+            title: Network
+            style: compact
+            sites:
+              - title: Gateway
+                url: https://router.homelab.local
+                icon: si:ubiquiti
+              - title: Pi-hole
+                url: https://dns.homelab.local/admin
+                icon: si:pihole
+              - title: Proxmox
+                url: https://pve.homelab.local:8006
+                icon: si:proxmox
+                allow-insecure: true
+
+      - size: full
+        widgets:
+          # Glance checks these every minute; down sites turn red.
+          - type: monitor
+            title: Services
+            cache: 1m
+            sites:
+              - title: Jellyfin
+                url: https://jellyfin.homelab.local
+                icon: si:jellyfin
+              - title: Immich
+                url: https://photos.homelab.local
+                icon: si:immich
+              - title: Home Assistant
+                url: https://home.homelab.local
+                icon: si:homeassistant
+              - title: Nextcloud
+                url: https://cloud.homelab.local
+                icon: si:nextcloud
+              - title: Vaultwarden
+                url: https://vault.homelab.local
+                icon: si:vaultwarden
+                alt-status-codes: [403]
+              - title: Paperless
+                url: https://docs.homelab.local
+                icon: si:paperlessngx
+          - type: docker-containers
+            running-only: true
+            format-container-names: true
+
+      - size: small
+        widgets:
+          - type: group
+            widgets:
+              - type: bookmarks
+                title: Admin
+                groups:
+                  - links:
+                      - title: Pi-hole
+                        url: https://dns.homelab.local/admin
+                      - title: Grafana
+                        url: https://grafana.homelab.local
+              - type: releases
+                title: Infra
+                token: ${GITHUB_TOKEN}
+                repositories:
+                  - pi-hole/pi-hole
+                  - traefik/traefik
+
+  - name: Reading
+    width: slim
+    columns:
+      - size: full
+        widgets:
+          - type: rss
+            title: Feeds
+            style: detailed-list
+            limit: 15
+            collapse-after: 6
+            feeds:
+              - url: https://blog.example.com/feed.xml
+                title: Example Blog
+              - url: https://news.example.com/selfhosted.rss
+                title: Self-hosted News
+
+      - size: small
+        widgets:
+          - type: releases
+            title: Watching
+            token: ${GITHUB_TOKEN}
+            repositories:
+              - glanceapp/glance
