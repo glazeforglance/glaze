@@ -14,7 +14,7 @@ Glaze is young; only the latest release gets security fixes.
 ## Reporting a vulnerability
 
 **Please don't open a public issue.** Report it privately through
-[GitHub Security Advisories](https://github.com/klingesean/glaze-for-glance/security/advisories/new)
+[GitHub Security Advisories](https://github.com/glazeforglance/glaze/security/advisories/new)
 ("Report a vulnerability" on the repository's Security tab).
 
 Include what you found, how to reproduce it, and which version you tested. You'll get an answer within a week. Once a fix is released, the advisory is published with credit to you, unless you prefer otherwise.

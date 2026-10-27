@@ -51,7 +51,7 @@ FROM node:24-alpine AS runtime
 ARG VERSION=dev
 LABEL org.opencontainers.image.title="Glaze" \
       org.opencontainers.image.description="A visual editor for Glance dashboards" \
-      org.opencontainers.image.source="https://github.com/klingesean/glaze-for-glance" \
+      org.opencontainers.image.source="https://github.com/glazeforglance/glaze" \
       org.opencontainers.image.licenses="MIT" \
       org.opencontainers.image.version="${VERSION}"
 

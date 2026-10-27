@@ -25,7 +25,8 @@ jobs:
             exit 1
           fi
 
-      # GHCR image names must be lower case; owners like "KlingeSean" aren't.
+      # GHCR image names must be lower case, but GITHUB_REPOSITORY_OWNER keeps the
+      # owner's casing (forks like "SomeUser/glaze"), so lower-case it here.
       - name: Image name
         id: image
         run: echo "name=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/glaze" >> "$GITHUB_OUTPUT"

@@ -38,7 +38,7 @@ Glance is a self-hosted dashboard that is configured entirely through a single Y
 
 ## 3. Name
 
-**Glaze**: a glaze layer on top of Glance. Short, and it sounds almost the same. The repository and package are called `glaze-for-glance` to avoid name clashes; "Glaze" is the product name.
+**Glaze**: a glaze layer on top of Glance. Short, and it sounds almost the same. The project lives in the GitHub organization `glazeforglance`, as the repository `glazeforglance/glaze`; "Glaze" is the product name.
 
 ---
 
@@ -309,10 +309,11 @@ A script (`scripts/generate-widget-schemas.ts`) reads the Glance Go source (`int
 ## 10. Open source
 
 - **License:** MIT. Glance itself is AGPL-3.0, but Glaze contains no Glance code; it only uses the Glance CLI and its config format. The Docker image ships the unmodified Glance binary for `config:validate`, with a pointer to its source.
+- **Repository:** [`glazeforglance/glaze`](https://github.com/glazeforglance/glaze), in the `glazeforglance` organization. The image is `ghcr.io/glazeforglance/glaze`.
 - **Repository layout:**
 
   ```
-  glaze-for-glance/
+  glaze/
   ├─ apps/web/          React app (Vite)
   ├─ apps/server/       Node API (Hono)
   ├─ packages/core/     document model, YAML edits, layout rules (shared, well tested)

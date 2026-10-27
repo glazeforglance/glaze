@@ -7,7 +7,7 @@
 #      └─ assets/       (custom.css, design.js, …)
 #
 # Create the password hash once:
-#   docker run --rm -it ghcr.io/klingesean/glaze:latest hash-password
+#   docker run --rm -it ghcr.io/glazeforglance/glaze:latest hash-password
 # and paste it below. Since v0.1.1 it contains no $ signs, so it needs no
 # quotes or escaping. (A v0.1.0 hash with $ signs must be regenerated.)
 
@@ -24,7 +24,7 @@ services:
       - "8080:8080"
 
   glaze:
-    image: ghcr.io/klingesean/glaze:latest
+    image: ghcr.io/glazeforglance/glaze:latest
     restart: unless-stopped
     # Glaze runs as uid 1000. If ./config belongs to another user, either
     # `chown -R 1000:1000 ./config`, or run Glaze as that user here:

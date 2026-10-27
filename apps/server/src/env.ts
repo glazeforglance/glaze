@@ -23,7 +23,7 @@ const DEFAULT_USERNAME = "admin";
 
 const NO_PASSWORD = `No admin password is set. Create a hash with
   pnpm --filter server hash-password        (from a checkout)
-  docker run --rm -it ghcr.io/klingesean/glaze hash-password   (Docker)
+  docker run --rm -it ghcr.io/glazeforglance/glaze hash-password   (Docker)
 and set GLAZE_ADMIN_PASSWORD_HASH to it (in .env or your compose file),
 or put it in a file and set GLAZE_ADMIN_PASSWORD_HASH_FILE to that file's path.`;
 

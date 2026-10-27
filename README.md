@@ -47,10 +47,13 @@ Glaze and Glance share the same config folder. Your edits stay a draft in the br
 
 You need Docker with Compose, and a folder with your `glance.yml` (for example `./config/glance.yml`).
 
+> [!NOTE]
+> Images up to v0.1.1 were published as `ghcr.io/klingesean/glaze`. That image no longer gets updates, so switch your compose file to `ghcr.io/glazeforglance/glaze`.
+
 **1. Create a password hash** for the Glaze login:
 
 ```bash
-docker run --rm -it ghcr.io/klingesean/glaze:latest hash-password
+docker run --rm -it ghcr.io/glazeforglance/glaze:latest hash-password
 ```
 
 Type your password twice (nothing is shown while you type). The output is one line like `scrypt:32768:8:1:…:…`. It contains only letters, digits, `-`, `_` and `:`, so you can paste it anywhere as is: no quotes, no escaping.
@@ -69,7 +72,7 @@ services:
       - "8080:8080"
 
   glaze:
-    image: ghcr.io/klingesean/glaze:latest
+    image: ghcr.io/glazeforglance/glaze:latest
     restart: unless-stopped
     # Glaze runs as uid 1000; see "File permissions" below.
     # user: "1000:1000"
@@ -114,11 +117,14 @@ Setting both a variable and its `_FILE` variant is an error, so it's always clea
 
 ZimaOS and CasaOS install apps from a compose file and re-serialise it, so values must be free of `$` signs (the v0.1.1+ hash is). If Glance keeps its config in `/DATA/AppData/glance/config` and uses `server.assets-path: /assets` (served from `/DATA/AppData/glance/config/assets` on the host), add Glaze as a **custom app** via **Import → Docker Compose**:
 
+> [!NOTE]
+> Images up to v0.1.1 were published as `ghcr.io/klingesean/glaze`. That image no longer gets updates, so switch your compose file to `ghcr.io/glazeforglance/glaze`.
+
 ```yaml
 name: glaze
 services:
   glaze:
-    image: ghcr.io/klingesean/glaze:latest
+    image: ghcr.io/glazeforglance/glaze:latest
     container_name: glaze
     restart: unless-stopped
     # The AppData folders belong to root on ZimaOS/CasaOS.
@@ -130,7 +136,7 @@ services:
         source: /DATA/AppData/glance/config
         target: /config
     environment:
-      # Fake example: run `docker run --rm -it ghcr.io/klingesean/glaze:latest hash-password`
+      # Fake example: run `docker run --rm -it ghcr.io/glazeforglance/glaze:latest hash-password`
       # in the ZimaOS/CasaOS terminal and paste your own hash here.
       GLAZE_ADMIN_PASSWORD_HASH: scrypt:32768:8:1:FAKEsaltReplaceMe0000w:FAKEhashRunHashPasswordAndPasteYourOwn00000
       # Glance serves this folder as /assets/; inside Glaze it's here.
@@ -142,7 +148,7 @@ x-casaos:
     - amd64
     - arm64
   main: glaze
-  icon: https://raw.githubusercontent.com/KlingeSean/glaze-for-glance/main/docs/brand/glaze-logo-512.png
+  icon: https://raw.githubusercontent.com/glazeforglance/glaze/main/docs/brand/glaze-logo-512.png
   title:
     en_us: Glaze
   description:
@@ -248,8 +254,8 @@ Your config and login stay as they are; they live in your config folder and comp
 ### Getting started
 
 ```bash
-git clone https://github.com/klingesean/glaze-for-glance.git
-cd glaze-for-glance
+git clone https://github.com/glazeforglance/glaze.git
+cd glaze
 pnpm install
 cp .env.example .env
 pnpm --filter server hash-password
@@ -288,7 +294,7 @@ sh docker/smoke-test.sh glaze:smoke
 ### Project structure
 
 ```
-glaze-for-glance/
+glaze/
 ├─ apps/
 │  ├─ web/        # React app (Vite)
 │  └─ server/     # API server (Hono): auth, reads and writes glance.yml
