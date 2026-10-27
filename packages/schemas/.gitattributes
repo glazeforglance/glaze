@@ -1,0 +1,4 @@
+# Generated files are compared byte for byte (pnpm schemas --check).
+src/generated/** text eol=lf
+# Fixtures are compared byte for byte too.
+test/fixtures/** text eol=lf

@@ -11,6 +11,7 @@
 		"dev": "pnpm --parallel --filter \"./apps/*\" dev",
 		"build": "pnpm -r --if-present build",
 		"release:prepare": "node scripts/release.ts",
+		"schemas": "node scripts/generate-widget-schemas.ts",
 		"screenshots": "node scripts/screenshots.ts",
 		"test": "pnpm -r --if-present test && pnpm test:scripts",
 		"test:scripts": "node --test \"scripts/test/*.test.ts\"",

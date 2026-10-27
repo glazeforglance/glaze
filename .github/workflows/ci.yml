@@ -26,6 +26,9 @@ jobs:
       - run: pnpm build
       # Fails when a logo file wasn't regenerated after docs/brand/glaze-logo.svg changed.
       - run: pnpm brand --check
+      # Fails when packages/schemas/src/generated doesn't match Glance's source
+      # plus packages/schemas/overrides.ts (downloads the Glance tag's tarball).
+      - run: pnpm schemas --check
 
   docker:
     name: Docker image (amd64) + smoke test

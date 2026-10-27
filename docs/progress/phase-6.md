@@ -54,14 +54,17 @@ Notes: there is no general undo yet, so the auto-unwrap notice keeps the documen
 unwrap. Keyboard drags stay in head widgets and columns; widths have keyboard controls in the
 Style tab and on the resize handle (a slider).
 
-## 6d — Generated widget schemas
+## 6d — Generated widget schemas ✅
 
-- [ ] `scripts/generate-widget-schemas.ts` (download or local path, default `v0.8.7`)
-- [ ] All widget types incl. aliases, `widgetBase`, `containerWidgetBase`, nested structs, slices, maps
-- [ ] Custom `UnmarshalYAML` field types, `initialize()` defaults, enums, `yaml:"-"`, inline
-- [ ] `packages/schemas` (`@glaze/schemas`) with `generated-from: v0.8.7`
-- [ ] `overrides.ts` merged in; generator fails on overrides for missing fields
-- [ ] `--check` mode in CI
+- [x] `scripts/generate-widget-schemas.ts` (`pnpm schemas`; downloads the tag's tarball, or `--source <checkout>`, default `v0.8.7`)
+- [x] All 28 factory types incl. aliases (`stocks` → `markets`), `widgetBase`, `containerWidgetBase`, nested structs, slices, maps, plus `page` and `config`
+- [x] Custom `UnmarshalYAML` types in an explicit table (an unknown one fails), `initialize()` defaults, enums (`!=` chains, `switch` on constants, map keys), required checks, `yaml:"-"`, unexported fields, `,inline` (also from `pkg/sysinfo`)
+- [x] `packages/schemas` (`@glaze/schemas`) with `GENERATED_FROM = "v0.8.7"`
+- [x] `overrides.ts` merged in; the generator fails on overrides for missing fields, on enums that drop values the code accepts, and on options the code compares with words that aren't classified
+- [x] `--check` mode in CI (`pnpm schemas --check`)
+
+Code over docs (help texts say so): dns-stats `service` is required in v0.8.7 (empty is an
+error), and a missing iframe `height` gives 50 px.
 
 ## 6e — Forms for every widget
 
@@ -115,4 +118,7 @@ Style tab and on the resize handle (a slider).
 
 ## Notes for the next session
 
-- Glance v0.8.7 source: clone `https://github.com/glanceapp/glance` at tag `v0.8.7`.
+- Glance v0.8.7 source: clone `https://github.com/glanceapp/glance` at tag `v0.8.7`, or let
+  `pnpm schemas` download it.
+- Browser checks: run the API with a scratch config, not `.dev/` (e.g. a copy of
+  `docs/screenshots/demo/glance.yml` and `GLAZE_AUTH=off` in an env file passed with `--env-file`).
