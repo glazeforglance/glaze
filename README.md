@@ -20,31 +20,44 @@ Drag, drop and configure your pages instead of hand-writing YAML.
 Glance is a fast, beautiful self-hosted dashboard, configured entirely through one `glance.yml`. Glaze runs next to it and gives you a visual editor on top of that same file:
 
 - **Drag & drop layout:** pages, columns and widgets, following Glance's own layout rules, so what you build is always something Glance can render.
-- **Every Glance option has a form:** all 28 widget types, page settings and the global settings (server, login, branding, theme), generated from Glance's own source. No more guessing option names or fighting indentation.
+- **Every Glance option has a form:** all 28 widget types, page settings and the global settings (server, Glance's login, document head, branding, theme with presets), generated from Glance's own source. No more guessing option names or fighting indentation.
 - **Widgets side by side:** drop a widget beside another and drag its edge to ½, ⅓ or ¼, the way Glance's `split-column` does it.
+- **A custom-api editor:** request, headers and template in one place, with highlighting and a cheat sheet of Glance's template functions.
 - **Your YAML stays yours:** Glaze edits `glance.yml` in place and keeps your comments, anchors and ordering intact.
 - **Code view with live preview:** switch to the YAML at any time, with the real Glance next to it.
-- **Validation before writing:** YAML syntax, layout rules, unknown options with one-click fixes, and `glance config:validate` itself.
+- **Validation before writing:** YAML syntax, layout rules, missing required options, unknown options with one-click fixes, and `glance config:validate` itself.
 - **One container:** a small Docker image next to Glance, with a login in front.
+
+**What Glaze can't do (yet):** set a widget's height, edit the theme with a live preview, build widgets from blocks, or give several people their own Glaze login. See the [roadmap](#roadmap).
 
 ## Screenshots
 
+New to Glaze? **[Using Glaze](docs/usage.md)** walks through every view, step by step.
+
 <table>
   <tr>
-    <td width="50%"><img src="docs/screenshots/code-preview.png" alt="Code view with the YAML on the left and the live Glance preview on the right"></td>
-    <td width="50%"><img src="docs/screenshots/validation.png" alt="Code view with a typo, stlye, underlined and an unknown-option warning with a Fix button"></td>
+    <td width="50%"><img src="docs/screenshots/split-column.png" alt="Three widgets side by side in a split-column, with the width handle dragged to one third"></td>
+    <td width="50%"><img src="docs/screenshots/custom-api.png" alt="The custom-api editor with a template and the template cheat sheet"></td>
   </tr>
   <tr>
+    <td><b>Side by side:</b> drag a widget's edge to ½, ⅓ or ¼.</td>
+    <td><b>custom-api:</b> write a template with a cheat sheet at hand.</td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/settings.png" alt="The Settings view on the Theme section with color pickers"></td>
+    <td><img src="docs/screenshots/code-preview.png" alt="Code view with the YAML on the left and the live Glance preview on the right"></td>
+  </tr>
+  <tr>
+    <td><b>Settings:</b> server, Glance's login, branding and theme as forms.</td>
     <td><b>Code + preview:</b> edit the YAML next to your real Glance.</td>
-    <td><b>Validation:</b> typos are caught before they reach Glance, with a one-click fix.</td>
   </tr>
   <tr>
+    <td><img src="docs/screenshots/validation.png" alt="Code view with a typo, stlye, underlined and an unknown-option warning with a Fix button"></td>
     <td><img src="docs/screenshots/publish.png" alt="The Publish changes dialog listing glance.yml and zero errors and warnings"></td>
-    <td><img src="docs/screenshots/login.png" alt="The Glaze login screen"></td>
   </tr>
   <tr>
+    <td><b>Validation:</b> typos are caught before they reach Glance, with a one-click fix.</td>
     <td><b>Publish review:</b> see what will be written and what's still wrong.</td>
-    <td><b>Login:</b> Glaze writes your config, so it sits behind a password.</td>
   </tr>
 </table>
 
@@ -121,6 +134,7 @@ Open <http://localhost:8090> and log in as `admin` with the password from step 1
 
 | Guide                                    | What's in it                                                                         |
 | ---------------------------------------- | ------------------------------------------------------------------------------------ |
+| [**Using Glaze**](docs/usage.md)         | **Start here:** the views, pages, columns, widgets, settings, publishing, shortcuts  |
 | [Installation](docs/installation.md)     | The full Docker Compose walkthrough, password options, file permissions, updating    |
 | [ZimaOS / CasaOS](docs/zimaos-casaos.md) | Installing Glaze as a custom app                                                     |
 | [Configuration](docs/configuration.md)   | All environment variables, validation with Glance, the live preview, asset files     |
@@ -134,9 +148,9 @@ Anyone who can use Glaze can change your dashboard config, including the API key
 
 ## Roadmap
 
-- **Available:** the visual editor with drag & drop, a form for every Glance option (widgets, pages, global settings, Glance's own login), widget widths through split-columns, the code view with live preview, validation, and the Docker image with a login.
-- **Next:** an "Edit page" button in Glance, widget heights, a theme editor, and a widget builder.
-- **Later:** multiple users, each with their own login.
+- **Available:** the visual editor with drag & drop; a form for every Glance option (all 28 widget types, page settings, and the server, Glance's login, document head, branding and theme with presets); widgets side by side through split-columns; column widths by dragging; the custom-api editor; the code view with live preview; validation; and the Docker image with a login.
+- **Next:** undo, an "Edit page" button in Glance, widget heights, a theme editor with live preview, and a widget builder for custom-api.
+- **Later:** multiple Glaze users, each with their own login.
 
 The details and the reasoning behind them are in [docs/DESIGN.md](docs/DESIGN.md).
 
