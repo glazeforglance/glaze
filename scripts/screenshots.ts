@@ -276,6 +276,66 @@ async function publishShot(browser: Browser, url: string): Promise<void> {
 	await page.context().close();
 }
 
+/** Opens the Status page, whose full column has a split-column with three widgets. */
+async function openStatusPage(page: Page): Promise<void> {
+	await page.getByRole("tab", { name: "Status", exact: true }).click();
+	await page.getByText("Solar today", { exact: true }).waitFor();
+}
+
+async function splitColumnShot(browser: Browser, url: string): Promise<void> {
+	const page = await openEditor(browser, url);
+	await openStatusPage(page);
+	await page.getByText("Server stats", { exact: true }).last().click();
+	const handle = page.getByRole("slider", { name: "Width of Server stats" });
+	await handle.waitFor();
+	// Hold the handle without moving it far: the label (⅓ · 3 columns) and the
+	// shared-width hint only show while dragging. Released afterwards on the
+	// same width, so nothing changes.
+	const box = await handle.boundingBox();
+	if (box === null) fail("The width handle has no size");
+	const x = box.x + box.width / 2;
+	const y = box.y + box.height / 2;
+	await page.mouse.move(x, y);
+	await page.mouse.down();
+	await page.mouse.move(x + 4, y, { steps: 2 });
+	await shoot(page, "split-column.png");
+	await page.mouse.up();
+	await page.context().close();
+}
+
+async function customApiShot(browser: Browser, url: string): Promise<void> {
+	const page = await openEditor(browser, url);
+	await openStatusPage(page);
+	await page.getByText("Solar today", { exact: true }).click();
+	// The widest inspector, so the template lines don't wrap as much, and no
+	// library, so the canvas keeps its room.
+	await page.getByRole("separator", { name: "Resize the inspector" }).focus();
+	await page.keyboard.press("End");
+	await page.getByRole("button", { name: "Hide the widget library" }).click();
+	const inspector = page.getByRole("complementary", { name: "Inspector" });
+	const cheatSheet = inspector.getByText("Template cheat sheet");
+	await cheatSheet.click();
+	// Template and cheat sheet together, below the request fields.
+	await inspector
+		.getByText("Template", { exact: true })
+		.first()
+		.evaluate((element) => element.scrollIntoView({ block: "start" }));
+	await shoot(page, "custom-api.png");
+	await page.context().close();
+}
+
+async function settingsShot(browser: Browser, url: string): Promise<void> {
+	const page = await openEditor(browser, url);
+	await page.getByRole("button", { name: /^Settings/ }).click();
+	await page
+		.getByRole("navigation", { name: "Settings sections" })
+		.getByRole("button", { name: "Theme", exact: true })
+		.click();
+	await page.getByRole("heading", { name: "Theme", exact: true }).waitFor();
+	await shoot(page, "settings.png");
+	await page.context().close();
+}
+
 async function loginShot(browser: Browser, url: string): Promise<void> {
 	const page = await openPage(browser, url);
 	await page
@@ -311,8 +371,11 @@ async function main(): Promise<void> {
 			fail(`Port ${GLANCE_PORT} is in use; Glance needs it for the preview`);
 		start("Glance", glanceBin, ["--config", copy("glance")], {
 			...process.env,
-			// The demo config reads it; empty means unauthenticated GitHub requests.
+			// The demo config reads these; empty means unauthenticated GitHub
+			// requests and failing (fake) homelab requests.
 			GITHUB_TOKEN: process.env.GITHUB_TOKEN ?? "",
+			PIHOLE_PASSWORD: "",
+			SOLAR_API_KEY: "",
 		});
 		glanceUrl = `http://localhost:${GLANCE_PORT}`;
 		await waitForUrl(`${glanceUrl}/api/healthz`, "Glance");
@@ -341,6 +404,9 @@ async function main(): Promise<void> {
 		if (glanceUrl !== null) await codePreviewShot(browser, editorUrl);
 		await validationShot(browser, editorUrl);
 		await publishShot(browser, editorUrl);
+		await splitColumnShot(browser, editorUrl);
+		await customApiShot(browser, editorUrl);
+		await settingsShot(browser, editorUrl);
 		await loginShot(browser, loginUrl);
 	} finally {
 		await browser.close();

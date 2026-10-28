@@ -164,3 +164,62 @@ pages:
             token: ${GITHUB_TOKEN}
             repositories:
               - glanceapp/glance
+
+  - name: Status
+    columns:
+      - size: full
+        widgets:
+          # Three widgets side by side: Glance draws three equal columns.
+          - type: split-column
+            max-columns: 3
+            widgets:
+              - type: dns-stats
+                service: pihole-v6
+                url: https://dns.homelab.local
+                password: ${PIHOLE_PASSWORD}
+                hour-format: 24h
+              - type: server-stats
+              - type: to-do
+                id: homelab-chores
+
+          - type: custom-api
+            title: Solar today
+            cache: 15m
+            url: https://solar.homelab.local/api/v1/today
+            headers:
+              Accept: application/json
+              Authorization: Bearer ${SOLAR_API_KEY}
+            template: |
+              <div class="flex justify-between text-center">
+                <div>
+                  <div class="color-highlight size-h3">{{ .JSON.Float "produced_kwh" | printf "%.1f" }} kWh</div>
+                  <div class="size-h6">PRODUCED</div>
+                </div>
+                <div>
+                  <div class="color-positive size-h3">{{ .JSON.Int "peak_watts" }} W</div>
+                  <div class="size-h6">PEAK</div>
+                </div>
+              </div>
+
+      - size: small
+        widgets:
+          - type: clock
+            hour-format: 24h
+
+theme:
+  background-color: 225 14 10
+  primary-color: 38 89 63
+  positive-color: 147 55 58
+  negative-color: 14 100 67
+  contrast-multiplier: 1.1
+  presets:
+    paper:
+      light: true
+      background-color: 40 30 94
+      primary-color: 24 80 45
+      positive-color: 147 45 38
+      negative-color: 4 70 50
+      contrast-multiplier: 1.2
+
+branding:
+  app-name: Homelab
