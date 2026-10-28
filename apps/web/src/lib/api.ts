@@ -148,6 +148,7 @@ function toIssue(value: unknown): ValidationIssue | null {
 	const fixPath = field(fix, "mapPath");
 	const from = field(fix, "from");
 	const to = field(fix, "to");
+	const docsUrl = field(value, "docsUrl");
 	return {
 		severity: severity as IssueSeverity,
 		source: source as IssueSource,
@@ -160,6 +161,13 @@ function toIssue(value: unknown): ValidationIssue | null {
 		typeof from === "string" &&
 		typeof to === "string"
 			? { fix: { kind: "rename-key" as const, mapPath: fixPath, from, to } }
+			: {}),
+		...(field(value, "requiresConfirmation") === true
+			? { requiresConfirmation: true }
+			: {}),
+		// Rendered as a link, so only https URLs are kept.
+		...(typeof docsUrl === "string" && docsUrl.startsWith("https://")
+			? { docsUrl }
 			: {}),
 	};
 }
@@ -221,21 +229,26 @@ export interface Published {
  * @param baseVersion - Version the edits were based on; the server refuses
  *   the write (conflict) when the file on disk has a different version.
  * @param force - Write even when validation finds errors (never for broken YAML).
+ * @param confirmed - The user confirmed the issues that need it (e.g. a port
+ *   change behind a Docker port mapping).
  * @returns The new version, or why publishing failed.
  */
 export async function putConfig(
 	text: string,
 	baseVersion: string,
 	force = false,
+	confirmed = false,
 ): Promise<Result<Published, PublishError>> {
 	let response: Response;
 	try {
 		response = await send(
 			"/api/config",
-			jsonInit(
-				"PUT",
-				force ? { text, baseVersion, force } : { text, baseVersion },
-			),
+			jsonInit("PUT", {
+				text,
+				baseVersion,
+				...(force ? { force } : {}),
+				...(confirmed ? { confirmed } : {}),
+			}),
 		);
 	} catch {
 		return err({
@@ -374,6 +387,8 @@ export interface Settings {
 	readonly glanceUrl: string | null;
 	/** Whether the server runs `glance config:validate`. */
 	readonly glanceValidation: boolean;
+	/** Glaze runs in a container, so Glance probably sits behind a port mapping. */
+	readonly glazeInContainer: boolean;
 }
 
 /**
@@ -387,6 +402,7 @@ export async function fetchSettings(): Promise<Result<Settings, ApiError>> {
 	return ok({
 		glanceUrl: typeof glanceUrl === "string" ? glanceUrl : null,
 		glanceValidation: field(result.value, "glanceValidation") === true,
+		glazeInContainer: field(result.value, "glazeInContainer") === true,
 	});
 }
 

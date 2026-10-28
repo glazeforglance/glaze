@@ -1,6 +1,11 @@
 import type { PageNode } from "@glaze/core";
 import { describe, expect, it, vi } from "vitest";
-import { previewUrl, titleToSlug, waitForGlance } from "../src/lib/preview.ts";
+import {
+	glanceComesBack,
+	previewUrl,
+	titleToSlug,
+	waitForGlance,
+} from "../src/lib/preview.ts";
 
 function page(name: string, slug: string | null = null): PageNode {
 	return {
@@ -82,5 +87,38 @@ describe("waitForGlance", () => {
 		controller.abort();
 		await waitForGlance("http://g", controller.signal, fetcher);
 		expect(fetcher).not.toHaveBeenCalled();
+	});
+});
+
+describe("glanceComesBack", () => {
+	it("is true once Glance answers", async () => {
+		vi.useFakeTimers();
+		const fetcher = vi
+			.fn<typeof fetch>()
+			.mockRejectedValueOnce(new TypeError("restarting"))
+			.mockResolvedValue(new Response(null, { status: 200 }));
+		const done = glanceComesBack(
+			"http://g",
+			new AbortController().signal,
+			fetcher,
+		);
+		await vi.runAllTimersAsync();
+		await expect(done).resolves.toBe(true);
+		vi.useRealTimers();
+	});
+
+	it("is false when Glance never answers", async () => {
+		vi.useFakeTimers();
+		const fetcher = vi
+			.fn<typeof fetch>()
+			.mockRejectedValue(new TypeError("down"));
+		const done = glanceComesBack(
+			"http://g",
+			new AbortController().signal,
+			fetcher,
+		);
+		await vi.runAllTimersAsync();
+		await expect(done).resolves.toBe(false);
+		vi.useRealTimers();
 	});
 });

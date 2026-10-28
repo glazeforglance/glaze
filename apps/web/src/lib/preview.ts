@@ -84,3 +84,40 @@ export async function waitForGlance(
 		}
 	}
 }
+
+/** How long Glance gets to come back after a change to its `server` options. */
+export const COMEBACK_TIMEOUT_MS = 8000;
+
+/**
+ * Checks whether Glance answers again after a publish, polling
+ * `GET /api/healthz` (`no-cors`, like `waitForGlance`) until it answers or
+ * the time is up. Unlike `waitForGlance` there is no early fallback: the
+ * answer decides whether Glaze offers to undo the publish.
+ * @param glanceUrl - Base URL of Glance.
+ * @param signal - Stops checking (e.g. on unmount or a newer publish).
+ * @param fetcher - `fetch`, replaceable in tests.
+ * @param timeoutMs - How long to keep trying.
+ * @returns True once Glance answers; false when it never did (or on abort).
+ */
+export async function glanceComesBack(
+	glanceUrl: string,
+	signal: AbortSignal,
+	fetcher: typeof fetch = fetch,
+	timeoutMs = COMEBACK_TIMEOUT_MS,
+): Promise<boolean> {
+	const started = Date.now();
+	await sleep(SETTLE_MS, signal);
+	while (!signal.aborted && Date.now() - started < timeoutMs) {
+		try {
+			await fetcher(`${glanceUrl}/api/healthz`, {
+				mode: "no-cors",
+				cache: "no-store",
+				signal,
+			});
+			return !signal.aborted;
+		} catch {
+			await sleep(POLL_INTERVAL_MS, signal);
+		}
+	}
+	return false;
+}

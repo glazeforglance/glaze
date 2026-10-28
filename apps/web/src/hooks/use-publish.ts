@@ -27,8 +27,10 @@ export interface Publisher {
 	 * Writes everything that changed: `glance.yml` (based on the version it was
 	 * loaded from) and then the edited asset files.
 	 * @param force - Write the config even when validation finds errors.
+	 * @param confirmed - The user confirmed issues that need it (e.g. a port
+	 *   change behind a Docker port mapping).
 	 */
-	publish(force: boolean): Promise<void>;
+	publish(force: boolean, confirmed?: boolean): Promise<void>;
 	/** After a conflict: write anyway, replacing the file that changed on disk. */
 	overwrite(diskVersion: string): Promise<void>;
 	/** After a conflict: throw away local changes and load the file from disk. */
@@ -59,6 +61,8 @@ export function usePublish(): Publisher {
 		undefined,
 	);
 	useEffect(() => () => clearTimeout(doneTimer.current), []);
+	// Kept for "Overwrite" after a conflict, which repeats the same publish.
+	const confirmedRef = useRef(false);
 
 	const write = async (baseVersion: string, force: boolean) => {
 		const editor = editorStore.getState();
@@ -66,22 +70,29 @@ export function usePublish(): Publisher {
 		setStatus({ phase: "publishing" });
 
 		let version = baseVersion;
+		let written: string | undefined;
 		if (configNeedsPublish() || baseVersion !== editor.version) {
 			// The draft text when it doesn't parse, so the server explains the error.
 			const text = editor.codeText ?? serializeConfig(editor.doc);
-			const result = await putConfig(text, baseVersion, force);
+			const result = await putConfig(
+				text,
+				baseVersion,
+				force,
+				confirmedRef.current,
+			);
 			if (!result.ok) {
 				setStatus({ phase: "failed", error: result.error });
 				return;
 			}
 			version = result.value.version;
+			written = text;
 		}
 
 		for (const file of filesStore.getState().files.filter(isFileDirty)) {
 			const result = await putFile(file.name, file.text, file.version);
 			if (!result.ok) {
 				// The config is already written; record that before reporting.
-				editorStore.getState().markPublished(version);
+				editorStore.getState().markPublished(version, written);
 				setStatus({ phase: "failed", error: result.error });
 				return;
 			}
@@ -91,7 +102,7 @@ export function usePublish(): Publisher {
 		}
 
 		// Also counts publishes of only asset files, so the preview reloads.
-		editorStore.getState().markPublished(version);
+		editorStore.getState().markPublished(version, written);
 		setStatus({ phase: "published" });
 		clearTimeout(doneTimer.current);
 		doneTimer.current = setTimeout(() => setStatus({ phase: "idle" }), 3000);
@@ -103,7 +114,8 @@ export function usePublish(): Publisher {
 			setStatus((current) =>
 				current.phase === "publishing" ? current : { phase: "reviewing" },
 			),
-		publish: async (force) => {
+		publish: async (force, confirmed = false) => {
+			confirmedRef.current = confirmed;
 			const { version } = editorStore.getState();
 			if (version !== null) await write(version, force);
 		},

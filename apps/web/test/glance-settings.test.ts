@@ -1,7 +1,10 @@
+import { parseConfig } from "@glaze/core";
 import { describe, expect, it } from "vitest";
 import {
 	glanceReachNotes,
+	isPortMapped,
 	makeSecretKey,
+	mappedListenChanges,
 	maskSecret,
 	usernameProblem,
 } from "../src/lib/glance-settings.ts";
@@ -66,4 +69,54 @@ describe("glanceReachNotes", () => {
 	it("says when there is no GLANCE_URL at all", () => {
 		expect(glanceReachNotes(null, {})[0]).toMatch(/GLANCE_URL isn't set/);
 	});
+
+	it("doesn't suggest changing GLANCE_URL behind a port mapping", () => {
+		expect(
+			glanceReachNotes("http://localhost:8080", { port: 9000 }, true),
+		).toEqual([]);
+	});
 });
+
+describe("port mapping", () => {
+	const PUBLISHED =
+		"pages:\n  - name: Home\n    columns:\n      - size: full\n";
+	const draft = (server: string) =>
+		unwrap(parseConfig(`server:\n${server}${PUBLISHED}`));
+	const zima = {
+		glazeInContainer: false,
+		glanceUrl: "http://192.168.178.233:8088",
+	};
+
+	it("sees the ZimaOS setup as port-mapped", () => {
+		expect(isPortMapped(PUBLISHED, zima)).toBe(true);
+		expect(
+			isPortMapped(PUBLISHED, {
+				glazeInContainer: false,
+				glanceUrl: "http://localhost:8080",
+			}),
+		).toBe(false);
+	});
+
+	it("lists host/port changes only when port-mapped", () => {
+		expect(
+			mappedListenChanges(draft("  port: 8088\n"), PUBLISHED, zima),
+		).toEqual(["port"]);
+		expect(
+			mappedListenChanges(draft("  port: 8080\n"), PUBLISHED, zima),
+		).toEqual([]);
+		expect(
+			mappedListenChanges(draft("  port: 9000\n"), PUBLISHED, {
+				glazeInContainer: false,
+				glanceUrl: null,
+			}),
+		).toEqual([]);
+		expect(mappedListenChanges(draft("  port: 9000\n"), null, zima)).toEqual(
+			[],
+		);
+	});
+});
+
+function unwrap<T>(result: { ok: true; value: T } | { ok: false }): T {
+	if (!result.ok) throw new Error("expected ok");
+	return result.value;
+}

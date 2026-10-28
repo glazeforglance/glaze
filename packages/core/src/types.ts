@@ -128,4 +128,11 @@ export interface ValidationIssue {
 	/** The node the issue is about, when known. */
 	readonly path?: YamlPath;
 	readonly fix?: RenameKeyFix;
+	/**
+	 * Publishing needs an explicit "I understand" for this issue, e.g. a port
+	 * change that a Docker port mapping won't follow.
+	 */
+	readonly requiresConfirmation?: boolean;
+	/** A page in Glaze's docs that explains the issue. */
+	readonly docsUrl?: string;
 }

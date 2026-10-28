@@ -45,6 +45,17 @@ describe("putConfig", () => {
 		});
 	});
 
+	it("sends confirmed only when asked", async () => {
+		answer(200, { version: "v2", issues: [] });
+		await putConfig("x", "v1", false, true);
+		const call = vi.mocked(fetch).mock.calls[0];
+		expect(JSON.parse(String(call?.[1]?.body))).toEqual({
+			text: "x",
+			baseVersion: "v1",
+			confirmed: true,
+		});
+	});
+
 	it("reports a conflict with the version on disk", async () => {
 		answer(409, { error: "conflict", version: "disk" });
 		expect(await putConfig("x", "v1")).toEqual({
@@ -148,6 +159,23 @@ describe("validateConfig", () => {
 		expect(call?.[0]).toBe("/api/validate");
 		expect(call?.[1]?.method).toBe("POST");
 	});
+
+	it("keeps confirmation flags and only https docs links", async () => {
+		const base = { severity: "warning", source: "glaze", message: "Port" };
+		answer(200, {
+			issues: [
+				{ ...base, requiresConfirmation: true, docsUrl: "https://x.test/a" },
+				{ ...base, requiresConfirmation: "yes", docsUrl: "javascript:x" },
+			],
+		});
+		expect(await validateConfig("pages: []\n")).toEqual({
+			ok: true,
+			value: [
+				{ ...base, requiresConfirmation: true, docsUrl: "https://x.test/a" },
+				base,
+			],
+		});
+	});
 });
 
 describe("files and settings", () => {
@@ -187,10 +215,18 @@ describe("files and settings", () => {
 	});
 
 	it("reads the settings", async () => {
-		answer(200, { glanceUrl: "http://localhost:8080", glanceValidation: true });
+		answer(200, {
+			glanceUrl: "http://localhost:8080",
+			glanceValidation: true,
+			glazeInContainer: true,
+		});
 		expect(await fetchSettings()).toEqual({
 			ok: true,
-			value: { glanceUrl: "http://localhost:8080", glanceValidation: true },
+			value: {
+				glanceUrl: "http://localhost:8080",
+				glanceValidation: true,
+				glazeInContainer: true,
+			},
 		});
 	});
 });

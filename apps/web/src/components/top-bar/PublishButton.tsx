@@ -54,7 +54,7 @@ export function PublishButton() {
 			<PublishReviewDialog
 				open={status.phase === "reviewing"}
 				onCancel={dismiss}
-				onPublish={(force) => void publish(force)}
+				onPublish={(force, confirmed) => void publish(force, confirmed)}
 			/>
 			<PublishDialog
 				error={status.phase === "failed" ? status.error : null}

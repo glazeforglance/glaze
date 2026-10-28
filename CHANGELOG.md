@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Settings → Server can no longer take Glance down by accident.** The listen address (`server.host`) must be empty, an IP address (IPv6 in brackets) or a host name: a URL, path or port such as `http://192.168.178.233` is refused, because Glance then fails to start with "too many colons in address" (which `glance config:validate` doesn't catch). The port must be a whole number from 1 to 65535, and the base path must start with `/` or be a full http(s) URL. The form and the publish review both show these errors.
+- **Docker port mappings:** when Glance runs in a container (Glaze runs in one, or `GLANCE_URL`'s port differs from `server.port`), changing the listen address or port shows a warning in the form and in the publish review, and publishing needs an explicit confirmation.
+- **Clearer Server labels:** "Listen address" and "Listen port (inside the container)", with help texts that point to the Docker port mapping, and a base path placeholder that reads as an example.
+- **Undo after a broken server change:** when Glance doesn't answer after a publish that changed `server.*`, a banner offers "Undo last publish", which writes the previous `glance.yml` back.
+- **No more false "assets directory does not exist" warning.** With `GLAZE_ASSETS_PATH` set, Glance's check of `server.assets-path` now runs against that folder (in the temporary validation copy only). Without it, one info note with a docs link replaces the warning on every draft.
+
 ## [0.2.0] - 2026-10-28
 
 A complete visual editor: every option Glance v0.8.7 knows can be set without touching YAML.

@@ -1120,8 +1120,17 @@ const CONFIG: Readonly<Record<string, FieldOverride>> = {
 	server: {
 		label: "Server",
 		fields: {
-			host: { label: "Host", help: "Listens on every address when empty." },
-			port: { label: "Port", default: 8080, min: 1, max: 65535 },
+			host: {
+				label: "Listen address",
+				help: "Leave empty. Only set this if Glance must listen on one specific network interface.",
+			},
+			port: {
+				label: "Listen port (inside the container)",
+				help: "Usually 8080. To reach Glance on another port, change your Docker port mapping.",
+				default: 8080,
+				min: 1,
+				max: 65535,
+			},
 			proxied: {
 				label: "Behind a reverse proxy",
 				help: "Read the client's address from X-Forwarded-For (needed for login rate limits behind a proxy).",
@@ -1129,8 +1138,8 @@ const CONFIG: Readonly<Record<string, FieldOverride>> = {
 			"base-url": {
 				kind: "text",
 				label: "Base path",
-				placeholder: "/glance",
-				help: "When Glance is served under a path, e.g. example.com/glance.",
+				placeholder: "e.g. /glance",
+				help: "Only when a reverse proxy serves Glance under a path, e.g. example.com/glance. Starts with /.",
 			},
 			"assets-path": {
 				label: "Assets folder",

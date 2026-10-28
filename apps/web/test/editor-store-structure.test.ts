@@ -218,6 +218,34 @@ describe("publishing state", () => {
 		expect(store.getState()).toMatchObject({ dirty: false, version: "v2" });
 	});
 
+	it("remembers the previous text, and whether server changed, for an undo", () => {
+		const store = setup();
+		expect(store.getState().diskText).toBe(CONFIG);
+		const renamed = CONFIG.replace("pages:", "# note\npages:");
+		store.getState().markPublished("v2", renamed);
+		expect(store.getState()).toMatchObject({
+			diskText: renamed,
+			lastPublish: {
+				previousText: CONFIG,
+				version: "v2",
+				touchedServer: false,
+			},
+		});
+		const withPort = `server:\n  port: 8088\n${renamed}`;
+		store.getState().markPublished("v3", withPort);
+		expect(store.getState().lastPublish).toEqual({
+			previousText: renamed,
+			version: "v3",
+			touchedServer: true,
+		});
+		// Only asset files: nothing in glance.yml to undo.
+		store.getState().markPublished("v3");
+		expect(store.getState()).toMatchObject({
+			diskText: withPort,
+			lastPublish: null,
+		});
+	});
+
 	it("reload keeps the open page by position and drops local changes", () => {
 		const store = setup();
 		const lab = store.getState().pages[1];

@@ -1,5 +1,6 @@
 import type { RenameKeyFix, ValidationIssue } from "@glaze/core";
 import { Button } from "../ui/Button.tsx";
+import { IssueNote } from "./IssueNote.tsx";
 
 const DOT: Record<ValidationIssue["severity"], string> = {
 	error: "bg-danger",
@@ -71,9 +72,11 @@ export function IssueList({ issues, stale, onJump, onFix }: IssueListProps) {
 				))}
 			</ul>
 			{notes.map((issue) => (
-				<p key={issue.message} className="px-4 py-2 text-xs text-faint">
-					{issue.message}
-				</p>
+				<IssueNote
+					key={issue.message}
+					issue={issue}
+					className="px-4 py-2 text-xs text-faint"
+				/>
 			))}
 		</section>
 	);

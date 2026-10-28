@@ -1,3 +1,11 @@
+import {
+	changedListenOptions,
+	type GlazeDocument,
+	glanceRunsInContainer,
+	type ListenOptionKey,
+	parseConfig,
+} from "@glaze/core";
+
 /*
  * Pure rules for the Settings view: Glance's login (secret key, users,
  * password hashes) and how server options relate to the way Glaze reaches
@@ -76,11 +84,14 @@ const DEFAULT_PORT = 8080;
  * rightly differ, so these are hints, not errors.
  * @param glanceUrl - `GLANCE_URL` from the server, or `null` when it isn't set.
  * @param server - The `server` section's values.
+ * @param portMapped - Glance sits behind a port mapping: then GLANCE_URL
+ *   shouldn't follow the port, so that note is left out.
  * @returns Sentences to show; empty when nothing stands out.
  */
 export function glanceReachNotes(
 	glanceUrl: string | null,
 	server: ServerOptions,
+	portMapped = false,
 ): string[] {
 	if (glanceUrl === null) {
 		return [
@@ -100,7 +111,7 @@ export function glanceReachNotes(
 			: Number.parseInt(String(server.port ?? ""), 10) || DEFAULT_PORT;
 	const urlPort = Number(url.port || (url.protocol === "https:" ? 443 : 80));
 	const local = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
-	if (local && urlPort !== port) {
+	if (local && urlPort !== port && !portMapped) {
 		notes.push(
 			`Glaze opens Glance at ${glanceUrl}, but Glance would listen on port ${port}: update GLANCE_URL when you publish this.`,
 		);
@@ -116,4 +127,51 @@ export function glanceReachNotes(
 		);
 	}
 	return notes;
+}
+
+/** What Glaze knows about where Glance runs, from `/api/settings`. */
+export interface ContainerSettings {
+	readonly glazeInContainer: boolean;
+	readonly glanceUrl: string | null;
+}
+
+/**
+ * Tells whether Glance likely runs behind a port mapping, judged from the
+ * published config (see `glanceRunsInContainer` in core).
+ * @param publishedText - The `glance.yml` on disk, or `null` when unknown.
+ * @param settings - Server settings.
+ * @returns True when host/port changes need the container warning.
+ */
+export function isPortMapped(
+	publishedText: string | null,
+	settings: ContainerSettings,
+): boolean {
+	const published = publishedText === null ? null : parseConfig(publishedText);
+	return glanceRunsInContainer({
+		glazeInContainer: settings.glazeInContainer,
+		glanceUrl: settings.glanceUrl,
+		port: published?.ok
+			? published.value.yaml.getIn(["server", "port"])
+			: undefined,
+	});
+}
+
+/**
+ * Lists the listen options (host, port) the draft changes while Glance runs
+ * behind a port mapping; the Settings form then shows the container warning.
+ * @param draft - The document being edited.
+ * @param publishedText - The `glance.yml` on disk, or `null` when unknown.
+ * @param settings - Server settings.
+ * @returns The changed keys; empty when there is nothing to warn about.
+ */
+export function mappedListenChanges(
+	draft: GlazeDocument,
+	publishedText: string | null,
+	settings: ContainerSettings,
+): ListenOptionKey[] {
+	if (publishedText === null || !isPortMapped(publishedText, settings)) {
+		return [];
+	}
+	const published = parseConfig(publishedText);
+	return published.ok ? changedListenOptions(published.value, draft) : [];
 }

@@ -1,15 +1,24 @@
-import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import {
+	mkdir,
+	mkdtemp,
+	readdir,
+	readFile,
+	rm,
+	writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
+	ASSETS_DOCS_URL,
 	childEnv,
 	collectEnvNames,
 	DUMMY_ENV_VALUE,
 	type GlanceCommand,
 	hasInclude,
 	parseGlanceOutput,
+	pointAssetsPath,
 	runGlanceValidate,
 	stubFileVariables,
 } from "../src/glance-validate.ts";
@@ -86,12 +95,37 @@ describe("parseGlanceOutput", () => {
 		for (const output of [
 			"Config file is invalid: parsing variable: reading secret file: open /run/secrets/a: no such file",
 			"Config file is invalid: parsing variable: readFileFromEnv: environment variable X not found",
-			"Config file is invalid: assets directory does not exist: /app/assets",
 		]) {
 			const [issue] = parseGlanceOutput(output, false);
 			expect(issue?.severity).toBe("warning");
 			expect(issue?.message).toContain("can't be checked here");
 		}
+	});
+
+	describe("a missing assets folder", () => {
+		const output =
+			"Config file is invalid: assets directory does not exist: /assets/";
+
+		it("is an info with a docs link without GLAZE_ASSETS_PATH", () => {
+			const [issue] = parseGlanceOutput(output, false, "unset");
+			expect(issue).toMatchObject({
+				severity: "info",
+				docsUrl: ASSETS_DOCS_URL,
+			});
+			expect(issue?.message).toContain("GLAZE_ASSETS_PATH");
+		});
+
+		it("is a warning when GLAZE_ASSETS_PATH doesn't exist", () => {
+			const [issue] = parseGlanceOutput(output, false, "missing");
+			expect(issue?.severity).toBe("warning");
+			expect(issue?.message).toContain("GLAZE_ASSETS_PATH doesn't exist");
+		});
+
+		it("is Glance's own warning when it was really checked", () => {
+			const [issue] = parseGlanceOutput(output, false, "checked");
+			expect(issue?.severity).toBe("warning");
+			expect(issue?.message).toContain("/assets/");
+		});
 	});
 
 	it("keeps unrecognised output as one raw error", () => {
@@ -257,7 +291,91 @@ describe("runGlanceValidate (fake Glance)", () => {
 	});
 });
 
+describe("assets-path in the validation copy", () => {
+	const WITH_ASSETS = `server:\n  assets-path: /assets/ # Glance's path\n${VALID}`;
+
+	it("points only server.assets-path at GLAZE_ASSETS_PATH", () => {
+		const pointed = pointAssetsPath(WITH_ASSETS, "/config/assets");
+		expect(pointed).toContain("assets-path: /config/assets");
+		expect(pointed).toContain("# Glance's path");
+		expect(pointed?.split("\n").length).toBe(WITH_ASSETS.split("\n").length);
+	});
+
+	it("leaves configs without an assets path or with a placeholder alone", () => {
+		expect(pointAssetsPath(VALID, "/config/assets")).toBeNull();
+		expect(
+			pointAssetsPath(
+				"server:\n  assets-path: ${ASSETS}\npages: []\n",
+				"/config/assets",
+			),
+		).toBeNull();
+	});
+
+	it("lets Glance check the folder when GLAZE_ASSETS_PATH exists", async () => {
+		await writeFile(configPath, WITH_ASSETS, "utf8");
+		const assetsDir = join(dir, "assets");
+		await mkdir(assetsDir);
+		const issues = await runGlanceValidate(
+			WITH_ASSETS,
+			configPath,
+			FAKE,
+			{},
+			assetsDir,
+		);
+		expect(issues).toEqual([]);
+		// The real file is never changed.
+		expect(await readFile(configPath, "utf8")).toBe(WITH_ASSETS);
+	});
+
+	it("gives one info without GLAZE_ASSETS_PATH", async () => {
+		const issues = await runGlanceValidate(WITH_ASSETS, configPath, FAKE, {});
+		expect(issues).toEqual([
+			expect.objectContaining({ severity: "info", docsUrl: ASSETS_DOCS_URL }),
+		]);
+	});
+
+	it("warns when GLAZE_ASSETS_PATH doesn't exist", async () => {
+		const issues = await runGlanceValidate(
+			WITH_ASSETS,
+			configPath,
+			FAKE,
+			{},
+			join(dir, "nope"),
+		);
+		expect(issues).toEqual([expect.objectContaining({ severity: "warning" })]);
+	});
+});
+
 describe("validateDraft", () => {
+	it("reports a broken server.host on its line", async () => {
+		const text = `server:\n  host: http://192.168.178.233\n${VALID}`;
+		const issues = await validateDraft(text, { configPath, glance: null });
+		expect(issues[0]).toMatchObject({
+			severity: "error",
+			path: ["server", "host"],
+			line: 2,
+		});
+	});
+
+	it("asks to confirm a port change when Glance runs in a container", async () => {
+		const text = `server:\n  port: 8088\n${VALID}`;
+		const options = {
+			configPath,
+			glance: null,
+			publishedText: VALID,
+			glazeInContainer: true,
+		};
+		const [issue] = await validateDraft(text, options);
+		expect(issue).toMatchObject({
+			severity: "warning",
+			path: ["server", "port"],
+			line: 2,
+			requiresConfirmation: true,
+		});
+		const unchanged = await validateDraft(VALID, options);
+		expect(unchanged.some((entry) => entry.requiresConfirmation)).toBe(false);
+	});
+
 	it("reports a YAML error with line and column and stops", async () => {
 		const issues = await validateDraft("pages:\n  - name: A\n   bad: x\n", {
 			configPath,

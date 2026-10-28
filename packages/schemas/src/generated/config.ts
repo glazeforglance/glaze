@@ -13,15 +13,16 @@ export const CONFIG_FIELDS: readonly FieldSchema[] = [
 			{
 				"key": "host",
 				"goType": "string",
-				"label": "Host",
+				"label": "Listen address",
 				"kind": "text",
-				"help": "Listens on every address when empty."
+				"help": "Leave empty. Only set this if Glance must listen on one specific network interface."
 			},
 			{
 				"key": "port",
 				"goType": "uint16",
-				"label": "Port",
+				"label": "Listen port (inside the container)",
 				"kind": "integer",
+				"help": "Usually 8080. To reach Glance on another port, change your Docker port mapping.",
 				"default": 8080,
 				"min": 1,
 				"max": 65535
@@ -46,8 +47,8 @@ export const CONFIG_FIELDS: readonly FieldSchema[] = [
 				"goType": "string",
 				"label": "Base path",
 				"kind": "text",
-				"placeholder": "/glance",
-				"help": "When Glance is served under a path, e.g. example.com/glance."
+				"placeholder": "e.g. /glance",
+				"help": "Only when a reverse proxy serves Glance under a path, e.g. example.com/glance. Starts with /."
 			}
 		]
 	},

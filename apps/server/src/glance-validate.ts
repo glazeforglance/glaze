@@ -1,10 +1,13 @@
 import { execFile } from "node:child_process";
 import { randomBytes } from "node:crypto";
-import { rm, writeFile } from "node:fs/promises";
+import { rm, stat, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import {
 	findEnvReferences,
 	offsetToLineColumn,
+	parseConfig,
+	serializeConfig,
+	setValueAt,
 	type ValidationIssue,
 	type YamlPath,
 } from "@glaze/core";
@@ -106,6 +109,79 @@ export function stubFileVariables(text: string): {
 	return { text: stubbed, warnings };
 }
 
+/** Where the docs explain `GLAZE_ASSETS_PATH`. */
+export const ASSETS_DOCS_URL =
+	"https://github.com/glazeforglance/glaze/blob/main/docs/configuration.md#asset-files";
+
+/**
+ * How Glance's assets folder check went:
+ * - `checked`: `server.assets-path` pointed at `GLAZE_ASSETS_PATH` for the check;
+ * - `missing`: `GLAZE_ASSETS_PATH` is set but doesn't exist inside Glaze;
+ * - `unset`: no `GLAZE_ASSETS_PATH`, so Glance looked for its own path here.
+ */
+export type AssetsCheck = "checked" | "missing" | "unset";
+
+/**
+ * Points `server.assets-path` at Glaze's own copy of the assets folder, for
+ * the temporary validation file only. `server.assets-path` is a path inside
+ * the *Glance* container (e.g. `/app/assets`); inside Glaze the same folder is
+ * `GLAZE_ASSETS_PATH`, so this lets Glance check that it really exists.
+ * @param text - The draft config.
+ * @param assetsDir - Absolute `GLAZE_ASSETS_PATH`.
+ * @returns The changed text, or `null` when there is nothing to point
+ *   (no or a templated `server.assets-path`, or YAML Glaze can't read).
+ */
+export function pointAssetsPath(
+	text: string,
+	assetsDir: string,
+): string | null {
+	const parsed = parseConfig(text);
+	if (!parsed.ok) return null;
+	const doc = parsed.value;
+	const current: unknown = doc.yaml.getIn(["server", "assets-path"]);
+	if (typeof current !== "string" || current === "" || current.includes("${")) {
+		return null;
+	}
+	// A one-line scalar is replaced in place, so Glance's line numbers still match.
+	const edited = setValueAt(doc, [], ["server", "assets-path"], assetsDir);
+	return edited.ok ? serializeConfig(edited.value) : null;
+}
+
+async function isDirectory(path: string): Promise<boolean> {
+	try {
+		return (await stat(path)).isDirectory();
+	} catch {
+		return false;
+	}
+}
+
+function assetsIssue(message: string, assets: AssetsCheck): GlanceIssue {
+	switch (assets) {
+		case "unset":
+			return {
+				severity: "info",
+				source: "glance",
+				message:
+					"Glance's assets folder can't be checked here. Set GLAZE_ASSETS_PATH so Glaze can check it.",
+				docsUrl: ASSETS_DOCS_URL,
+			};
+		case "missing":
+			return {
+				severity: "warning",
+				source: "glance",
+				message:
+					"GLAZE_ASSETS_PATH doesn't exist inside Glaze, so Glance's assets folder can't be checked.",
+				docsUrl: ASSETS_DOCS_URL,
+			};
+		case "checked":
+			return {
+				severity: "warning",
+				source: "glance",
+				message: `Glance: ${shorten(message)}`,
+			};
+	}
+}
+
 const PREFIXES = ["Config file is invalid:", "Could not parse config file:"];
 
 function pathFromMessage(message: string): YamlPath | undefined {
@@ -128,16 +204,20 @@ function shorten(text: string): string {
  * - `Config file is invalid: …` / `Could not parse config file: …` → one error;
  * - `line N` in the message is used only when the draft has no `$include`;
  * - `page N` / `column N of page M` become a path (Glance counts from 1);
- * - errors about secrets, `readFileFromEnv` or a missing assets folder depend
- *   on the machine Glance runs on, so they become warnings;
+ * - errors about secrets or `readFileFromEnv` depend on the machine Glance
+ *   runs on, so they become warnings;
+ * - a missing assets folder depends on `assets` (see `AssetsCheck`): an info
+ *   with a docs link when it can't be checked, otherwise a warning;
  * - anything else → one error with the raw output.
  * @param output - Everything Glance printed (stdout and stderr).
  * @param includes - Whether the draft has `$include`s.
+ * @param assets - How the assets folder was checked.
  * @returns The issues; empty for empty output.
  */
 export function parseGlanceOutput(
 	output: string,
 	includes: boolean,
+	assets: AssetsCheck = "unset",
 ): GlanceIssue[] {
 	const text = output.trim();
 	if (text === "") return [];
@@ -155,10 +235,10 @@ export function parseGlanceOutput(
 		.slice(text.indexOf(prefix) + prefix.length)
 		.trim()
 		.replace(/\s*\n\s*/g, " ");
-	const machineSpecific =
-		/reading secret file|readFileFromEnv:|assets directory does not exist/.test(
-			message,
-		);
+	if (message.includes("assets directory does not exist")) {
+		return [assetsIssue(message, assets)];
+	}
+	const machineSpecific = /reading secret file|readFileFromEnv:/.test(message);
 	const line = includes ? null : /\bline (\d+)\b/.exec(message);
 	const path = includes ? undefined : pathFromMessage(message);
 	return [
@@ -227,8 +307,12 @@ function run(
  * and the temp file is always deleted afterwards.
  * @param text - The draft config.
  * @param configPath - Path of the real `glance.yml`.
+ * With `assetsDir` (`GLAZE_ASSETS_PATH`, when it exists), the temp file's
+ * `server.assets-path` points there, so Glance checks the real folder; the
+ * real config is never changed.
  * @param command - The Glance binary and timeout.
  * @param env - The server's environment, usually `process.env`.
+ * @param assetsDir - Absolute `GLAZE_ASSETS_PATH`, or `null` when it isn't set.
  * @returns Glance's issues (empty when Glance accepts the draft).
  */
 export async function runGlanceValidate(
@@ -236,8 +320,20 @@ export async function runGlanceValidate(
 	configPath: string,
 	command: GlanceCommand,
 	env: Readonly<Record<string, string | undefined>> = process.env,
+	assetsDir: string | null = null,
 ): Promise<GlanceIssue[]> {
-	const { text: stubbed, warnings } = stubFileVariables(text);
+	const stubResult = stubFileVariables(text);
+	const { warnings } = stubResult;
+	let stubbed = stubResult.text;
+	let assets: AssetsCheck = "unset";
+	if (assetsDir !== null) {
+		if (await isDirectory(assetsDir)) {
+			stubbed = pointAssetsPath(stubbed, assetsDir) ?? stubbed;
+			assets = "checked";
+		} else {
+			assets = "missing";
+		}
+	}
 	const tempPath = join(
 		dirname(configPath),
 		`.glaze-validate-${randomBytes(6).toString("hex")}.yml`,
@@ -266,7 +362,10 @@ export async function runGlanceValidate(
 		}
 		// Glance prints the temp file's name in some errors; show the real one.
 		const output = result.output.split(tempPath).join(configPath);
-		return [...warnings, ...parseGlanceOutput(output, hasInclude(text))];
+		return [
+			...warnings,
+			...parseGlanceOutput(output, hasInclude(text), assets),
+		];
 	} catch (error) {
 		const reason = error instanceof Error ? error.message : String(error);
 		return [

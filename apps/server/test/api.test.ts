@@ -166,6 +166,71 @@ describe("PUT /api/config with validation", () => {
 	});
 });
 
+describe("PUT /api/config with server options", () => {
+	const withPort = (port: number) =>
+		ORIGINAL.replace("pages:", `server:\n  port: ${port}\npages:`);
+
+	async function putIn(
+		options: { glazeInContainer?: boolean; glanceUrl?: string },
+		body: unknown,
+	): Promise<Response> {
+		return await (await testApp({ configPath, ...options })).request(
+			"/api/config",
+			{
+				method: "PUT",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(body),
+			},
+		);
+	}
+
+	it("refuses a host that is a URL (the ZimaOS bug)", async () => {
+		const text = ORIGINAL.replace(
+			"pages:",
+			"server:\n  host: http://192.168.178.233\n  port: 8088\npages:",
+		);
+		const res = await put({ text, baseVersion: hashText(ORIGINAL) });
+		expect(res.status).toBe(422);
+		const body = (await res.json()) as { issues: { message: string }[] };
+		expect(body.issues[0]?.message).toContain("not a URL");
+		expect(await readFile(configPath, "utf8")).toBe(ORIGINAL);
+	});
+
+	it("needs a confirmation to change the port in a container", async () => {
+		const text = withPort(8088);
+		const refused = await putIn(
+			{ glazeInContainer: true },
+			{ text, baseVersion: hashText(ORIGINAL) },
+		);
+		expect(refused.status).toBe(422);
+		expect(await refused.json()).toMatchObject({ error: "unconfirmed" });
+		expect(await readFile(configPath, "utf8")).toBe(ORIGINAL);
+
+		const confirmed = await putIn(
+			{ glazeInContainer: true },
+			{ text, baseVersion: hashText(ORIGINAL), confirmed: true },
+		);
+		expect(confirmed.status).toBe(200);
+		expect(await readFile(configPath, "utf8")).toBe(text);
+	});
+
+	it("treats a GLANCE_URL on another port as a container", async () => {
+		const res = await putIn(
+			{ glanceUrl: "http://192.168.178.233:8088" },
+			{ text: withPort(9000), baseVersion: hashText(ORIGINAL) },
+		);
+		expect(res.status).toBe(422);
+	});
+
+	it("doesn't ask outside a container", async () => {
+		const res = await putIn(
+			{ glanceUrl: "http://localhost:8080" },
+			{ text: withPort(9000), baseVersion: hashText(ORIGINAL) },
+		);
+		expect(res.status).toBe(200);
+	});
+});
+
 describe("POST /api/validate", () => {
 	async function validate(body: unknown): Promise<Response> {
 		return await (await testApp({ configPath })).request("/api/validate", {
@@ -196,6 +261,7 @@ describe("GET /api/settings", () => {
 		expect(await off.json()).toEqual({
 			glanceUrl: null,
 			glanceValidation: false,
+			glazeInContainer: false,
 		});
 		const on = await (
 			await testApp({
@@ -207,6 +273,7 @@ describe("GET /api/settings", () => {
 		expect(await on.json()).toEqual({
 			glanceUrl: "http://localhost:8080",
 			glanceValidation: true,
+			glazeInContainer: false,
 		});
 	});
 });

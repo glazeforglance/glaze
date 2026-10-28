@@ -3,6 +3,7 @@ import { serve } from "@hono/node-server";
 import { createApp } from "./app.ts";
 import { resolveAuthConfig } from "./auth-config.ts";
 import { waitForPendingWrites } from "./config-store.ts";
+import { runsInContainer } from "./container.ts";
 import { loadDotEnv, REPO_ROOT, readServerEnv } from "./env.ts";
 import { checkAssetsAccess, checkConfigAccess } from "./startup-check.ts";
 import { hasWebApp } from "./static.ts";
@@ -57,6 +58,7 @@ async function main(): Promise<void> {
 		auth: auth.value,
 		trustProxy,
 		assetsPath,
+		glazeInContainer: runsInContainer(),
 		version: GLAZE_VERSION,
 		webDist: serveWeb ? webDist : null,
 	});

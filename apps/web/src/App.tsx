@@ -6,6 +6,7 @@ import { Inspector } from "./components/inspector/Inspector.tsx";
 import { PreviewPane } from "./components/preview/PreviewPane.tsx";
 import { SettingsView } from "./components/settings/SettingsView.tsx";
 import { WidgetLibrary } from "./components/library/WidgetLibrary.tsx";
+import { GlanceDownBanner } from "./components/top-bar/GlanceDownBanner.tsx";
 import { TopBar } from "./components/top-bar/TopBar.tsx";
 import { Button } from "./components/ui/Button.tsx";
 import { GlazeMark } from "./components/ui/icons.tsx";
@@ -51,6 +52,7 @@ function Editor() {
 	return (
 		<div className="flex h-full flex-col">
 			<TopBar />
+			<GlanceDownBanner />
 			<div className="flex min-h-0 flex-1">
 				{codeMounted && <CodeWorkspace active={view === "code"} />}
 				{view === "preview" && <PreviewPane />}

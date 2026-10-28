@@ -28,6 +28,7 @@ import {
 	removeWidgetValue,
 	renameKey,
 	renamePage,
+	serverSectionChanged,
 	replaceSource,
 	setColumnSize,
 	setSplitColumns,
@@ -78,6 +79,16 @@ export type WidgetSource =
 	| { readonly kind: "new"; readonly widget: WidgetInput }
 	| { readonly kind: "move"; readonly widgetId: string };
 
+/** A publish of `glance.yml`, with what it replaced. */
+export interface LastPublish {
+	/** The text on disk before this publish. */
+	readonly previousText: string;
+	/** The version this publish wrote. */
+	readonly version: string;
+	/** Whether a `server` option changed: Glance may then not come back. */
+	readonly touchedServer: boolean;
+}
+
 /** Everything the editor shows, in one place. */
 export interface EditorState {
 	readonly status: "loading" | "ready" | "error";
@@ -87,6 +98,10 @@ export interface EditorState {
 	readonly pages: readonly PageNode[];
 	/** Version of the file on disk this document is based on. */
 	readonly version: string | null;
+	/** The text of that version: what Glance runs now. */
+	readonly diskText: string | null;
+	/** The latest publish of `glance.yml`, so it can be undone; `null` when there is none. */
+	readonly lastPublish: LastPublish | null;
 	/** True when the document has changes that aren't published yet. */
 	readonly dirty: boolean;
 	readonly selectedPageId: string | null;
@@ -124,8 +139,13 @@ export interface EditorActions {
 	 * after a conflict). Keeps the open page by position when possible.
 	 */
 	load(text: string, version: string): void;
-	/** Records a successful publish: the file on disk now matches the document. */
-	markPublished(version: string): void;
+	/**
+	 * Records a successful publish: the file on disk now matches the document.
+	 * @param version - The new version on disk.
+	 * @param text - The `glance.yml` that was written; leave out when only
+	 *   asset files were published.
+	 */
+	markPublished(version: string, text?: string): void;
 	setView(view: EditorView): void;
 	/**
 	 * Takes the text from the code view. Valid YAML replaces the document (one
@@ -265,6 +285,8 @@ const INITIAL_STATE: EditorState = {
 	doc: null,
 	pages: [],
 	version: null,
+	diskText: null,
+	lastPublish: null,
 	dirty: false,
 	selectedPageId: null,
 	selectedWidgetId: null,
@@ -279,6 +301,13 @@ const INITIAL_STATE: EditorState = {
 	publishCount: 0,
 	publishRequest: 0,
 };
+
+function serverChanged(before: string, after: string): boolean {
+	const a = parseConfig(before);
+	const b = parseConfig(after);
+	// Unreadable text: assume the worst, so the undo offer still appears.
+	return !a.ok || !b.ok || serverSectionChanged(a.value, b.value);
+}
 
 function findColumn(
 	pages: readonly PageNode[],
@@ -418,6 +447,8 @@ export function createEditorStore(): StoreApi<EditorStore> {
 					doc: parsed.value,
 					pages,
 					version,
+					diskText: text,
+					lastPublish: null,
 					dirty: false,
 					selectedPageId: (pages[openIndex] ?? pages[0])?.id ?? null,
 					selectedWidgetId: null,
@@ -429,11 +460,20 @@ export function createEditorStore(): StoreApi<EditorStore> {
 				});
 			},
 
-			markPublished: (version) =>
+			markPublished: (version, text) =>
 				set((state) => ({
 					version,
 					dirty: false,
 					publishCount: state.publishCount + 1,
+					diskText: text ?? state.diskText,
+					lastPublish:
+						text === undefined || state.diskText === null
+							? null
+							: {
+									previousText: state.diskText,
+									version,
+									touchedServer: serverChanged(state.diskText, text),
+								},
 				})),
 
 			setView: (view) => set({ view }),

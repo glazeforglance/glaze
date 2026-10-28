@@ -119,7 +119,11 @@ The Settings view (`Ctrl/Cmd + 4`) covers everything in `glance.yml` that isn't 
 
 ![The Settings view on the Theme section: colors for background, primary, positive and negative, the light theme switch, contrast and text saturation](screenshots/settings.png)
 
-- **Server:** Glance's host, port, the assets folder, the base path and whether Glance sits behind a reverse proxy. Glaze warns when these don't match where it expects to reach Glance.
+- **Server:** where Glance **listens**, not where you reach it, plus the assets folder, the base path and whether Glance sits behind a reverse proxy.
+  - **Listen address:** leave it empty, so Glance listens on every network interface. Only set it to make Glance listen on one specific interface: an IP address (`192.168.1.10`, or `[::1]` for IPv6, in brackets) or a host name. A URL, a path or a port (`http://…`, `…:8088`) is refused, because Glance can't start with it.
+  - **Listen port (inside the container):** usually `8080`, a whole number from 1 to 65535. In Docker this is the port **inside** the container; to reach Glance on another port, change your Docker port mapping (e.g. `8088:8080`), not this field. When Glaze can tell Glance runs in a container, changing the address or port shows a warning and Publish asks you to confirm.
+  - **Base path:** only when a reverse proxy serves Glance under a path, e.g. `/glance` for `example.com/glance`. It must start with `/` (or be a full `http(s)://` URL).
+  - If Glance doesn't answer after you publish a change here, a banner offers **Undo last publish**, which puts the previous `glance.yml` back.
 - **Login:** Glance's **own** login, separate from Glaze's.
   - **Users:** add a user with a name (at least 3 characters) and a password (at least 6). Glaze stores a bcrypt **hash** of the password, never the password itself. You can set a new password or rename a user later. Glance has no per-page access: every user sees every page.
   - **Secret key:** signs Glance's login sessions; Glance needs one as soon as there are users, and Glaze makes one when you add the first user. **Generate a new key** replaces it: after you publish, **everyone is logged out of Glance** and has to log in again. You can also write `${GLANCE_SECRET_KEY}` here and keep the key out of `glance.yml`.
@@ -139,7 +143,8 @@ To publish, press **Publish** (or `Ctrl/Cmd + S`). Glaze shows a review first:
 
 - **Which files will be written:** `glance.yml`, plus any CSS or JavaScript files you changed in the Code view.
 - **Errors** are things Glance would refuse: a broken layout, a missing required option, or an error from Glance's own check (`glance config:validate`). Fix them first. If you're sure, **Publish anyway** writes the file regardless, except when the YAML itself can't be read.
-- **Warnings** don't block publishing, for example an option Glance doesn't know (with a **Fix** button when Glaze has a suggestion).
+- **Warnings** don't block publishing, for example an option Glance doesn't know (with a **Fix** button when Glaze has a suggestion). One kind does need a confirmation: changing Glance's listen address or port while Glance runs in a container. Tick the box to publish it anyway.
+- **Notes** at the bottom are only information, for example that Glance's assets folder can't be checked because `GLAZE_ASSETS_PATH` isn't set.
 
 After publishing, Glance notices the new file and reloads by itself; Glaze waits for that and then refreshes the preview. If `glance.yml` was changed by someone else since you opened it (by hand, or in another tab), Glaze doesn't overwrite it silently: you choose between **Reload** (take their version, lose your draft) and **Overwrite** (replace theirs with yours).
 

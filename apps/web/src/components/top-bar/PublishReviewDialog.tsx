@@ -5,14 +5,18 @@ import { useDraftText } from "../../hooks/use-validation.ts";
 import { validateConfig } from "../../lib/api.ts";
 import { editorStore, useEditor } from "../../store/editor-store.ts";
 import { isFileDirty, useFiles } from "../../store/files-store.ts";
+import { IssueNote } from "../code/IssueNote.tsx";
 import { Button } from "../ui/Button.tsx";
 import { Dialog } from "../ui/Dialog.tsx";
 
 export interface PublishReviewDialogProps {
 	readonly open: boolean;
 	readonly onCancel: () => void;
-	/** Publishes; `force` is true for "Publish anyway". */
-	readonly onPublish: (force: boolean) => void;
+	/**
+	 * Publishes; `force` is true for "Publish anyway", `confirmed` when the
+	 * user ticked the box for issues that need it.
+	 */
+	readonly onPublish: (force: boolean, confirmed: boolean) => void;
 }
 
 type Check =
@@ -33,7 +37,8 @@ const SEVERITY_DOT: Record<ValidationIssue["severity"], string> = {
 /**
  * The step before writing: which files change, and what validation found.
  * Errors block Publish (with an explicit "Publish anyway", except for broken
- * YAML); warnings are listed but never block.
+ * YAML); warnings are listed but never block, except a warning that needs an
+ * explicit confirmation (a host/port change behind a Docker port mapping).
  * @param props - Open state and handlers.
  * @returns The dialog.
  */
@@ -56,6 +61,8 @@ export function PublishReviewDialog({
 		readonly message: string;
 	} | null>(null);
 	const configChanged = open && configDirty;
+	// Tied to the draft: any further edit asks again.
+	const [confirmedDraft, setConfirmedDraft] = useState<string | null>(null);
 
 	// Validate the draft that is about to be written, unless a fresh result exists.
 	useEffect(() => {
@@ -89,6 +96,13 @@ export function PublishReviewDialog({
 	const warnings = issues.filter((issue) => issue.severity === "warning");
 	const notes = issues.filter((issue) => issue.severity === "info");
 	const yamlBroken = errors.some((issue) => issue.source === "yaml");
+	const toConfirm = issues.filter((issue) => issue.requiresConfirmation);
+	const confirmed =
+		toConfirm.length === 0 || (draft !== null && confirmedDraft === draft);
+	// Issues to confirm get their own box below instead of a line in the list.
+	const listed = [...errors, ...warnings].filter(
+		(issue) => !issue.requiresConfirmation,
+	);
 	const files = [...(configChanged ? ["glance.yml"] : []), ...changedFiles];
 
 	const blocked =
@@ -96,7 +110,9 @@ export function PublishReviewDialog({
 			? "Checking the config…"
 			: errors.length > 0
 				? "Fix the errors first, or use Publish anyway"
-				: undefined;
+				: !confirmed
+					? "Confirm the warning first"
+					: undefined;
 
 	return (
 		<Dialog
@@ -110,14 +126,18 @@ export function PublishReviewDialog({
 						Cancel
 					</Button>
 					{errors.length > 0 && !yamlBroken && (
-						<Button variant="danger" onClick={() => onPublish(true)}>
+						<Button
+							variant="danger"
+							unavailable={confirmed ? undefined : "Confirm the warning first"}
+							onClick={() => onPublish(true, confirmed)}
+						>
 							Publish anyway
 						</Button>
 					)}
 					<Button
 						variant="primary"
 						unavailable={blocked}
-						onClick={() => onPublish(false)}
+						onClick={() => onPublish(false, confirmed)}
 					>
 						Publish
 					</Button>
@@ -183,9 +203,9 @@ export function PublishReviewDialog({
 						</button>
 					</p>
 				)}
-				{errors.length + warnings.length > 0 && (
+				{listed.length > 0 && (
 					<ul className="mt-3 max-h-56 space-y-1.5 overflow-y-auto pr-1">
-						{[...errors, ...warnings].map((issue, index) => (
+						{listed.map((issue, index) => (
 							<li
 								// Issues have no id; the list is replaced as a whole.
 								key={`${index}-${issue.message}`}
@@ -206,10 +226,36 @@ export function PublishReviewDialog({
 						))}
 					</ul>
 				)}
+				{toConfirm.length > 0 && (
+					<div
+						role="alert"
+						className="mt-3 rounded-md border border-danger/40 bg-danger/10 px-3 py-2.5"
+					>
+						{toConfirm.map((issue) => (
+							<p key={issue.message} className="font-semibold text-text">
+								{issue.message}
+							</p>
+						))}
+						<label className="mt-2 flex cursor-pointer items-start gap-2 text-text">
+							<input
+								type="checkbox"
+								checked={confirmed}
+								onChange={(event) =>
+									setConfirmedDraft(event.target.checked ? draft : null)
+								}
+								className="mt-1"
+							/>
+							I understand Glance may become unreachable. Publish this change
+							anyway.
+						</label>
+					</div>
+				)}
 				{notes.map((issue) => (
-					<p key={issue.message} className="mt-3 text-xs text-faint">
-						{issue.message}
-					</p>
+					<IssueNote
+						key={issue.message}
+						issue={issue}
+						className="mt-3 text-xs text-faint"
+					/>
 				))}
 			</section>
 		</Dialog>

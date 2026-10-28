@@ -43,6 +43,21 @@ export {
 	type PathAtOffset,
 } from "./ranges.ts";
 export { renameKey } from "./rename-key.ts";
+export {
+	CONTAINER_LISTEN_WARNING,
+	type ContainerHints,
+	changedListenOptions,
+	DEFAULT_GLANCE_PORT,
+	glanceRunsInContainer,
+	HOST_NOT_A_URL,
+	isIPv6,
+	type ListenOptionKey,
+	type ServerOptionIssue,
+	type ServerOptionKey,
+	serverOptionProblem,
+	serverSectionChanged,
+	validateServerOptions,
+} from "./server-options.ts";
 export { getNodeSource } from "./source.ts";
 export {
 	addToSplitColumn,

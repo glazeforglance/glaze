@@ -1,6 +1,6 @@
 // Stand-in for the Glance binary in tests: `node fake-glance.mjs --config <file> config:validate`.
 // What it prints depends on a `# fake: <mode>` comment in the config.
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 
 const args = process.argv.slice(2);
 const at = args.indexOf("--config");
@@ -42,6 +42,20 @@ if (/\$\{(?:secret|readFileFromEnv):/.test(text)) {
 		"Config file is invalid: parsing variable: reading secret file: open /run/secrets/x: no such file or directory",
 	);
 	process.exit(1);
+}
+
+// Like Glance (config.go): a set `server.assets-path` must exist, relative to the cwd.
+const assets = /^\s+assets-path:[ \t]*(.+?)(?:[ \t]+#.*)?\s*$/m.exec(text)?.[1];
+if (assets !== undefined) {
+	const path = assets.startsWith('"')
+		? JSON.parse(assets)
+		: assets.replace(/^'(.*)'$/, "$1");
+	if (!existsSync(path)) {
+		console.log(
+			`Config file is invalid: assets directory does not exist: ${path}`,
+		);
+		process.exit(1);
+	}
 }
 
 switch (mode) {

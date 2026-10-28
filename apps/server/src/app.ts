@@ -12,7 +12,7 @@ import type { GlanceCommand } from "./glance-validate.ts";
 import type { RateLimiter } from "./rate-limit.ts";
 import { csrfProtection, securityHeaders } from "./security.ts";
 import { installWebApp } from "./static.ts";
-import { hasErrors, validateDraft } from "./validate.ts";
+import { hasErrors, needsConfirmation, validateDraft } from "./validate.ts";
 
 /** What the API needs to know about its environment. */
 export interface AppOptions {
@@ -43,6 +43,11 @@ export interface AppOptions {
 	 * `server.assets-path` from the config's folder instead.
 	 */
 	readonly assetsPath?: string | null;
+	/**
+	 * Glaze runs in a container, so Glance probably does too: a host/port
+	 * change then needs a confirmation (see `validateDraft`).
+	 */
+	readonly glazeInContainer?: boolean;
 	/** Folder of the built web app to serve next to the API; `null` or missing: API only. */
 	readonly webDist?: string | null;
 }
@@ -74,14 +79,15 @@ function textOf(body: unknown): string | null {
  *
  * - `GET /api/healthz` → `{ ok, version }`
  * - `GET /api/config` → `{ text, version }`
- * - `PUT /api/config` with `{ text, baseVersion, force? }` → `{ version, issues }`;
+ * - `PUT /api/config` with `{ text, baseVersion, force?, confirmed? }` → `{ version, issues }`;
  *   400 bad body, 422 with `{ issues }` when validation finds errors (YAML
- *   errors always, others unless `force: true`), 409 file changed since `baseVersion`.
+ *   errors always, others unless `force: true`) or an issue needs confirming
+ *   and `confirmed` isn't true, 409 file changed since `baseVersion`.
  * - `POST /api/validate` with `{ text }` → `{ issues }`
  * - `GET /api/files` → `{ files, unavailable }`: asset files the config references
  * - `GET /api/files/:name` → `{ name, text, version }`
  * - `PUT /api/files/:name` with `{ text, baseVersion }` → `{ version }`; 409 on conflict
- * - `GET /api/settings` → `{ glanceUrl, glanceValidation }`
+ * - `GET /api/settings` → `{ glanceUrl, glanceValidation, glazeInContainer }`
  * - `POST /api/glance/password-hash` with `{ password }` → `{ hash, via }`:
  *   a bcrypt hash for Glance's `auth.users` (400 for a password Glance refuses)
  * - with `webDist`: the web app on every other GET (see `installWebApp`)
@@ -91,14 +97,24 @@ function textOf(body: unknown): string | null {
 export function createApp(options: AppOptions): Hono {
 	const { configPath } = options;
 	const glance = options.glance ?? null;
-	const validate = (text: string) =>
+	const trustProxy = options.trustProxy ?? false;
+	const assetsPath = options.assetsPath ?? null;
+	const glazeInContainer = options.glazeInContainer ?? false;
+	/** Validates a draft against the file on disk (`publishedText`). */
+	const validate = (text: string, publishedText: string | null) =>
 		validateDraft(text, {
 			configPath,
 			glance,
 			...(options.env ? { env: options.env } : {}),
+			assetsPath,
+			publishedText,
+			glazeInContainer,
+			glanceUrl: options.glanceUrl ?? null,
 		});
-	const trustProxy = options.trustProxy ?? false;
-	const assetsPath = options.assetsPath ?? null;
+	const publishedText = async () => {
+		const file = await readConfig(configPath);
+		return file.ok ? file.value.text : null;
+	};
 	const app = new Hono();
 
 	app.use("*", securityHeaders(options.glanceUrl ?? null));
@@ -132,19 +148,20 @@ export function createApp(options: AppOptions): Hono {
 		const text = textOf(body);
 		const baseVersion = field(body, "baseVersion");
 		const force = field(body, "force") === true;
+		const confirmed = field(body, "confirmed") === true;
 		if (text === null || typeof baseVersion !== "string") {
 			return c.json(
 				{
 					error: "bad-request",
 					message:
-						"Expected JSON { text: string, baseVersion: string, force?: boolean }",
+						"Expected JSON { text: string, baseVersion: string, force?: boolean, confirmed?: boolean }",
 				},
 				400,
 			);
 		}
 
 		// Validate before touching the disk: Glance should never get a config it can't load.
-		const issues = await validate(text);
+		const issues = await validate(text, await publishedText());
 		// Broken YAML can't be forced: neither Glance nor Glaze could load it again.
 		const yamlBroken = issues.some((issue) => issue.source === "yaml");
 		if (hasErrors(issues) && (!force || yamlBroken)) {
@@ -154,6 +171,17 @@ export function createApp(options: AppOptions): Hono {
 					message: yamlBroken
 						? "The YAML has errors"
 						: "Glance can't use this config",
+					issues,
+				},
+				422,
+			);
+		}
+		// E.g. a port change behind a Docker port mapping: never written by accident.
+		if (needsConfirmation(issues) && !confirmed) {
+			return c.json(
+				{
+					error: "unconfirmed",
+					message: "This change needs a confirmation",
 					issues,
 				},
 				422,
@@ -199,7 +227,7 @@ export function createApp(options: AppOptions): Hono {
 				400,
 			);
 		}
-		return c.json({ issues: await validate(text) });
+		return c.json({ issues: await validate(text, await publishedText()) });
 	});
 
 	app.get("/api/files", async (c) => {
@@ -337,6 +365,7 @@ export function createApp(options: AppOptions): Hono {
 		c.json({
 			glanceUrl: options.glanceUrl ?? null,
 			glanceValidation: glance !== null,
+			glazeInContainer,
 		}),
 	);
 
