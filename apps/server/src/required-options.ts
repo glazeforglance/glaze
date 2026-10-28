@@ -11,8 +11,29 @@ import { type FieldSchema, widgetSchema } from "@glaze/schemas";
 export interface MissingOption {
 	/** The map that should hold the option (the widget or a list item). */
 	readonly path: YamlPath;
-	/** E.g. "Weather needs a location". */
+	/** E.g. "Weather needs a location" (English; the web app builds its own from `params`). */
 	readonly message: string;
+	/**
+	 * fields.json keys for the web app's sentence: `widget` (e.g.
+	 * `widget.weather`), `option` (e.g. `widget.weather.fields.location`) and,
+	 * inside a list, `list` and the 1-based `item` of the innermost list.
+	 */
+	readonly params: Readonly<Record<string, string | number>>;
+}
+
+/** The innermost list item an option is missing in, for "… for site 2". */
+interface ListItem {
+	readonly list: string;
+	readonly item: number;
+}
+
+/** What `check` carries down into nested objects. */
+interface Context {
+	readonly path: YamlPath;
+	readonly trail: readonly string[];
+	/** fields.json key prefix of the fields being checked. */
+	readonly textKey: string;
+	readonly listItem: ListItem | null;
 }
 
 function isEmpty(value: unknown): boolean {
@@ -41,18 +62,26 @@ function asRecord(value: unknown): Record<string, unknown> | null {
 		: null;
 }
 
-/** The object form of a field's value: its own fields, or a union's object variant. */
+/**
+ * The object form of a field's value: its own fields, or a union's object
+ * variant, plus the fields.json key prefix of those fields.
+ */
 function objectFields(
 	field: FieldSchema,
 	value: unknown,
-): readonly FieldSchema[] | null {
+	textKey: string,
+): { fields: readonly FieldSchema[]; textKey: string } | null {
 	if (!asRecord(value)) return null;
-	if (field.kind === "object") return field.fields ?? null;
+	if (field.kind === "object" && field.fields) {
+		return { fields: field.fields, textKey: `${textKey}.fields` };
+	}
 	if (field.kind === "union") {
-		return (
-			field.variants?.find((variant) => variant.kind === "object")?.fields ??
-			null
-		);
+		const index =
+			field.variants?.findIndex((variant) => variant.kind === "object") ?? -1;
+		const fields = field.variants?.[index]?.fields;
+		return fields
+			? { fields, textKey: `${textKey}.variants.${index}.fields` }
+			: null;
 	}
 	return null;
 }
@@ -60,42 +89,58 @@ function objectFields(
 function check(
 	fields: readonly FieldSchema[],
 	values: Record<string, unknown>,
-	path: YamlPath,
-	trail: readonly string[],
-	widgetLabel: string,
+	context: Context,
+	widget: { readonly label: string; readonly textKey: string },
 	into: MissingOption[],
 ): void {
+	const { path, trail, textKey, listItem } = context;
 	for (const field of fields) {
 		const value = values[field.key];
+		const fieldKey = `${textKey}.${field.key}`;
 		if (field.required && !field.hidden && isEmpty(value)) {
 			const where =
 				trail.length > 0 ? ` for ${[...trail].reverse().join(" in ")}` : "";
 			into.push({
 				path,
-				message: `${widgetLabel} needs ${withArticle(field.label)}${where}`,
+				message: `${widget.label} needs ${withArticle(field.label)}${where}`,
+				params: {
+					widget: widget.textKey,
+					option: fieldKey,
+					...(listItem ?? {}),
+				},
 			});
 			continue;
 		}
 		if (field.kind === "list" && field.item && Array.isArray(value)) {
 			const item = field.item;
 			value.forEach((entry, index) => {
-				const nested = objectFields(item, entry);
+				const nested = objectFields(item, entry, `${fieldKey}.item`);
 				const record = asRecord(entry);
 				if (!nested || !record) return;
 				check(
-					nested,
+					nested.fields,
 					record,
-					[...path, field.key, index],
-					[...trail, `${singular(field.label)} ${index + 1}`],
-					widgetLabel,
+					{
+						path: [...path, field.key, index],
+						trail: [...trail, `${singular(field.label)} ${index + 1}`],
+						textKey: nested.textKey,
+						listItem: { list: fieldKey, item: index + 1 },
+					},
+					widget,
 					into,
 				);
 			});
 		}
-		const nested = objectFields(field, value);
+		const nested = objectFields(field, value, fieldKey);
 		const record = asRecord(value);
 		if (field.kind === "object" && nested && record) {
-			check(nested, record, [...path, field.key], trail, widgetLabel, into);
+			check(
+				nested.fields,
+				record,
+				{ ...context, path: [...path, field.key], textKey: nested.textKey },
+				widget,
+				into,
+			);
 		}
 	}
 }
@@ -119,7 +164,19 @@ export function findMissingOptions(doc: GlazeDocument): MissingOption[] {
 		const values = Object.fromEntries(
 			[...options.value.options].map(([key, option]) => [key, option.value]),
 		);
-		check(schema.fields, values, widget.path, [], schema.label, found);
+		const textKey = `widget.${schema.type}`;
+		check(
+			schema.fields,
+			values,
+			{
+				path: widget.path,
+				trail: [],
+				textKey: `${textKey}.fields`,
+				listItem: null,
+			},
+			{ label: schema.label, textKey },
+			found,
+		);
 	};
 	for (const page of getModel(doc)) {
 		page.headWidgets.forEach(visit);

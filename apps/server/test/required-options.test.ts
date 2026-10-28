@@ -66,6 +66,32 @@ describe("findMissingOptions", () => {
 		).toEqual(["pages", 0, "columns", 0, "widgets", 2, "bangs", 0]);
 	});
 
+	it("names the widget, option and list item as fields.json keys, for the web app", () => {
+		const weather = missing.find(
+			(item) => item.message === "Weather needs a location",
+		);
+		expect(weather?.params).toEqual({
+			widget: "widget.weather",
+			option: "widget.weather.fields.location",
+		});
+		const link = missing.find((item) =>
+			item.message.endsWith("link 2 in group 1"),
+		);
+		expect(link?.params).toEqual({
+			widget: "widget.bookmarks",
+			option:
+				"widget.bookmarks.fields.groups.item.fields.links.item.fields.url",
+			list: "widget.bookmarks.fields.groups.item.fields.links",
+			item: 2,
+		});
+		const repository = missing.find((item) =>
+			item.message.endsWith("repository 2"),
+		);
+		expect(repository?.params.option).toMatch(
+			/^widget\.releases\.fields\.repositories\.item\.variants\.\d+\.fields\.repository$/,
+		);
+	});
+
 	it("skips aliases, so an anchored widget is reported once", () => {
 		expect(
 			messages.filter((message) => message === "Reddit needs a subreddit"),

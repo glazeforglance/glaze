@@ -100,6 +100,8 @@ export function stubFileVariables(text: string): {
 		warnings.push({
 			severity: "warning",
 			source: "glance",
+			code: "glance-reads-file",
+			params: { reference: match.raw },
 			message: `${match.raw} reads a file where Glance runs; it can't be checked here`,
 			line: at.line,
 			column: at.column,
@@ -161,6 +163,7 @@ function assetsIssue(message: string, assets: AssetsCheck): GlanceIssue {
 			return {
 				severity: "info",
 				source: "glance",
+				code: "assets-unchecked",
 				message:
 					"Glance's assets folder can't be checked here. Set GLAZE_ASSETS_PATH so Glaze can check it.",
 				docsUrl: ASSETS_DOCS_URL,
@@ -169,6 +172,7 @@ function assetsIssue(message: string, assets: AssetsCheck): GlanceIssue {
 			return {
 				severity: "warning",
 				source: "glance",
+				code: "assets-path-missing",
 				message:
 					"GLAZE_ASSETS_PATH doesn't exist inside Glaze, so Glance's assets folder can't be checked.",
 				docsUrl: ASSETS_DOCS_URL,
@@ -177,9 +181,18 @@ function assetsIssue(message: string, assets: AssetsCheck): GlanceIssue {
 			return {
 				severity: "warning",
 				source: "glance",
-				message: `Glance: ${shorten(message)}`,
+				...glanceOutput(shorten(message)),
 			};
 	}
+}
+
+/** Glance's own words: shown as they are (English), after a translated "Glance:". */
+function glanceOutput(output: string) {
+	return {
+		code: "glance-output" as const,
+		params: { output },
+		message: `Glance: ${output}`,
+	};
 }
 
 const PREFIXES = ["Config file is invalid:", "Could not parse config file:"];
@@ -227,7 +240,7 @@ export function parseGlanceOutput(
 			{
 				severity: "error",
 				source: "glance",
-				message: `Glance: ${shorten(text)}`,
+				...glanceOutput(shorten(text)),
 			},
 		];
 	}
@@ -245,9 +258,13 @@ export function parseGlanceOutput(
 		{
 			severity: machineSpecific ? "warning" : "error",
 			source: "glance",
-			message: machineSpecific
-				? `Glance: ${shorten(message)} (can't be checked here)`
-				: `Glance: ${shorten(message)}`,
+			...(machineSpecific
+				? {
+						code: "glance-output-machine" as const,
+						params: { output: shorten(message) },
+						message: `Glance: ${shorten(message)} (can't be checked here)`,
+					}
+				: glanceOutput(shorten(message))),
 			...(line ? { line: Number(line[1]) } : {}),
 			...(path ? { path } : {}),
 		},
@@ -346,6 +363,7 @@ export async function runGlanceValidate(
 				{
 					severity: "warning",
 					source: "glance",
+					code: "glance-unrunnable",
 					message: "GLANCE_BIN can't be run; Glance validation was skipped",
 				},
 			];
@@ -356,6 +374,7 @@ export async function runGlanceValidate(
 				{
 					severity: "warning",
 					source: "glance",
+					code: "glance-timeout",
 					message: "Glance took too long to validate the config",
 				},
 			];
@@ -372,6 +391,8 @@ export async function runGlanceValidate(
 			{
 				severity: "warning",
 				source: "glance",
+				code: "glance-failed",
+				params: { reason: shorten(reason) },
 				message: `Glance validation failed to run: ${shorten(reason)}`,
 			},
 		];

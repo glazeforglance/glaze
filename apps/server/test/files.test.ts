@@ -92,6 +92,7 @@ describe("GET /api/files", () => {
 				{ name: "js/design.js", language: "javascript" },
 			],
 			unavailable: null,
+			unavailableReason: null,
 		});
 	});
 
@@ -103,9 +104,11 @@ describe("GET /api/files", () => {
 		const body = (await (await request("/api/files")).json()) as {
 			files: unknown[];
 			unavailable: string | null;
+			unavailableReason: string | null;
 		};
 		expect(body.files).toEqual([]);
 		expect(body.unavailable).toContain("outside");
+		expect(body.unavailableReason).toBe("outside-config-folder");
 		expect((await request("/api/files/custom.css")).status).toBe(404);
 	});
 });

@@ -33,9 +33,10 @@ describe("serverOptionProblem: host", () => {
 	});
 
 	it("refuses the URL from the real bug report", () => {
-		expect(serverOptionProblem("host", "http://192.168.178.233")).toBe(
-			HOST_NOT_A_URL,
-		);
+		expect(serverOptionProblem("host", "http://192.168.178.233")).toEqual({
+			code: "host-is-url",
+			message: HOST_NOT_A_URL,
+		});
 	});
 
 	it.each([
@@ -44,11 +45,14 @@ describe("serverOptionProblem: host", () => {
 		"glance.lan/dashboard",
 		"[::1]:8080",
 	])("refuses a URL, port or path in %j", (host) => {
-		expect(serverOptionProblem("host", host)).toBe(HOST_NOT_A_URL);
+		expect(serverOptionProblem("host", host)?.code).toBe("host-is-url");
 	});
 
 	it("asks for brackets around a bare IPv6 address", () => {
-		expect(serverOptionProblem("host", "::1")).toContain("[::1]");
+		const problem = serverOptionProblem("host", "::1");
+		expect(problem?.code).toBe("host-ipv6-needs-brackets");
+		expect(problem?.params).toEqual({ host: "::1" });
+		expect(problem?.message).toContain("[::1]");
 	});
 
 	it.each(["300.1.1.1", "1.2.3", "bad host", "-glance", "[nope]", "[::1"])(
@@ -71,7 +75,9 @@ describe("serverOptionProblem: port", () => {
 	});
 
 	it.each([0, 65536, -1, 80.5, "8088", true])("refuses %j", (port) => {
-		expect(serverOptionProblem("port", port)).toContain("1 to 65535");
+		const problem = serverOptionProblem("port", port);
+		expect(problem?.code).toBe("port-invalid");
+		expect(problem?.message).toContain("1 to 65535");
 	});
 
 	it("skips env placeholders", () => {
@@ -90,7 +96,9 @@ describe("serverOptionProblem: base-url", () => {
 	it.each(["glance", "example.com/glance", "ftp://example.com", 5])(
 		"refuses %j",
 		(value) => {
-			expect(serverOptionProblem("base-url", value)).toContain("start with /");
+			const problem = serverOptionProblem("base-url", value);
+			expect(problem?.code).toBe("base-url-invalid");
+			expect(problem?.message).toContain("start with /");
 		},
 	);
 });
@@ -118,15 +126,22 @@ describe("validateServerOptions", () => {
 			),
 		);
 		expect(validateServerOptions(doc)).toEqual([
-			{ key: "host", path: ["server", "host"], message: HOST_NOT_A_URL },
+			{
+				key: "host",
+				path: ["server", "host"],
+				code: "host-is-url",
+				message: HOST_NOT_A_URL,
+			},
 			{
 				key: "port",
 				path: ["server", "port"],
+				code: "port-invalid",
 				message: expect.stringContaining("65535"),
 			},
 			{
 				key: "base-url",
 				path: ["server", "base-url"],
+				code: "base-url-invalid",
 				message: expect.stringContaining("start with /"),
 			},
 		]);

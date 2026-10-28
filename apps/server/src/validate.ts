@@ -67,6 +67,7 @@ function listenChangeIssue(
 	return {
 		severity: "warning",
 		source: "glaze",
+		code: "listen-in-container",
 		message: CONTAINER_LISTEN_WARNING,
 		path,
 		...at(doc, path),
@@ -99,11 +100,13 @@ export async function validateDraft(
 ): Promise<ValidationIssue[]> {
 	const parsed = parseConfig(text);
 	if (!parsed.ok) {
-		const { message, line, column } = parsed.error;
+		const { code, params, message, line, column } = parsed.error;
 		return [
 			{
 				severity: "error",
 				source: "yaml",
+				code,
+				...(params ? { params } : {}),
 				message,
 				...(line !== null ? { line } : {}),
 				...(column !== null ? { column } : {}),
@@ -117,6 +120,8 @@ export async function validateDraft(
 		issues.push({
 			severity: "error",
 			source: "layout",
+			code: issue.code,
+			...(issue.params ? { params: issue.params } : {}),
 			message: issue.message,
 			path: issue.path,
 			...at(doc, issue.path),
@@ -127,6 +132,8 @@ export async function validateDraft(
 		issues.push({
 			severity: "error",
 			source: "glaze",
+			code: option.code,
+			...(option.params ? { params: option.params } : {}),
 			message: option.message,
 			path: option.path,
 			...at(doc, option.path),
@@ -139,6 +146,8 @@ export async function validateDraft(
 		issues.push({
 			severity: "error",
 			source: "glaze",
+			code: "missing-option",
+			params: missing.params,
 			message: missing.message,
 			path: missing.path,
 			...at(doc, missing.path),
@@ -150,6 +159,12 @@ export async function validateDraft(
 		issues.push({
 			severity: "warning",
 			source: "glaze",
+			...(option.suggestion === null
+				? { code: "unknown-option" as const, params: { key: option.key } }
+				: {
+						code: "unknown-option-suggestion" as const,
+						params: { key: option.key, suggestion: option.suggestion },
+					}),
 			message:
 				option.suggestion === null
 					? `Unknown option "${option.key}"; Glance ignores it`
@@ -173,6 +188,7 @@ export async function validateDraft(
 		issues.push({
 			severity: "info",
 			source: "glaze",
+			code: "glance-validation-off",
 			message: "Glance validation is off — set GLANCE_BIN",
 		});
 		return issues;

@@ -61,6 +61,24 @@ function field(body: unknown, key: string): unknown {
 		: undefined;
 }
 
+/**
+ * The JSON body of an error: its code, the values the web app needs to
+ * build the sentence in the user's language, and the English message.
+ * @param error - A typed error from the store, assets or password helpers.
+ * @returns The response body.
+ */
+function errorBody(error: {
+	readonly code: string;
+	readonly params?: Readonly<Record<string, string | number>>;
+	readonly message: string;
+}) {
+	return {
+		error: error.code,
+		...(error.params ? { params: error.params } : {}),
+		message: error.message,
+	};
+}
+
 function textOf(body: unknown): string | null {
 	const text = field(body, "text");
 	return typeof text === "string" &&
@@ -135,10 +153,7 @@ export function createApp(options: AppOptions): Hono {
 		const file = await readConfig(configPath);
 		if (!file.ok) {
 			const status = file.error.code === "not-found" ? 404 : 500;
-			return c.json(
-				{ error: file.error.code, message: file.error.message },
-				status,
-			);
+			return c.json(errorBody(file.error), status);
 		}
 		return c.json(file.value);
 	});
@@ -191,10 +206,7 @@ export function createApp(options: AppOptions): Hono {
 		// Someone may have edited the file by hand since the editor loaded it.
 		const current = await readConfig(configPath);
 		if (!current.ok && current.error.code === "io-error") {
-			return c.json(
-				{ error: current.error.code, message: current.error.message },
-				500,
-			);
+			return c.json(errorBody(current.error), 500);
 		}
 		const currentVersion = current.ok ? current.value.version : null;
 		if (currentVersion !== baseVersion) {
@@ -210,10 +222,7 @@ export function createApp(options: AppOptions): Hono {
 
 		const written = await writeFileSafely(configPath, text);
 		if (!written.ok) {
-			return c.json(
-				{ error: written.error.code, message: written.error.message },
-				500,
-			);
+			return c.json(errorBody(written.error), 500);
 		}
 		return c.json({ version: hashText(text), issues });
 	});
@@ -247,6 +256,7 @@ export function createApp(options: AppOptions): Hono {
 			files: checked.filter(({ path }) => path.ok).map(({ entry }) => entry),
 			// Explains why referenced files can't be edited, e.g. an assets path outside the config folder.
 			unavailable: refused && !refused.ok ? refused.error.message : null,
+			unavailableReason: refused && !refused.ok ? refused.error.code : null,
 		});
 	});
 
@@ -257,6 +267,7 @@ export function createApp(options: AppOptions): Hono {
 			return {
 				ok: false as const,
 				status: 400 as const,
+				reason: "invalid-name",
 				message: "Invalid file name",
 			};
 		}
@@ -265,6 +276,7 @@ export function createApp(options: AppOptions): Hono {
 			return {
 				ok: false as const,
 				status: 404 as const,
+				reason: config.error.code,
 				message: config.error.message,
 			};
 		}
@@ -279,6 +291,7 @@ export function createApp(options: AppOptions): Hono {
 			return {
 				ok: false as const,
 				status: status as 400 | 404,
+				reason: resolved.error.code,
 				message: resolved.error.message,
 			};
 		}
@@ -290,17 +303,18 @@ export function createApp(options: AppOptions): Hono {
 		const resolved = await assetPath(c.req.path, name);
 		if (!resolved.ok) {
 			return c.json(
-				{ error: "invalid-file", message: resolved.message },
+				{
+					error: "invalid-file",
+					reason: resolved.reason,
+					message: resolved.message,
+				},
 				resolved.status,
 			);
 		}
 		const file = await readAsset(resolved.path, name);
 		if (!file.ok) {
 			const status = file.error.code === "io-error" ? 500 : 422;
-			return c.json(
-				{ error: file.error.code, message: file.error.message },
-				status,
-			);
+			return c.json(errorBody(file.error), status);
 		}
 		return c.json(file.value);
 	});
@@ -310,7 +324,11 @@ export function createApp(options: AppOptions): Hono {
 		const resolved = await assetPath(c.req.path, name);
 		if (!resolved.ok) {
 			return c.json(
-				{ error: "invalid-file", message: resolved.message },
+				{
+					error: "invalid-file",
+					reason: resolved.reason,
+					message: resolved.message,
+				},
 				resolved.status,
 			);
 		}
@@ -350,10 +368,7 @@ export function createApp(options: AppOptions): Hono {
 		}
 		const hashed = await hashGlancePassword(password, glance);
 		if (!hashed.ok) {
-			return c.json(
-				{ error: hashed.error.code, message: hashed.error.message },
-				400,
-			);
+			return c.json(errorBody(hashed.error), 400);
 		}
 		// Never cached: the answer relates to a password.
 		c.header("Cache-Control", "no-store");

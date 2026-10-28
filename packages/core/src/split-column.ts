@@ -141,7 +141,11 @@ export function wrapInSplitColumn(
 	const target = splitItemPath(targetPath, WIDGET_LISTS);
 	if (!target.ok) return target;
 	if (target.value.seq[target.value.seq.length - 1] === "head-widgets") {
-		return err(editError("layout-violation", HEAD_MESSAGE));
+		return err(
+			editError("layout-violation", HEAD_MESSAGE, [
+				{ code: "split-in-head", message: HEAD_MESSAGE, path: targetPath },
+			]),
+		);
 	}
 	const eol = detectEol(doc.source);
 	// The new split-column follows the style of the list it lands in.

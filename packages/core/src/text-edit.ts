@@ -22,6 +22,7 @@ import type {
 	EditError,
 	EditErrorCode,
 	LayoutIssue,
+	MessageParams,
 	YamlPath,
 } from "./types.ts";
 import { getNodeAt, type ParsedYaml } from "./yaml-read.ts";
@@ -31,14 +32,16 @@ import { getNodeAt, type ParsedYaml } from "./yaml-read.ts";
  * @param code - Machine-readable reason.
  * @param message - Human-readable explanation.
  * @param issues - Layout issues, for `layout-violation`.
+ * @param params - Values for the web app's sentence, e.g. `{ key }`.
  * @returns The error object.
  */
 export function editError(
 	code: EditErrorCode,
 	message: string,
 	issues: readonly LayoutIssue[] = [],
+	params?: MessageParams,
 ): EditError {
-	return { code, message, issues };
+	return params ? { code, params, message, issues } : { code, message, issues };
 }
 
 // --- line helpers ---------------------------------------------------------

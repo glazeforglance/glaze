@@ -37,7 +37,11 @@ export function renameKey(
 		return err(editError("option-not-found", `There is no "${from}" here`));
 	}
 	if (map.items.some((item) => pairKey(item.key) === to)) {
-		return err(editError("duplicate-key", `"${to}" is already set here`));
+		return err(
+			editError("duplicate-key", `"${to}" is already set here`, [], {
+				key: to,
+			}),
+		);
 	}
 	const source =
 		doc.source.slice(0, range[0]) + to + doc.source.slice(range[1]);

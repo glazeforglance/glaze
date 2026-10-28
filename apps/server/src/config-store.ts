@@ -13,6 +13,8 @@ export interface ConfigFile {
 /** Why the config file couldn't be read or written. */
 export interface StoreError {
 	readonly code: "not-found" | "io-error";
+	/** `{ reason }` for `io-error`: the system's own words. */
+	readonly params?: Readonly<Record<string, string | number>>;
 	readonly message: string;
 }
 
@@ -46,7 +48,7 @@ function toStoreError(error: unknown, path: string): StoreError {
 		return { code: "not-found", message: `Config file not found: ${path}` };
 	}
 	const reason = error instanceof Error ? error.message : String(error);
-	return { code: "io-error", message: reason };
+	return { code: "io-error", params: { reason }, message: reason };
 }
 
 /**

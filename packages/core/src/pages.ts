@@ -9,7 +9,7 @@ import {
 	renderItem,
 	setMapEntry,
 } from "./text-edit.ts";
-import type { EditError, YamlPath } from "./types.ts";
+import type { EditError, Problem, SlugProblemCode, YamlPath } from "./types.ts";
 import { getNodeAt } from "./yaml-read.ts";
 
 const PAGES: YamlPath = ["pages"];
@@ -134,7 +134,8 @@ export function slugFromName(name: string): string {
  * Explains why a page's slug (written, or made from its name) won't work.
  * @param pages - Every page's name and slug, in order.
  * @param index - The page to check.
- * @returns A sentence for the user, or `null` when the slug is fine.
+ * @returns The problem (`slug-reserved` or `slug-taken`, with `slug` and
+ *   the other page's 1-based `page`), or `null` when the slug is fine.
  */
 export function slugProblem(
 	pages: readonly {
@@ -142,7 +143,7 @@ export function slugProblem(
 		readonly slug: string | null;
 	}[],
 	index: number,
-): string | null {
+): Problem<SlugProblemCode> | null {
 	const slugOf = (page: { name: string | null; slug: string | null }) =>
 		page.slug !== null && page.slug !== ""
 			? page.slug
@@ -151,13 +152,21 @@ export function slugProblem(
 	if (!page) return null;
 	const slug = slugOf(page);
 	if (RESERVED_SLUGS.includes(slug)) {
-		return `"${slug}" is reserved by Glance; pick another URL path.`;
+		return {
+			code: "slug-reserved",
+			params: { slug },
+			message: `"${slug}" is reserved by Glance; pick another URL path.`,
+		};
 	}
 	const other = pages.findIndex(
 		(candidate, i) => i !== index && slugOf(candidate) === slug,
 	);
 	if (other !== -1) {
-		return `Page ${other + 1} already uses the URL path "${slug}"; Glance would only show one of them.`;
+		return {
+			code: "slug-taken",
+			params: { slug, page: other + 1 },
+			message: `Page ${other + 1} already uses the URL path "${slug}"; Glance would only show one of them.`,
+		};
 	}
 	return null;
 }

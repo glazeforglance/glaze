@@ -46,6 +46,20 @@ export interface PageNode {
 	readonly columns: readonly ColumnNode[];
 }
 
+/**
+ * Values for a message's placeholders. Glaze's own problems carry a `code`
+ * plus these, so the web app can build the sentence in the user's language;
+ * `message` stays English for logs and API clients.
+ */
+export type MessageParams = Readonly<Record<string, string | number>>;
+
+/** A problem for the user: a stable code, its values and the English sentence. */
+export interface Problem<Code extends string = string> {
+	readonly code: Code;
+	readonly params?: MessageParams;
+	readonly message: string;
+}
+
 /** Codes for the Glance layout rules. */
 export type LayoutIssueCode =
 	| "no-pages"
@@ -60,6 +74,8 @@ export type LayoutIssueCode =
 /** A broken Glance layout rule. */
 export interface LayoutIssue {
 	readonly code: LayoutIssueCode;
+	/** E.g. `{ max: 2 }` for `too-many-columns`. */
+	readonly params?: MessageParams;
 	readonly message: string;
 	/** The node the issue is about. */
 	readonly path: YamlPath;
@@ -68,6 +84,8 @@ export interface LayoutIssue {
 /** Why `parseConfig` failed. */
 export interface ParseError {
 	readonly code: "yaml-syntax" | "unresolved-alias";
+	/** `{ alias }` for `unresolved-alias`; a syntax error only has the yaml package's (English) message. */
+	readonly params?: MessageParams;
 	readonly message: string;
 	/** 1-based line, when known. */
 	readonly line: number | null;
@@ -96,10 +114,59 @@ export type EditErrorCode =
 /** Why an edit was refused. The document is left unchanged. */
 export interface EditError {
 	readonly code: EditErrorCode;
+	/** E.g. `{ key }` for `duplicate-key`. */
+	readonly params?: MessageParams;
+	/** English, with details for developers (paths); the web app shows a sentence per code. */
 	readonly message: string;
 	/** Layout issues the edit would have introduced (only for `layout-violation`). */
 	readonly issues: readonly LayoutIssue[];
 }
+
+/** Why a column can't get a size (`columnSizeProblem`). */
+export type ColumnSizeProblemCode =
+	| "column-needs-full"
+	| "column-too-many-full";
+
+/** Why a page's URL path won't work (`slugProblem`). */
+export type SlugProblemCode = "slug-reserved" | "slug-taken";
+
+/** Codes for a broken `server.host`, `server.port` or `server.base-url`. */
+export type ServerOptionProblemCode =
+	| "host-not-text"
+	| "host-is-url"
+	| "host-unclosed-bracket"
+	| "host-bad-ipv6"
+	| "host-ipv6-needs-brackets"
+	| "host-invalid"
+	| "port-invalid"
+	| "base-url-invalid";
+
+/** Codes for every validation issue Glaze reports (see `ValidationIssue.code`). */
+export type IssueCode =
+	| ParseError["code"]
+	| LayoutIssueCode
+	| ServerOptionProblemCode
+	/** Host/port change while Glance runs behind a port mapping. */
+	| "listen-in-container"
+	/** `{ widget, option, list?, item? }`: fields.json keys of the widget and option. */
+	| "missing-option"
+	/** `{ key }` */
+	| "unknown-option"
+	/** `{ key, suggestion }` */
+	| "unknown-option-suggestion"
+	| "glance-validation-off"
+	/** `{ output }`: Glance's own (English) words. */
+	| "glance-output"
+	/** `{ output }`: depends on the machine Glance runs on. */
+	| "glance-output-machine"
+	/** `{ reference }`: a `${secret:…}` or `${readFileFromEnv:…}`. */
+	| "glance-reads-file"
+	| "assets-unchecked"
+	| "assets-path-missing"
+	| "glance-unrunnable"
+	| "glance-timeout"
+	/** `{ reason }` */
+	| "glance-failed";
 
 /** How serious a validation issue is. `info` never blocks anything. */
 export type IssueSeverity = "error" | "warning" | "info";
@@ -120,6 +187,14 @@ export interface RenameKeyFix {
 export interface ValidationIssue {
 	readonly severity: IssueSeverity;
 	readonly source: IssueSource;
+	/**
+	 * Glaze's own checks set a code (and `params`), so the web app can show
+	 * the issue in the user's language. Without one (Glance's own output,
+	 * the yaml package's syntax errors) `message` is shown as it is.
+	 */
+	readonly code?: IssueCode;
+	readonly params?: MessageParams;
+	/** English. */
 	readonly message: string;
 	/** 1-based line in the draft, when known. */
 	readonly line?: number;

@@ -40,6 +40,11 @@ export function finishEdit(
 			editError(
 				"invalid-result",
 				`The edit would break the YAML: ${parsed.error.message}`,
+				[],
+				// A missing anchor is ours to explain; a syntax error is the yaml package's.
+				parsed.error.code === "unresolved-alias" && parsed.error.params
+					? parsed.error.params
+					: { detail: parsed.error.message },
 			),
 		);
 	}

@@ -406,11 +406,13 @@ describe("model: maxColumns", () => {
 describe("columnSizeProblem", () => {
 	it("explains the full-column rule before an edit is tried", () => {
 		expect(columnSizeProblem(["small", "full", "small"], 0, "full")).toBeNull();
-		expect(columnSizeProblem(["small", "full", "small"], 1, "small")).toMatch(
-			/at least one full column/,
-		);
-		expect(columnSizeProblem(["full", "full", "small"], 2, "full")).toMatch(
-			/at most two full columns/,
-		);
+		expect(columnSizeProblem(["small", "full", "small"], 1, "small")).toEqual({
+			code: "column-needs-full",
+			message: expect.stringMatching(/at least one full column/),
+		});
+		expect(columnSizeProblem(["full", "full", "small"], 2, "full")).toEqual({
+			code: "column-too-many-full",
+			message: expect.stringMatching(/at most two full columns/),
+		});
 	});
 });

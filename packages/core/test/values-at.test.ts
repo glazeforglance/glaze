@@ -140,10 +140,16 @@ describe("slugs", () => {
 			{ name: "Login", slug: null },
 			{ name: "Lab", slug: null },
 		];
-		expect(slugProblem(pages, 1)).toMatch(
-			/Page 1 already uses the URL path "home"/,
-		);
-		expect(slugProblem(pages, 2)).toMatch(/"login" is reserved/);
+		expect(slugProblem(pages, 1)).toEqual({
+			code: "slug-taken",
+			params: { slug: "home", page: 1 },
+			message: expect.stringMatching(/Page 1 already uses the URL path "home"/),
+		});
+		expect(slugProblem(pages, 2)).toEqual({
+			code: "slug-reserved",
+			params: { slug: "login" },
+			message: expect.stringMatching(/"login" is reserved/),
+		});
 		expect(slugProblem(pages, 3)).toBeNull();
 	});
 });

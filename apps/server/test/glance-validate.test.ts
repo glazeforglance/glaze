@@ -133,6 +133,8 @@ describe("parseGlanceOutput", () => {
 			{
 				severity: "error",
 				source: "glance",
+				code: "glance-output",
+				params: { output: "panic: boom\ngoroutine 1" },
 				message: "Glance: panic: boom\ngoroutine 1",
 			},
 		]);
@@ -261,6 +263,8 @@ describe("runGlanceValidate (fake Glance)", () => {
 			{
 				severity: "error",
 				source: "glance",
+				code: "glance-output",
+				params: { output: "panic: something unexpected" },
 				message: "Glance: panic: something unexpected",
 			},
 		]);
@@ -400,6 +404,8 @@ describe("validateDraft", () => {
 			{
 				severity: "error",
 				source: "layout",
+				code: "invalid-column-size",
+				params: { size: "medium" },
 				message: 'Column size must be "small" or "full", not "medium"',
 				path: ["pages", 0, "columns", 0],
 				line: 4,
@@ -408,6 +414,8 @@ describe("validateDraft", () => {
 				severity: "warning",
 				source: "glaze",
 				line: 8,
+				code: "unknown-option-suggestion",
+				params: { key: "stlye", suggestion: "style" },
 				fix: {
 					kind: "rename-key",
 					mapPath: ["pages", 0, "columns", 1, "widgets", 0],
@@ -418,6 +426,7 @@ describe("validateDraft", () => {
 			{
 				severity: "info",
 				source: "glaze",
+				code: "glance-validation-off",
 				message: "Glance validation is off — set GLANCE_BIN",
 			},
 		]);

@@ -60,6 +60,7 @@ export function parseChecked(text: string): Result<ParsedYaml, ParseError> {
 		const at = offsetToLineColumn(text, offset);
 		return err({
 			code: "unresolved-alias",
+			params: { alias: source },
 			message: `Alias *${source} has no matching anchor &${source}`,
 			line: at.line,
 			column: at.column,

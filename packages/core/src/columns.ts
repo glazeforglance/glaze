@@ -8,7 +8,13 @@ import {
 	renderItem,
 	setMapEntry,
 } from "./text-edit.ts";
-import type { ColumnSize, EditError, YamlPath } from "./types.ts";
+import type {
+	ColumnSize,
+	ColumnSizeProblemCode,
+	EditError,
+	Problem,
+	YamlPath,
+} from "./types.ts";
 import { getNodeAt } from "./yaml-read.ts";
 
 /**
@@ -87,20 +93,29 @@ export function setColumnSize(
  * @param sizes - The page's column sizes, in order.
  * @param index - The column to change.
  * @param size - Its new size.
- * @returns A sentence for the user, or `null` when the change is allowed.
+ * @returns The problem (`column-needs-full` or `column-too-many-full`), or
+ *   `null` when the change is allowed.
  */
 export function columnSizeProblem(
 	sizes: readonly (string | null)[],
 	index: number,
 	size: ColumnSize,
-): string | null {
+): Problem<ColumnSizeProblemCode> | null {
 	const next = sizes.map((current, i) => (i === index ? size : current));
 	const full = next.filter((current) => current === "full").length;
 	if (full === 0) {
-		return "A page needs at least one full column, so this one has to stay full.";
+		return {
+			code: "column-needs-full",
+			message:
+				"A page needs at least one full column, so this one has to stay full.",
+		};
 	}
 	if (full > 2) {
-		return "A page can have at most two full columns; make another one small first.";
+		return {
+			code: "column-too-many-full",
+			message:
+				"A page can have at most two full columns; make another one small first.",
+		};
 	}
 	return null;
 }

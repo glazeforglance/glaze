@@ -36,6 +36,8 @@ export interface AssetError {
 		| "not-text"
 		| "too-large"
 		| StoreError["code"];
+	/** E.g. `{ reason }` for `io-error`; the web app builds the sentence from the code. */
+	readonly params?: Readonly<Record<string, string | number>>;
 	readonly message: string;
 }
 
@@ -188,7 +190,7 @@ export async function readAsset(
 			error instanceof Error && "code" in error ? String(error.code) : "";
 		if (code === "ENOENT") return ok({ name, text: "", version: null });
 		const reason = error instanceof Error ? error.message : String(error);
-		return err({ code: "io-error", message: reason });
+		return err({ code: "io-error", params: { reason }, message: reason });
 	}
 	if (bytes.length > MAX_ASSET_BYTES) {
 		return err({ code: "too-large", message: `${name} is larger than 1 MB` });

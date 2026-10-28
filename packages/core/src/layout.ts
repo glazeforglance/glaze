@@ -70,6 +70,7 @@ function checkPage(
 	if (columns.length > max) {
 		issues.push({
 			code: "too-many-columns",
+			params: { max },
 			message:
 				max === 2
 					? "A slim page can have at most 2 columns"
@@ -86,6 +87,7 @@ function checkPage(
 		if (size !== "small" && size !== "full") {
 			issues.push({
 				code: "invalid-column-size",
+				params: { size: size ?? "" },
 				message: `Column size must be "small" or "full", not ${size === null ? "empty" : `"${size}"`}`,
 				path: columnPath,
 			});
@@ -96,6 +98,7 @@ function checkPage(
 	if (fullColumns < 1 || fullColumns > 2) {
 		issues.push({
 			code: "full-column-count",
+			params: { count: fullColumns },
 			message: `A page needs 1 or 2 "full" columns, this one has ${fullColumns}`,
 			path: columnsPath,
 		});
@@ -156,6 +159,7 @@ function checkWidgetList(
 		if (insideGroup && type !== null && NOT_IN_GROUP.has(type)) {
 			issues.push({
 				code: "nested-group",
+				params: { type },
 				message: `A group can't contain a ${type}`,
 				path,
 			});

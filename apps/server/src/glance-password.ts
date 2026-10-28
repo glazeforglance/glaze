@@ -25,6 +25,8 @@ export interface GlancePasswordHash {
 /** Why a password couldn't be hashed. */
 export interface PasswordHashError {
 	readonly code: "too-short" | "too-long";
+	/** `{ min }` or `{ max }`, for the web app's sentence. */
+	readonly params: Readonly<Record<string, number>>;
 	readonly message: string;
 }
 
@@ -66,12 +68,14 @@ export async function hashGlancePassword(
 	if (password.length < MIN_PASSWORD_LENGTH) {
 		return err({
 			code: "too-short",
+			params: { min: MIN_PASSWORD_LENGTH },
 			message: `Glance needs a password of at least ${MIN_PASSWORD_LENGTH} characters`,
 		});
 	}
 	if (Buffer.byteLength(password, "utf8") > MAX_PASSWORD_BYTES) {
 		return err({
 			code: "too-long",
+			params: { max: MAX_PASSWORD_BYTES },
 			message: `A password can be at most ${MAX_PASSWORD_BYTES} bytes (bcrypt ignores the rest)`,
 		});
 	}
