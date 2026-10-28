@@ -1,6 +1,6 @@
 # Glaze: design document
 
-> Status: v0.1.2 · phases 0–6 done
+> Status: v0.2.0 (unreleased) · phases 0–6 done, phases 7–8 open
 > Target: Glance **v0.8.7**
 
 ---
@@ -88,7 +88,7 @@ These facts come from the Glance v0.8.7 source (`github.com/glanceapp/glance`). 
 
 **Theme** (`theme:` in `config.go` / `theme.go`)
 
-- `background-color`, `primary-color`, `positive-color`, `negative-color`: HSL strings like `"240 13 14"` (hue 0–360, saturation and lightness 0–100).
+- `background-color`, `primary-color`, `positive-color`, `negative-color`: HSL strings like `"240 13 14"` (hue 0–360, saturation and lightness 0–100); `hsl(240, 13%, 14%)` is accepted too.
 - `light` (bool), `contrast-multiplier`, `text-saturation-multiplier` (floats).
 - `custom-css-file`: a stylesheet Glance loads on every page (usually under `server.assets-path`, served at `/assets/`).
 - `presets`: named extra themes with the same fields; Glance shows a theme switcher when presets exist.
@@ -116,23 +116,23 @@ These facts come from the Glance v0.8.7 source (`github.com/glanceapp/glance`). 
 
 ## 5. Features
 
-### MVP (v0.1)
+### MVP (v0.1, released)
 
 - Read `glance.yml`, show it as pages → columns → widgets, and write it back with comments preserved.
 - Add, rename and remove pages. Add and remove columns, and switch `small`/`full`, within the rules in §4.
 - Drag widgets: from the library into a column, and between columns.
-- Inspector with forms for the 10 most used widgets: `clock`, `weather`, `calendar`, `search`, `bookmarks`, `monitor`, `rss`, `releases`, `docker-containers`, `group`.
-- For other widgets: a "raw YAML" tab in the inspector.
+- ~~Inspector with forms for the 10 most used widgets~~ **Replaced in phase 6** by generated forms for all 28 widget types.
+- A YAML tab in the inspector for every widget (kept next to the forms).
 - Code view (YAML editor) + live preview of Glance in an iframe.
 - Validation via `glance config:validate`, with errors on the right line.
 - Login for Glaze itself (single admin).
 
 ### v0.2
 
-- All widgets, with forms generated automatically from the Glance source (§8). **Done in phase 6** (below).
-- Library of custom CSS presets (for example a "dark cards" style).
-- "Edit page" button in Glance via `document.head`.
-- Undo/redo and a version history (`.glaze/history/`).
+- ~~All widgets, with forms generated automatically from the Glance source (§8).~~ **Done in phase 6** (below).
+- Library of custom CSS presets (for example a "dark cards" style). _Not started._
+- "Edit page" button in Glance via `document.head`. _Not started; moved to phase 7._
+- Undo/redo and a version history (`.glaze/history/`). _Not started:_ the Undo button in the top bar is a placeholder ("Coming soon"); only the dissolved-split-column notice can undo.
 
 ### v0.3
 
@@ -208,11 +208,11 @@ Like the theme generators of daisyUI or shadcn/ui, but for Glance's theme option
 ## 6. Screens
 
 1. **Editor**
-   - Top bar: logo, page tabs (+ Page), Design/Code/Preview switch, user switcher, undo, **Publish**.
+   - Top bar: logo, page tabs (+ Page), Design/Code/Preview/Settings switch, undo (placeholder until undo history exists), **Publish**. A user switcher follows with multiple users (§7).
    - Left: widget library with search, grouped as Basics / Server / Media & news / Advanced.
    - Center: the page as columns, each with a label (`small` ▾ / `full` ▾). Widget blocks with a drag handle, a dashed drop indicator, and a selection with an amber outline plus duplicate and delete buttons.
    - Right: inspector with Settings / Style / YAML tabs and forms (example: Monitor with a list of sites, each with `url` and `check-url`).
-2. **Code + live preview:** the YAML editor on the left with file tabs (`glance.yml`, `custom.css`, `design.js`), syntax highlighting and inline errors ("unknown option `stlye`: did you mean `style`? [Fix]"). Live preview on the right with a desktop/phone toggle. Clicking a widget in the preview jumps to it in the code.
+2. **Code + live preview:** the YAML editor on the left with file tabs (`glance.yml`, `custom.css`, `design.js`), syntax highlighting and inline errors ("unknown option `stlye`: did you mean `style`? [Fix]"). Live preview on the right with a desktop/phone toggle. _Planned, not built:_ clicking a widget in the preview jumps to it in the code.
 3. **Users:** list of users with role, visible pages and the status of their Glance instance. Detail panel with username, password, a checkbox per page, a starting template and "Edit layout".
 4. **Button in Glance:** an "Edit page" pill next to the status label, with a tooltip. Opens Glaze directly on that page.
 5. **Widget size (in the editor):** a selected widget in a split-column has a handle on its right edge that snaps to ½ / ⅓ / ¼ with a label ("⅓ · 3 columns"); done in phase 6. A bottom handle for S–XL height follows with the Extras.
@@ -247,8 +247,8 @@ Browser
 
 - **Glaze container**: one Node process that serves the built React app and a small API.
 - **Shared folder**: Glaze and Glance mount the same config folder. Glaze writes; Glance sees the change and reloads.
-- **Validation**: Glaze runs `glance config:validate`, either by shipping the Glance binary in the Glaze image (Glance is a single Go binary) or via `docker exec` (requires Docker socket access, which is less secure).
-- **Live preview**: an iframe pointing at the Glance URL. For "click a widget → jump to the code", Glaze injects a small script through `document.head` that reports clicks with `postMessage`.
+- **Validation**: Glaze runs `glance config:validate` with the Glance binary shipped in the Glaze image (`GLANCE_BIN`; Glance is a single Go binary), not via `docker exec`, which would need the Docker socket. The same binary hashes passwords for Glance's users (`password:hash`).
+- **Live preview**: an iframe pointing at the Glance URL, showing the published config. _Planned:_ for "click a widget → jump to the code", Glaze would inject a small script through `document.head` that reports clicks with `postMessage`.
 
 **Multiple users: two routes**
 
@@ -270,7 +270,7 @@ Browser
 | Code editor  | CodeMirror 6 + `@codemirror/lang-yaml`       | Lighter than Monaco; per-line error markers.                                       |
 | Backend      | Node + Hono                                  | Small and fast, TypeScript end to end.                                             |
 | Auth (Glaze) | Signed session cookie + scrypt hash          | Glaze writes config, so it always sits behind a login (see §9).                    |
-| Tests        | Vitest (+ Playwright for the editor)         | Above all: "parse → edit → serialize changes nothing else".                        |
+| Tests        | Vitest (+ Playwright for the screenshots)    | Above all: "parse → edit → serialize changes nothing else".                        |
 | Deployment   | Docker multi-stage build → single image      | One container next to Glance; compose example in the README.                       |
 
 **Core idea: the document model**
@@ -327,7 +327,7 @@ interface PageNode {
   - **Proxies:** only with `GLAZE_TRUST_PROXY=true` does Glaze read the client IP from `CF-Connecting-IP` or the last `X-Forwarded-For` entry, and HTTPS from `X-Forwarded-Proto`.
   - **Everything else:** every `/api/*` route except `/api/healthz` and `/api/auth/*` answers `401` without a valid session. In the browser, a `401` opens a login overlay over the editor and retries the request afterwards, so unpublished work survives.
 - Don't expose Glaze publicly without extra protection. README advice: Cloudflare Access, a VPN, or LAN only.
-- Secrets: a "secret" field in the UI that stores the value in `.env` and writes `${NAME}` to the YAML. Warn when a key is stored as plain text in the YAML.
+- Secrets: today, secret fields are masked, suggest `${NAME}`, and `${…}` values show as ENV / SECRET / FILE chips that Glaze never resolves. _Planned:_ a "secret" field that stores the value in `.env` and writes `${NAME}` to the YAML, and a warning when a key is stored as plain text.
 - Warn about `apiKey=` inside an `img src` (visible in the page source). Recommend a key with minimal permissions.
 - Docker socket access (only needed for route A in §7) is optional and off by default.
 
@@ -367,7 +367,7 @@ interface PageNode {
 | 4     | Code view + live preview + validation                                                                                              | Errors show up on the right line                                                                  | ✅ done |
 | 5     | Auth, Docker image, README → **v0.1 release**                                                                                      | Installable next to Glance                                                                        | ✅ done |
 | 6     | Complete visual editor: forms for every option, widget width, flicker-free drag & drop, resizable panels, page and global settings | Every Glance option has a form; every fixture and new widget passes `glance config:validate`      | ✅ done |
-| 7     | "Edit page" button, multiple users                                                                                                 | See §5 (v0.2 / v0.3)                                                                              |         |
+| 7     | Undo history, "Edit page" button, multiple users                                                                                   | See §5 (v0.2 / v0.3)                                                                              |         |
 | 8     | Extras: widget height, widget builder, theme editor                                                                                | A resized widget, a builder widget and a theme all survive a round-trip and render in real Glance |         |
 
 ---

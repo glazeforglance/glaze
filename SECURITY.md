@@ -6,10 +6,10 @@ Glaze edits your Glance config, which often contains API keys and passwords. Sec
 
 Glaze is young; only the latest release gets security fixes.
 
-| Version | Supported |
-| ------- | --------- |
-| 0.1.x   | ✅ (latest patch) |
-| < 0.1   | ❌        |
+| Version | Supported         |
+| ------- | ----------------- |
+| 0.2.x   | ✅ (latest patch) |
+| < 0.2   | ❌                |
 
 ## Reporting a vulnerability
 
