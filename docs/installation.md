@@ -52,7 +52,9 @@ services:
 docker compose up -d
 ```
 
-Open <http://localhost:8090> and log in as `admin` with the password from step 1. Make a change, press **Publish** (or `Ctrl/Cmd + S`), and Glance reloads with it.
+Open <http://localhost:8090> and log in as `admin` with the password from step 1. Make a change, press **Publish** (or `Ctrl/Cmd + S`), and Glance reloads with it. [Using Glaze](usage.md) shows what you can do from here.
+
+<img src="screenshots/login.png" alt="The Glaze login screen" width="480">
 
 > [!IMPORTANT]
 > Glaze can change your dashboard config, including API keys. Keep it behind its login, and don't expose it to the internet without extra protection. See [Security](security.md).

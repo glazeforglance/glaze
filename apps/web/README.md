@@ -1,32 +1,24 @@
-# React + TypeScript + Vite
+# web
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Glaze's editor: a React 19 app built with Vite, TypeScript and Tailwind CSS v4.
 
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-	"$schema": "./node_modules/oxlint/configuration_schema.json",
-	"plugins": ["react", "typescript", "oxc"],
-	"options": {
-		"typeAware": true
-	},
-	"rules": {
-		"react/rules-of-hooks": "error",
-		"react/only-export-components": ["warn", { "allowConstantExport": true }]
-	}
-}
+```bash
+pnpm --filter web dev        # http://localhost:5173, proxies /api to the server on port 8090
+pnpm --filter web build      # type check + production build into dist/
+pnpm --filter web test       # Vitest
+pnpm --filter web typecheck
+pnpm --filter web lint       # Oxlint
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Run `pnpm dev` from the repository root to start the web app and the API server together. In production, the server serves `dist/` next to the API (`GLAZE_WEB_DIST`).
+
+| Folder            | What's in it                                                                       |
+| ----------------- | ---------------------------------------------------------------------------------- |
+| `src/components/` | The UI: top bar, canvas, library, inspector, code view, preview, settings, login   |
+| `src/forms/`      | The schema-driven forms (`SchemaForm`) and their field components                  |
+| `src/store/`      | Zustand stores: the editor draft, asset files and the login state                  |
+| `src/hooks/`      | Loading, publishing, validation, shortcuts, drag & drop and code sync              |
+| `src/lib/`        | Pure helpers: drop geometry, widths, the widget catalog, CodeMirror setup, the API |
+| `test/`           | Vitest tests                                                                       |
+
+Every edit goes through `@glaze/core`, so the YAML keeps its comments and ordering. See [docs/development.md](../../docs/development.md) for the full setup and [docs/usage.md](../../docs/usage.md) for what the app does.

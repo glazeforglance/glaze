@@ -30,9 +30,15 @@ pnpm typecheck
 pnpm --filter web lint
 pnpm biome format --write .
 pnpm build
+pnpm brand --check
+pnpm schemas --check
 ```
 
-CI runs the same checks, builds the Docker image and smoke-tests it.
+CI runs the same checks, builds the Docker image and smoke-tests it. Every `pnpm` script is described in
+[docs/development.md](docs/development.md#scripts).
+
+If your change is visible in the UI, update [docs/usage.md](docs/usage.md) and re-take the screenshots
+(see below).
 
 ## Conventions
 
@@ -52,6 +58,29 @@ CI runs the same checks, builds the Docker image and smoke-tests it.
 - Every change needs tests in `packages/core/test/`, and the byte-for-byte round-trip test must keep passing.
 - No side effects (file system, network) in core; those belong in `apps/server`.
 - When in doubt about a Glance option, check the Glance v0.8.7 source (`internal/glance/*.go`, `yaml:"…"` struct tags).
+
+## Widget forms
+
+The forms come from `@glaze/schemas`, generated from the Glance source. To change a label, a help text,
+the field order or the options a new widget starts with, edit
+[`packages/schemas/overrides.ts`](packages/schemas/overrides.ts) and run `pnpm schemas`; never edit
+`packages/schemas/src/generated/` by hand. Commit both, and keep the widget's fixture in
+`packages/schemas/test/fixtures/` passing. The full walkthrough is in
+[docs/development.md](docs/development.md#adding-or-adjusting-a-widget-form).
+
+## Screenshots
+
+The images in `docs/screenshots/` are made by `pnpm screenshots` from a demo config with fake data. After a
+UI change:
+
+```bash
+pnpm exec playwright install chromium   # once
+pnpm build
+GLANCE_BIN=/path/to/glance pnpm screenshots
+```
+
+Look at every image before you commit it. Details in
+[docs/development.md](docs/development.md#screenshots).
 
 ## Brand / logo
 
