@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-10-28
+
 ### Fixed
 
 - **Settings → Server can no longer take Glance down by accident.** The listen address (`server.host`) must be empty, an IP address (IPv6 in brackets) or a host name: a URL, path or port such as `http://192.168.178.233` is refused, because Glance then fails to start with "too many colons in address" (which `glance config:validate` doesn't catch). The port must be a whole number from 1 to 65535, and the base path must start with `/` or be a full http(s) URL. The form and the publish review both show these errors.
@@ -94,7 +96,8 @@ The first release: a visual editor that runs next to Glance v0.8.7 and edits its
 - **Docker image** `ghcr.io/klingesean/glaze` for `linux/amd64` and `linux/arm64`: non-root (uid 1000), with the checksum-verified Glance v0.8.7 binary for validation, a health check and a compose example.
 - CI (typecheck, lint, tests, build, Docker smoke test) and a tag-driven release workflow.
 
-[Unreleased]: https://github.com/glazeforglance/glaze/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/glazeforglance/glaze/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/glazeforglance/glaze/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/glazeforglance/glaze/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/glazeforglance/glaze/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/glazeforglance/glaze/compare/v0.1.0...v0.1.1
