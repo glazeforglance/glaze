@@ -1,0 +1,1699 @@
+{
+	"base": {
+		"type": {
+			"label": "Type"
+		},
+		"title": {
+			"label": "Title"
+		},
+		"title-url": {
+			"label": "Title link",
+			"help": "Opens when the title is clicked."
+		},
+		"hide-header": {
+			"label": "Hide the header"
+		},
+		"css-class": {
+			"label": "CSS class",
+			"help": "Added to the widget, for your own custom CSS."
+		},
+		"cache": {
+			"label": "Refresh",
+			"help": "How long Glance keeps the data before fetching it again."
+		}
+	},
+	"page": {
+		"name": {
+			"label": "Name"
+		},
+		"slug": {
+			"label": "URL path",
+			"help": "Made from the name when empty."
+		},
+		"width": {
+			"label": "Width",
+			"options": {
+				"default": {
+					"label": "Default"
+				},
+				"slim": {
+					"label": "Slim",
+					"help": "At most 2 columns."
+				},
+				"wide": {
+					"label": "Wide"
+				}
+			}
+		},
+		"desktop-navigation-width": {
+			"label": "Navigation width",
+			"help": "The width of the top navigation on desktop; follows the page width when empty.",
+			"options": {
+				"default": {
+					"label": "Default"
+				},
+				"slim": {
+					"label": "Slim"
+				},
+				"wide": {
+					"label": "Wide"
+				}
+			}
+		},
+		"show-mobile-header": {
+			"label": "Show the header on phones"
+		},
+		"hide-desktop-navigation": {
+			"label": "Hide the navigation on desktop"
+		},
+		"center-vertically": {
+			"label": "Center the columns vertically"
+		},
+		"head-widgets": {
+			"label": "Head widgets",
+			"help": "Edited on the canvas."
+		},
+		"columns": {
+			"label": "Columns",
+			"item": {
+				"label": "Column",
+				"fields": {
+					"size": {
+						"label": "Size",
+						"options": {
+							"small": {
+								"label": "Small"
+							},
+							"full": {
+								"label": "Full"
+							}
+						}
+					},
+					"widgets": {
+						"label": "Widgets"
+					}
+				}
+			}
+		}
+	},
+	"config": {
+		"server": {
+			"label": "Server",
+			"fields": {
+				"host": {
+					"label": "Listen address",
+					"help": "Leave empty. Only set this if Glance must listen on one specific network interface."
+				},
+				"port": {
+					"label": "Listen port (inside the container)",
+					"help": "Usually 8080. To reach Glance on another port, change your Docker port mapping."
+				},
+				"proxied": {
+					"label": "Behind a reverse proxy",
+					"help": "Read the client's address from X-Forwarded-For (needed for login rate limits behind a proxy)."
+				},
+				"assets-path": {
+					"label": "Assets folder",
+					"help": "A folder Glance serves at /assets/ (as Glance sees it).",
+					"placeholder": "/app/assets"
+				},
+				"base-url": {
+					"label": "Base path",
+					"help": "Only when a reverse proxy serves Glance under a path, e.g. example.com/glance. Starts with /.",
+					"placeholder": "e.g. /glance"
+				}
+			}
+		},
+		"auth": {
+			"label": "Login",
+			"fields": {
+				"secret-key": {
+					"label": "Secret key",
+					"help": "Signs login sessions; changing it logs everyone out."
+				},
+				"users": {
+					"label": "Users",
+					"keyLabel": "Username",
+					"item": {
+						"fields": {
+							"password": {
+								"label": "Password",
+								"help": "Plain text; prefer a password hash."
+							},
+							"password-hash": {
+								"label": "Password hash",
+								"help": "A bcrypt hash."
+							}
+						}
+					}
+				}
+			}
+		},
+		"document": {
+			"label": "Document",
+			"fields": {
+				"head": {
+					"label": "Extra <head> HTML",
+					"warning": "Scripts here run on every page of your dashboard."
+				}
+			}
+		},
+		"theme": {
+			"label": "Theme",
+			"fields": {
+				"background-color": {
+					"label": "Background",
+					"placeholder": "240 8 9"
+				},
+				"primary-color": {
+					"label": "Primary",
+					"placeholder": "43 50 70"
+				},
+				"positive-color": {
+					"label": "Positive",
+					"help": "Same as primary when empty."
+				},
+				"negative-color": {
+					"label": "Negative",
+					"placeholder": "0 70 70"
+				},
+				"light": {
+					"label": "Light theme"
+				},
+				"contrast-multiplier": {
+					"label": "Contrast"
+				},
+				"text-saturation-multiplier": {
+					"label": "Text saturation"
+				},
+				"custom-css-file": {
+					"label": "Custom CSS file",
+					"placeholder": "/assets/custom.css"
+				},
+				"disable-picker": {
+					"label": "Hide the theme picker"
+				},
+				"presets": {
+					"label": "Presets",
+					"keyLabel": "Preset name",
+					"item": {
+						"fields": {
+							"background-color": {
+								"label": "Background",
+								"placeholder": "240 8 9"
+							},
+							"primary-color": {
+								"label": "Primary",
+								"placeholder": "43 50 70"
+							},
+							"positive-color": {
+								"label": "Positive",
+								"help": "Same as primary when empty."
+							},
+							"negative-color": {
+								"label": "Negative",
+								"placeholder": "0 70 70"
+							},
+							"light": {
+								"label": "Light theme"
+							},
+							"contrast-multiplier": {
+								"label": "Contrast"
+							},
+							"text-saturation-multiplier": {
+								"label": "Text saturation"
+							}
+						}
+					}
+				}
+			}
+		},
+		"branding": {
+			"label": "Branding",
+			"fields": {
+				"hide-footer": {
+					"label": "Hide the footer"
+				},
+				"custom-footer": {
+					"label": "Custom footer (HTML)"
+				},
+				"logo-text": {
+					"label": "Logo text",
+					"placeholder": "G"
+				},
+				"logo-url": {
+					"label": "Logo image",
+					"help": "Replaces the logo text."
+				},
+				"favicon-url": {
+					"label": "Favicon"
+				},
+				"app-name": {
+					"label": "App name",
+					"placeholder": "Glance"
+				},
+				"app-icon-url": {
+					"label": "App icon",
+					"help": "Used when the dashboard is installed as an app."
+				},
+				"app-background-color": {
+					"label": "App background",
+					"help": "A CSS color, used when the dashboard is installed as an app; the theme background when empty.",
+					"placeholder": "#151519"
+				}
+			}
+		},
+		"pages": {
+			"label": "Pages",
+			"item": {
+				"label": "Page",
+				"fields": {
+					"name": {
+						"label": "Name"
+					},
+					"slug": {
+						"label": "Slug"
+					},
+					"width": {
+						"label": "Width"
+					},
+					"desktop-navigation-width": {
+						"label": "Desktop navigation width"
+					},
+					"show-mobile-header": {
+						"label": "Show mobile header"
+					},
+					"hide-desktop-navigation": {
+						"label": "Hide desktop navigation"
+					},
+					"center-vertically": {
+						"label": "Center vertically"
+					},
+					"head-widgets": {
+						"label": "Head widgets"
+					},
+					"columns": {
+						"label": "Columns",
+						"item": {
+							"label": "Column",
+							"fields": {
+								"size": {
+									"label": "Size"
+								},
+								"widgets": {
+									"label": "Widgets"
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	},
+	"widget": {
+		"calendar": {
+			"name": "Calendar",
+			"description": "A month calendar.",
+			"fields": {
+				"first-day-of-week": {
+					"label": "Week starts on",
+					"options": {
+						"monday": {
+							"label": "Monday"
+						},
+						"tuesday": {
+							"label": "Tuesday"
+						},
+						"wednesday": {
+							"label": "Wednesday"
+						},
+						"thursday": {
+							"label": "Thursday"
+						},
+						"friday": {
+							"label": "Friday"
+						},
+						"saturday": {
+							"label": "Saturday"
+						},
+						"sunday": {
+							"label": "Sunday"
+						}
+					}
+				}
+			}
+		},
+		"calendar-legacy": {
+			"name": "Calendar (legacy)",
+			"description": "The old calendar widget; use Calendar for new pages.",
+			"fields": {
+				"calendar": {
+					"label": "Calendar",
+					"fields": {
+						"currentday": {
+							"label": "Currentday"
+						},
+						"currentweeknumber": {
+							"label": "Currentweeknumber"
+						},
+						"currentmonthname": {
+							"label": "Currentmonthname"
+						},
+						"currentyear": {
+							"label": "Currentyear"
+						},
+						"days": {
+							"label": "Days",
+							"item": {
+								"label": "Day"
+							}
+						}
+					}
+				},
+				"start-sunday": {
+					"label": "Week starts on Sunday"
+				}
+			}
+		},
+		"clock": {
+			"name": "Clock",
+			"description": "The time here and in other time zones.",
+			"fields": {
+				"hour-format": {
+					"label": "Clock",
+					"options": {
+						"12h": {
+							"label": "12-hour"
+						},
+						"24h": {
+							"label": "24-hour"
+						}
+					}
+				},
+				"timezones": {
+					"label": "Other time zones",
+					"item": {
+						"label": "Other time zone",
+						"fields": {
+							"timezone": {
+								"label": "Time zone",
+								"help": "A name from the tz database.",
+								"placeholder": "Europe/Amsterdam"
+							},
+							"label": {
+								"label": "Label",
+								"placeholder": "Home"
+							}
+						}
+					}
+				}
+			}
+		},
+		"weather": {
+			"name": "Weather",
+			"description": "Current weather and the next hours, from Open-Meteo.",
+			"groups": {
+				"display": "Display"
+			},
+			"fields": {
+				"location": {
+					"label": "Location",
+					"help": "A place name; add the country when the name isn't unique.",
+					"placeholder": "Amsterdam, Netherlands"
+				},
+				"show-area-name": {
+					"label": "Show the area name"
+				},
+				"hide-location": {
+					"label": "Hide the location"
+				},
+				"hour-format": {
+					"label": "Clock",
+					"options": {
+						"12h": {
+							"label": "12-hour"
+						},
+						"24h": {
+							"label": "24-hour"
+						}
+					}
+				},
+				"units": {
+					"label": "Units",
+					"options": {
+						"metric": {
+							"label": "Metric (°C)"
+						},
+						"imperial": {
+							"label": "Imperial (°F)"
+						}
+					}
+				}
+			}
+		},
+		"bookmarks": {
+			"name": "Bookmarks",
+			"description": "Groups of links.",
+			"fields": {
+				"groups": {
+					"label": "Groups",
+					"item": {
+						"label": "Group",
+						"fields": {
+							"title": {
+								"label": "Group name"
+							},
+							"color": {
+								"label": "Color",
+								"help": "Uses the theme's primary color when empty."
+							},
+							"same-tab": {
+								"label": "Open links in the same tab"
+							},
+							"hide-arrow": {
+								"label": "Hide the arrows"
+							},
+							"target": {
+								"label": "Link target",
+								"placeholder": "_blank"
+							},
+							"links": {
+								"label": "Links",
+								"item": {
+									"label": "Link",
+									"fields": {
+										"title": {
+											"label": "Title"
+										},
+										"url": {
+											"label": "URL"
+										},
+										"description": {
+											"label": "Description"
+										},
+										"icon": {
+											"label": "Icon",
+											"help": "si:name (Simple Icons), di:name (Dashboard Icons), sh:name (selfh.st), mdi:name, or an image URL. Start with “auto-invert ” to invert it on light themes."
+										},
+										"same-tab": {
+											"label": "Open in the same tab"
+										},
+										"hide-arrow": {
+											"label": "Hide the arrow"
+										},
+										"target": {
+											"label": "Link target",
+											"placeholder": "_blank"
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"iframe": {
+			"name": "Iframe",
+			"description": "Another web page inside a widget.",
+			"fields": {
+				"source": {
+					"label": "Page URL",
+					"placeholder": "https://example.com",
+					"warning": "The page must allow being shown in a frame (no X-Frame-Options)."
+				},
+				"height": {
+					"label": "Height (px)",
+					"help": "In Glance v0.8.7 a missing height gives 50 px (the docs say 300), so set it."
+				}
+			}
+		},
+		"html": {
+			"name": "HTML",
+			"description": "Your own HTML, shown as is.",
+			"fields": {
+				"source": {
+					"label": "HTML",
+					"warning": "This HTML is not sanitized: scripts in it run on your dashboard."
+				}
+			}
+		},
+		"hacker-news": {
+			"name": "Hacker News",
+			"description": "Top stories from Hacker News.",
+			"groups": {
+				"display": "Display"
+			},
+			"fields": {
+				"limit": {
+					"label": "Number of items"
+				},
+				"sort-by": {
+					"label": "Stories",
+					"options": {
+						"top": {
+							"label": "Top"
+						},
+						"new": {
+							"label": "New"
+						},
+						"best": {
+							"label": "Best"
+						}
+					}
+				},
+				"extra-sort-by": {
+					"label": "Then sort by",
+					"help": "Re-sorts the stories by comments and points.",
+					"options": {
+						"engagement": {
+							"label": "Engagement"
+						}
+					}
+				},
+				"collapse-after": {
+					"label": "Show before “Show more”",
+					"help": "How many items are visible before the rest is folded away. -1 shows everything."
+				},
+				"comments-url-template": {
+					"label": "Comments link",
+					"help": "Where a post's comments open; {POST-ID} is replaced.",
+					"placeholder": "https://news.ycombinator.com/item?id={POST-ID}"
+				}
+			}
+		},
+		"releases": {
+			"name": "Releases",
+			"description": "Latest releases of GitHub, GitLab, Codeberg and Docker Hub projects.",
+			"groups": {
+				"display": "Display"
+			},
+			"fields": {
+				"repositories": {
+					"label": "Repositories",
+					"item": {
+						"label": "Repository",
+						"variants": {
+							"0": {
+								"label": "Repository",
+								"help": "owner/repo for GitHub; start with gitlab:, dockerhub: or codeberg: for other sources.",
+								"placeholder": "glanceapp/glance"
+							},
+							"1": {
+								"label": "Repository with options",
+								"fields": {
+									"include-prereleases": {
+										"label": "Include pre-releases"
+									},
+									"repository": {
+										"label": "Repository",
+										"placeholder": "glanceapp/glance"
+									}
+								}
+							}
+						}
+					}
+				},
+				"token": {
+					"label": "GitHub token",
+					"help": "Raises GitHub's rate limit. Prefer ${YOUR_VAR} so the value stays out of glance.yml."
+				},
+				"gitlab-token": {
+					"label": "GitLab token",
+					"help": "Prefer ${YOUR_VAR} so the value stays out of glance.yml."
+				},
+				"limit": {
+					"label": "Number of items"
+				},
+				"collapse-after": {
+					"label": "Show before “Show more”",
+					"help": "How many items are visible before the rest is folded away. -1 shows everything."
+				},
+				"show-source-icon": {
+					"label": "Show the source's icon"
+				}
+			}
+		},
+		"videos": {
+			"name": "Videos",
+			"description": "Latest videos from YouTube channels and playlists.",
+			"groups": {
+				"display": "Display"
+			},
+			"fields": {
+				"video-url-template": {
+					"label": "Video link",
+					"help": "Where a video opens; {VIDEO-ID} is replaced.",
+					"placeholder": "https://www.youtube.com/watch?v={VIDEO-ID}"
+				},
+				"style": {
+					"label": "Layout",
+					"options": {
+						"horizontal-cards": {
+							"label": "Cards in a row"
+						},
+						"grid-cards": {
+							"label": "Grid of cards"
+						},
+						"vertical-list": {
+							"label": "List"
+						}
+					}
+				},
+				"collapse-after": {
+					"label": "Show before “Show more”",
+					"help": "How many items are visible before the rest is folded away. -1 shows everything."
+				},
+				"collapse-after-rows": {
+					"label": "Rows before “Show more”",
+					"help": "For the grid layout. -1 shows everything."
+				},
+				"channels": {
+					"label": "Channels",
+					"help": "YouTube channel IDs (they start with UC).",
+					"item": {
+						"label": "Channel ID",
+						"placeholder": "UCXuqSBlHAE6Xw-yeJA0Tunw"
+					}
+				},
+				"playlists": {
+					"label": "Playlists",
+					"item": {
+						"label": "Playlist ID"
+					}
+				},
+				"limit": {
+					"label": "Number of items"
+				},
+				"include-shorts": {
+					"label": "Include Shorts"
+				}
+			}
+		},
+		"markets": {
+			"name": "Markets",
+			"description": "Stock and crypto prices from Yahoo Finance.",
+			"fields": {
+				"markets": {
+					"label": "Markets",
+					"item": {
+						"label": "Market",
+						"fields": {
+							"name": {
+								"label": "Name",
+								"placeholder": "S&P 500"
+							},
+							"symbol": {
+								"label": "Symbol",
+								"placeholder": "SPY"
+							},
+							"chart-link": {
+								"label": "Chart link"
+							},
+							"symbol-link": {
+								"label": "Symbol link"
+							}
+						}
+					}
+				},
+				"sort-by": {
+					"label": "Sort by",
+					"help": "Leave empty to keep your order.",
+					"options": {
+						"change": {
+							"label": "Change (%)"
+						},
+						"absolute-change": {
+							"label": "Change (absolute)"
+						}
+					}
+				},
+				"chart-link-template": {
+					"label": "Chart link",
+					"help": "Used for every market without its own; {SYMBOL} is replaced.",
+					"placeholder": "https://www.tradingview.com/chart/?symbol={SYMBOL}"
+				},
+				"symbol-link-template": {
+					"label": "Symbol link",
+					"help": "Used for every market without its own; {SYMBOL} is replaced.",
+					"placeholder": "https://www.google.com/search?q={SYMBOL}"
+				},
+				"stocks": {
+					"label": "Stocks (old name)",
+					"help": "The old name of the markets list, used when “Markets” is empty. Prefer Markets.",
+					"item": {
+						"label": "Stocks (old name)",
+						"fields": {
+							"name": {
+								"label": "Name"
+							},
+							"symbol": {
+								"label": "Symbol"
+							},
+							"chart-link": {
+								"label": "Chart link"
+							},
+							"symbol-link": {
+								"label": "Symbol link"
+							}
+						}
+					}
+				}
+			}
+		},
+		"reddit": {
+			"name": "Reddit",
+			"description": "Posts from a subreddit.",
+			"groups": {
+				"display": "Display"
+			},
+			"fields": {
+				"subreddit": {
+					"label": "Subreddit",
+					"help": "Without r/.",
+					"placeholder": "selfhosted"
+				},
+				"sort-by": {
+					"label": "Sort by",
+					"options": {
+						"hot": {
+							"label": "Hot"
+						},
+						"new": {
+							"label": "New"
+						},
+						"top": {
+							"label": "Top"
+						},
+						"rising": {
+							"label": "Rising"
+						}
+					}
+				},
+				"top-period": {
+					"label": "Top of the",
+					"help": "Only for “Top”.",
+					"options": {
+						"hour": {
+							"label": "Hour"
+						},
+						"day": {
+							"label": "Day"
+						},
+						"week": {
+							"label": "Week"
+						},
+						"month": {
+							"label": "Month"
+						},
+						"year": {
+							"label": "Year"
+						},
+						"all": {
+							"label": "All time"
+						}
+					}
+				},
+				"search": {
+					"label": "Search",
+					"help": "Only works with app authentication (Reddit's API rules)."
+				},
+				"limit": {
+					"label": "Number of items"
+				},
+				"style": {
+					"label": "Layout",
+					"options": {
+						"vertical-list": {
+							"label": "List"
+						},
+						"horizontal-cards": {
+							"label": "Cards in a row"
+						},
+						"vertical-cards": {
+							"label": "Cards below each other"
+						}
+					}
+				},
+				"proxy": {
+					"label": "Proxy",
+					"variants": {
+						"0": {
+							"label": "Proxy URL",
+							"placeholder": "http://user:pass@proxy:8080"
+						},
+						"1": {
+							"label": "Proxy settings",
+							"fields": {
+								"url": {
+									"label": "Proxy URL"
+								},
+								"allow-insecure": {
+									"label": "Allow invalid certificates"
+								},
+								"timeout": {
+									"label": "Timeout"
+								}
+							}
+						}
+					}
+				},
+				"show-thumbnails": {
+					"label": "Show thumbnails"
+				},
+				"show-flairs": {
+					"label": "Show flairs"
+				},
+				"extra-sort-by": {
+					"label": "Then sort by",
+					"options": {
+						"engagement": {
+							"label": "Engagement"
+						}
+					}
+				},
+				"comments-url-template": {
+					"label": "Comments link",
+					"help": "{POST-PATH}, {POST-ID} and {SUBREDDIT} are replaced.",
+					"placeholder": "https://www.reddit.com/{POST-PATH}"
+				},
+				"collapse-after": {
+					"label": "Show before “Show more”",
+					"help": "How many items are visible before the rest is folded away. -1 shows everything."
+				},
+				"request-url-template": {
+					"label": "Request through",
+					"help": "Fetches Reddit through another address; must contain {REQUEST-URL}.",
+					"placeholder": "https://proxy.example.com/?url={REQUEST-URL}"
+				},
+				"app-auth": {
+					"label": "App authentication",
+					"help": "A Reddit app (name, client ID and secret); all three or none.",
+					"fields": {
+						"name": {
+							"label": "App name"
+						},
+						"id": {
+							"label": "Client ID"
+						},
+						"secret": {
+							"label": "Client secret",
+							"help": "Prefer ${YOUR_VAR} so the value stays out of glance.yml."
+						}
+					}
+				}
+			}
+		},
+		"rss": {
+			"name": "RSS",
+			"description": "Items from one or more RSS or Atom feeds.",
+			"groups": {
+				"display": "Display"
+			},
+			"fields": {
+				"feeds": {
+					"label": "Feeds",
+					"item": {
+						"label": "Feed",
+						"fields": {
+							"url": {
+								"label": "Feed URL"
+							},
+							"title": {
+								"label": "Title",
+								"help": "Uses the feed's own title when empty."
+							},
+							"hide-categories": {
+								"label": "Hide categories",
+								"help": "Detailed list only."
+							},
+							"hide-description": {
+								"label": "Hide the description",
+								"help": "Detailed list only."
+							},
+							"limit": {
+								"label": "Items from this feed"
+							},
+							"item-link-prefix": {
+								"label": "Item link prefix"
+							},
+							"thumbnail-link-prefix": {
+								"label": "Thumbnail link prefix"
+							},
+							"headers": {
+								"label": "Headers",
+								"help": "Sent with every request, e.g. Authorization or X-Api-Key.",
+								"keyLabel": "Header"
+							}
+						}
+					}
+				},
+				"style": {
+					"label": "Layout",
+					"options": {
+						"vertical-list": {
+							"label": "List"
+						},
+						"detailed-list": {
+							"label": "Detailed list"
+						},
+						"horizontal-cards": {
+							"label": "Cards in a row"
+						},
+						"horizontal-cards-2": {
+							"label": "Cards in a row (big)"
+						}
+					}
+				},
+				"thumbnail-height": {
+					"label": "Thumbnail height (rem)",
+					"help": "Cards layouts only."
+				},
+				"card-height": {
+					"label": "Card height (rem)",
+					"help": "Cards layouts only."
+				},
+				"limit": {
+					"label": "Number of items"
+				},
+				"collapse-after": {
+					"label": "Show before “Show more”",
+					"help": "How many items are visible before the rest is folded away. -1 shows everything."
+				},
+				"single-line-titles": {
+					"label": "Titles on one line"
+				},
+				"preserve-order": {
+					"label": "Keep the feeds' order",
+					"help": "Instead of sorting by date."
+				}
+			}
+		},
+		"monitor": {
+			"name": "Monitor",
+			"description": "Whether your sites and services are up.",
+			"groups": {
+				"display": "Display"
+			},
+			"fields": {
+				"sites": {
+					"label": "Sites",
+					"item": {
+						"label": "Site",
+						"fields": {
+							"url": {
+								"label": "URL",
+								"help": "Opens when the site is clicked; also checked, unless a check URL is set."
+							},
+							"check-url": {
+								"label": "Check URL",
+								"help": "Checked instead of the URL, e.g. an internal address."
+							},
+							"allow-insecure": {
+								"label": "Allow invalid certificates"
+							},
+							"timeout": {
+								"label": "Timeout"
+							},
+							"basic-auth": {
+								"label": "Basic authentication",
+								"fields": {
+									"username": {
+										"label": "Username"
+									},
+									"password": {
+										"label": "Password",
+										"help": "Prefer ${YOUR_VAR} so the value stays out of glance.yml."
+									}
+								}
+							},
+							"error-url": {
+								"label": "Error URL",
+								"help": "Opens instead of the URL while the site is down."
+							},
+							"title": {
+								"label": "Title"
+							},
+							"icon": {
+								"label": "Icon",
+								"help": "si:name (Simple Icons), di:name (Dashboard Icons), sh:name (selfh.st), mdi:name, or an image URL. Start with “auto-invert ” to invert it on light themes."
+							},
+							"same-tab": {
+								"label": "Open in the same tab"
+							},
+							"alt-status-codes": {
+								"label": "Also OK",
+								"help": "Status codes that count as up, besides 200.",
+								"item": {
+									"label": "Also OK"
+								}
+							}
+						}
+					}
+				},
+				"show-failing-only": {
+					"label": "Only show failing sites"
+				},
+				"style": {
+					"label": "Layout",
+					"help": "Leave empty for the default layout.",
+					"options": {
+						"compact": {
+							"label": "Compact"
+						}
+					}
+				}
+			}
+		},
+		"twitch-top-games": {
+			"name": "Twitch top games",
+			"description": "The most watched games on Twitch.",
+			"groups": {
+				"display": "Display"
+			},
+			"fields": {
+				"exclude": {
+					"label": "Leave out",
+					"item": {
+						"label": "Game slug",
+						"placeholder": "just-chatting"
+					}
+				},
+				"limit": {
+					"label": "Number of items"
+				},
+				"collapse-after": {
+					"label": "Show before “Show more”",
+					"help": "How many items are visible before the rest is folded away. -1 shows everything."
+				}
+			}
+		},
+		"twitch-channels": {
+			"name": "Twitch channels",
+			"description": "Which Twitch channels are live.",
+			"groups": {
+				"display": "Display"
+			},
+			"fields": {
+				"channels": {
+					"label": "Channels",
+					"item": {
+						"label": "Channel name",
+						"placeholder": "theprimeagen"
+					}
+				},
+				"collapse-after": {
+					"label": "Show before “Show more”",
+					"help": "How many items are visible before the rest is folded away. -1 shows everything."
+				},
+				"sort-by": {
+					"label": "Sort by",
+					"options": {
+						"viewers": {
+							"label": "Viewers"
+						},
+						"live": {
+							"label": "Live first"
+						}
+					}
+				}
+			}
+		},
+		"lobsters": {
+			"name": "Lobsters",
+			"description": "Stories from lobste.rs or another Lobsters site.",
+			"groups": {
+				"display": "Display"
+			},
+			"fields": {
+				"instance-url": {
+					"label": "Site",
+					"placeholder": "https://lobste.rs/"
+				},
+				"custom-url": {
+					"label": "Custom feed URL",
+					"help": "A JSON feed URL; overrides the site, sort and tags."
+				},
+				"limit": {
+					"label": "Number of items"
+				},
+				"collapse-after": {
+					"label": "Show before “Show more”",
+					"help": "How many items are visible before the rest is folded away. -1 shows everything."
+				},
+				"sort-by": {
+					"label": "Sort by",
+					"options": {
+						"hot": {
+							"label": "Hot"
+						},
+						"new": {
+							"label": "New"
+						}
+					}
+				},
+				"tags": {
+					"label": "Only these tags",
+					"item": {
+						"label": "Tag",
+						"placeholder": "linux"
+					}
+				}
+			}
+		},
+		"change-detection": {
+			"name": "Change detection",
+			"description": "Recent changes found by changedetection.io.",
+			"groups": {
+				"display": "Display"
+			},
+			"fields": {
+				"watches": {
+					"label": "Only these watches",
+					"help": "Leave empty to show all watches.",
+					"item": {
+						"label": "Watch UUID"
+					}
+				},
+				"instance-url": {
+					"label": "Instance URL"
+				},
+				"token": {
+					"label": "API key",
+					"help": "Prefer ${YOUR_VAR} so the value stays out of glance.yml."
+				},
+				"limit": {
+					"label": "Number of items"
+				},
+				"collapse-after": {
+					"label": "Show before “Show more”",
+					"help": "How many items are visible before the rest is folded away. -1 shows everything."
+				}
+			}
+		},
+		"repository": {
+			"name": "Repository",
+			"description": "Pull requests, issues and commits of a GitHub repository.",
+			"fields": {
+				"repository": {
+					"label": "Repository",
+					"help": "owner/repo on GitHub.",
+					"placeholder": "glanceapp/glance"
+				},
+				"token": {
+					"label": "GitHub token",
+					"help": "Prefer ${YOUR_VAR} so the value stays out of glance.yml."
+				},
+				"pull-requests-limit": {
+					"label": "Pull requests",
+					"help": "How many to show; -1 hides them."
+				},
+				"issues-limit": {
+					"label": "Issues",
+					"help": "How many to show; -1 hides them."
+				},
+				"commits-limit": {
+					"label": "Commits",
+					"help": "How many to show; -1 hides them."
+				}
+			}
+		},
+		"search": {
+			"name": "Search",
+			"description": "A search bar, with bangs as shortcuts.",
+			"fields": {
+				"search-engine": {
+					"label": "Search engine",
+					"help": "A name from the list, or your own URL with {QUERY} where the search goes.",
+					"options": {
+						"duckduckgo": {
+							"label": "DuckDuckGo"
+						},
+						"google": {
+							"label": "Google"
+						},
+						"bing": {
+							"label": "Bing"
+						},
+						"perplexity": {
+							"label": "Perplexity"
+						},
+						"kagi": {
+							"label": "Kagi"
+						},
+						"startpage": {
+							"label": "Startpage"
+						}
+					}
+				},
+				"bangs": {
+					"label": "Bangs",
+					"help": "Type the shortcut before your search to use another site.",
+					"item": {
+						"label": "Bang",
+						"fields": {
+							"title": {
+								"label": "Title"
+							},
+							"shortcut": {
+								"label": "Shortcut",
+								"placeholder": "!yt"
+							},
+							"url": {
+								"label": "URL",
+								"help": "{QUERY} is replaced by your search.",
+								"placeholder": "https://www.youtube.com/results?search_query={QUERY}"
+							}
+						}
+					}
+				},
+				"new-tab": {
+					"label": "Open results in a new tab"
+				},
+				"target": {
+					"label": "Link target",
+					"placeholder": "_blank"
+				},
+				"autofocus": {
+					"label": "Focus the search bar on load"
+				},
+				"placeholder": {
+					"label": "Placeholder"
+				}
+			}
+		},
+		"extension": {
+			"name": "Extension",
+			"description": "HTML from your own service, shown as a widget.",
+			"fields": {
+				"url": {
+					"label": "URL",
+					"help": "Your service's address; it answers with the widget's HTML."
+				},
+				"fallback-content-type": {
+					"label": "Content type",
+					"help": "Used when the response doesn't send a Widget-Content-Type header.",
+					"options": {
+						"html": {
+							"label": "HTML"
+						}
+					}
+				},
+				"parameters": {
+					"label": "Query parameters",
+					"help": "Added to the URL. A parameter with several values is repeated.",
+					"keyLabel": "Parameter",
+					"item": {
+						"label": "Value",
+						"variants": {
+							"0": {
+								"label": "One value"
+							},
+							"1": {
+								"label": "Several values",
+								"item": {
+									"label": "Value"
+								}
+							}
+						}
+					}
+				},
+				"headers": {
+					"label": "Headers",
+					"help": "Sent with every request, e.g. Authorization or X-Api-Key.",
+					"keyLabel": "Header"
+				},
+				"allow-potentially-dangerous-html": {
+					"label": "Allow unsafe HTML",
+					"warning": "The extension's HTML is shown without sanitizing: only turn this on for a service you trust."
+				}
+			}
+		},
+		"group": {
+			"name": "Group (tabs)",
+			"description": "Several widgets as tabs.",
+			"fields": {
+				"widgets": {
+					"label": "Tabs",
+					"help": "Drag widgets into the group on the canvas."
+				}
+			}
+		},
+		"dns-stats": {
+			"name": "DNS stats",
+			"description": "Statistics from AdGuard Home, Pi-hole or Technitium.",
+			"groups": {
+				"display": "Display"
+			},
+			"fields": {
+				"service": {
+					"label": "Service",
+					"help": "Glance v0.8.7 refuses an empty service (the docs say pihole is the default).",
+					"options": {
+						"adguard": {
+							"label": "AdGuard Home"
+						},
+						"pihole-v6": {
+							"label": "Pi-hole 6+"
+						},
+						"pihole": {
+							"label": "Pi-hole 5 and older"
+						},
+						"technitium": {
+							"label": "Technitium"
+						}
+					}
+				},
+				"url": {
+					"label": "URL",
+					"placeholder": "http://pihole.local"
+				},
+				"token": {
+					"label": "API token",
+					"help": "Pi-hole 5 and Technitium. Prefer ${YOUR_VAR} so the value stays out of glance.yml."
+				},
+				"username": {
+					"label": "Username",
+					"help": "AdGuard Home only."
+				},
+				"password": {
+					"label": "Password",
+					"help": "AdGuard Home and Pi-hole 6. Prefer ${YOUR_VAR} so the value stays out of glance.yml."
+				},
+				"hour-format": {
+					"label": "Clock",
+					"options": {
+						"12h": {
+							"label": "12-hour"
+						},
+						"24h": {
+							"label": "24-hour"
+						}
+					}
+				},
+				"hide-graph": {
+					"label": "Hide the graph"
+				},
+				"hide-top-domains": {
+					"label": "Hide top blocked domains"
+				},
+				"allow-insecure": {
+					"label": "Allow invalid certificates"
+				}
+			}
+		},
+		"split-column": {
+			"name": "Split column",
+			"description": "Widgets side by side in equal columns.",
+			"fields": {
+				"widgets": {
+					"label": "Widgets",
+					"help": "Drop widgets beside each other on the canvas."
+				},
+				"max-columns": {
+					"label": "Columns",
+					"help": "Glance uses at least 2; every widget gets the same width."
+				}
+			}
+		},
+		"custom-api": {
+			"name": "Custom API",
+			"description": "Data from any JSON API, shown with your own template.",
+			"groups": {
+				"request": "Request",
+				"template": "Template"
+			},
+			"fields": {
+				"url": {
+					"label": "URL",
+					"help": "The address to fetch. Without it, the template still renders, with no data.",
+					"placeholder": "https://api.example.com/v1/status"
+				},
+				"method": {
+					"label": "Method",
+					"help": "GET by default; POST when a body is set."
+				},
+				"headers": {
+					"label": "Headers",
+					"help": "Sent with every request, e.g. Authorization or X-Api-Key.",
+					"keyLabel": "Header"
+				},
+				"parameters": {
+					"label": "Query parameters",
+					"help": "Added to the URL. A parameter with several values is repeated.",
+					"keyLabel": "Parameter",
+					"item": {
+						"label": "Value",
+						"variants": {
+							"0": {
+								"label": "One value"
+							},
+							"1": {
+								"label": "Several values",
+								"item": {
+									"label": "Value"
+								}
+							}
+						}
+					}
+				},
+				"body-type": {
+					"label": "Body type",
+					"options": {
+						"json": {
+							"label": "JSON",
+							"help": "The body is sent as JSON."
+						},
+						"string": {
+							"label": "Text",
+							"help": "The body must be a string."
+						}
+					}
+				},
+				"body": {
+					"label": "Body",
+					"help": "Sent with the request; any YAML value (sent as JSON unless the body type is text)."
+				},
+				"basic-auth": {
+					"label": "Basic authentication",
+					"fields": {
+						"username": {
+							"label": "Username"
+						},
+						"password": {
+							"label": "Password",
+							"help": "Prefer ${YOUR_VAR} so the value stays out of glance.yml."
+						}
+					}
+				},
+				"allow-insecure": {
+					"label": "Allow invalid certificates"
+				},
+				"skip-json-validation": {
+					"label": "Don't check that the response is JSON"
+				},
+				"subrequests": {
+					"label": "Subrequests",
+					"help": "More requests; use them in the template with .Subrequest \"name\".",
+					"keyLabel": "Name",
+					"item": {
+						"fields": {
+							"url": {
+								"label": "URL",
+								"help": "The address to fetch. Without it, the template still renders, with no data.",
+								"placeholder": "https://api.example.com/v1/status"
+							},
+							"allow-insecure": {
+								"label": "Allow invalid certificates"
+							},
+							"headers": {
+								"label": "Headers",
+								"help": "Sent with every request, e.g. Authorization or X-Api-Key.",
+								"keyLabel": "Header"
+							},
+							"parameters": {
+								"label": "Query parameters",
+								"help": "Added to the URL. A parameter with several values is repeated.",
+								"keyLabel": "Parameter",
+								"item": {
+									"label": "Value",
+									"variants": {
+										"0": {
+											"label": "One value"
+										},
+										"1": {
+											"label": "Several values",
+											"item": {
+												"label": "Value"
+											}
+										}
+									}
+								}
+							},
+							"method": {
+								"label": "Method",
+								"help": "GET by default; POST when a body is set."
+							},
+							"body-type": {
+								"label": "Body type",
+								"options": {
+									"json": {
+										"label": "JSON",
+										"help": "The body is sent as JSON."
+									},
+									"string": {
+										"label": "Text",
+										"help": "The body must be a string."
+									}
+								}
+							},
+							"body": {
+								"label": "Body",
+								"help": "Sent with the request; any YAML value (sent as JSON unless the body type is text)."
+							},
+							"skip-json-validation": {
+								"label": "Don't check that the response is JSON"
+							},
+							"basic-auth": {
+								"label": "Basic authentication",
+								"fields": {
+									"username": {
+										"label": "Username"
+									},
+									"password": {
+										"label": "Password",
+										"help": "Prefer ${YOUR_VAR} so the value stays out of glance.yml."
+									}
+								}
+							}
+						}
+					}
+				},
+				"options": {
+					"label": "Options",
+					"help": "Values for the template, read with .Options.StringOr \"name\" \"default\".",
+					"keyLabel": "Option"
+				},
+				"template": {
+					"label": "Template",
+					"help": "HTML with Go template actions; the response is .JSON."
+				},
+				"frameless": {
+					"label": "No frame around the widget"
+				}
+			}
+		},
+		"docker-containers": {
+			"name": "Docker containers",
+			"description": "Your containers and whether they run.",
+			"groups": {
+				"display": "Display"
+			},
+			"fields": {
+				"hide-by-default": {
+					"label": "Hide unless labelled",
+					"help": "Only show containers with glance.hide=false."
+				},
+				"running-only": {
+					"label": "Only running containers"
+				},
+				"category": {
+					"label": "Category",
+					"help": "Only containers with this glance.category label."
+				},
+				"sock-path": {
+					"label": "Docker socket",
+					"help": "A path, or tcp://host:2375 for a remote Docker API.",
+					"placeholder": "/var/run/docker.sock"
+				},
+				"format-container-names": {
+					"label": "Tidy up container names"
+				},
+				"containers": {
+					"label": "Container labels",
+					"help": "Glance labels (name, url, icon, description, …) per container, without touching Docker.",
+					"keyLabel": "Container name",
+					"item": {
+						"label": "Labels",
+						"keyLabel": "Label"
+					}
+				}
+			}
+		},
+		"server-stats": {
+			"name": "Server stats",
+			"description": "CPU, memory and disk use of this or other servers.",
+			"fields": {
+				"servers": {
+					"label": "Servers",
+					"help": "Leave empty for the server Glance runs on.",
+					"item": {
+						"label": "Server",
+						"fields": {
+							"cpu-temp-sensor": {
+								"label": "CPU temperature sensor",
+								"help": "A sensor name from `glance sensors:print`."
+							},
+							"hide-mountpoints-by-default": {
+								"label": "Hide disks unless listed"
+							},
+							"mountpoints": {
+								"label": "Disks",
+								"keyLabel": "Mount point",
+								"item": {
+									"fields": {
+										"name": {
+											"label": "Name"
+										},
+										"hide": {
+											"label": "Hide"
+										}
+									}
+								}
+							},
+							"name": {
+								"label": "Name"
+							},
+							"hide-swap": {
+								"label": "Hide swap"
+							},
+							"type": {
+								"label": "Type",
+								"options": {
+									"local": {
+										"label": "This server"
+									},
+									"remote": {
+										"label": "Remote (Glance agent)"
+									}
+								}
+							},
+							"url": {
+								"label": "Agent URL",
+								"help": "Remote servers only."
+							},
+							"token": {
+								"label": "Agent token",
+								"help": "Remote servers only. Prefer ${YOUR_VAR} so the value stays out of glance.yml."
+							},
+							"timeout": {
+								"label": "Timeout",
+								"help": "Remote servers only."
+							}
+						}
+					}
+				}
+			}
+		},
+		"to-do": {
+			"name": "To-do",
+			"description": "A to-do list stored in your browser.",
+			"fields": {
+				"id": {
+					"label": "List id",
+					"help": "Lists with the same id share their items."
+				}
+			}
+		}
+	}
+}

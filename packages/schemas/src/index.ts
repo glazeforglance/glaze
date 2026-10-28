@@ -13,6 +13,14 @@ export type {
 	Overrides,
 	WidgetOverride,
 } from "./override-types.ts";
+export {
+	listItemLabel,
+	localizeFields,
+	localizeWidget,
+	schemaTexts,
+	type TextTree,
+	type Translate,
+} from "./texts.ts";
 export type {
 	CodeLanguage,
 	EnumOption,
