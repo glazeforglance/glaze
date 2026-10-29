@@ -12,9 +12,15 @@ need to know Git or JavaScript to help.
 
 <!-- i18n-status:start -->
 
-| Language | Code | Translated |
-| -------- | ---- | ---------- |
-| English  | `en` | 100%       |
+| Language                        | Code    | Translated |
+| ------------------------------- | ------- | ---------- |
+| English                         | `en`    | 100%       |
+| German (Deutsch)                | `de`    | 0%         |
+| Filipino                        | `fil`   | 0%         |
+| Hebrew (Israel) (עברית (ישראל)) | `he-IL` | 0%         |
+| Dutch (Nederlands)              | `nl`    | 0%         |
+| Polish (Polski)                 | `pl`    | 0%         |
+| Filipino                        | `tl`    | 0%         |
 
 <!-- i18n-status:end -->
 
