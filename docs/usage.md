@@ -169,7 +169,7 @@ While the YAML has an error that stops Glaze from reading it, the Design and Set
 
 ## Language
 
-Glaze is available in English and Dutch (Nederlands). Pick your language in the user menu at the top right: click your name, or the globe when login is off. The login screen has a language picker too. Each language is listed in its own name, so you can find yours whatever the interface shows now. Glaze remembers the choice in this browser; without one, it follows your browser's language and falls back to English.
+Glaze is available in English, and in every language translated on Weblate. Pick your language in the user menu at the top right: click your name, or the globe when login is off. The login screen has a language picker too. Each language is listed in its own name, so you can find yours whatever the interface shows now. Glaze remembers the choice in this browser; without one, it follows your browser's language and falls back to English.
 
 The names of Glance's options (`hide-header`, `cache`, …) are never translated: they're shown small next to each label, so you can still find them in Glance's documentation. Your own texts (page names, widget titles) stay as you wrote them, and so does the YAML.
 

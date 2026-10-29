@@ -12,10 +12,9 @@ need to know Git or JavaScript to help.
 
 <!-- i18n-status:start -->
 
-| Language           | Code | Translated |
-| ------------------ | ---- | ---------- |
-| English            | `en` | 100%       |
-| Dutch (Nederlands) | `nl` | 100%       |
+| Language | Code | Translated |
+| -------- | ---- | ---------- |
+| English  | `en` | 100%       |
 
 <!-- i18n-status:end -->
 

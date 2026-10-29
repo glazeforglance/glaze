@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Glaze in your language.** The interface, every widget, page and setting label, and all messages can now be translated; English and Dutch (Nederlands) are included. Pick the language in the user menu (or on the login screen); without a choice Glaze follows your browser. Glance's option names are shown next to each label, untranslated, so Glance's documentation still applies. Translations are done on Weblate; see [TRANSLATING.md](TRANSLATING.md).
+- **Glaze in your language.** The interface, every widget, page and setting label, and all messages can now be translated; English is included, other languages come from Weblate. Pick the language in the user menu (or on the login screen); without a choice Glaze follows your browser. Glance's option names are shown next to each label, untranslated, so Glance's documentation still applies. Translations are done on Weblate; see [TRANSLATING.md](TRANSLATING.md).
 - **Right-to-left support** for languages such as Arabic and Hebrew: the layout, side panels, drag & drop, resize handles and arrow keys mirror, while code, URLs and YAML stay left to right.
 
 ### Changed

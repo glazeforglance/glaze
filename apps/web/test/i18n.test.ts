@@ -70,10 +70,9 @@ describe("language helpers", () => {
 		expect(localeOf(RTL_TEST_LANGUAGE)).toBe("en");
 	});
 
-	it("finds the translations in src/locales, plus the RTL test language", () => {
+	it("starts with English and adds the RTL test language", () => {
 		expect(AVAILABLE_LANGUAGES[0]).toBe("en");
-		expect(AVAILABLE_LANGUAGES).toContain("nl");
-		expect(AVAILABLE_LANGUAGES).toContain(RTL_TEST_LANGUAGE);
+		expect(AVAILABLE_LANGUAGES.at(-1)).toBe(RTL_TEST_LANGUAGE);
 	});
 });
 
@@ -106,10 +105,11 @@ describe("translations", () => {
 		);
 	});
 
-	it("loads Dutch on demand", async () => {
-		await changeLanguage("nl");
-		expect(i18n.language).toBe("nl");
-		expect(i18n.t("common.cancel")).toBe("Annuleren");
+	it("switches to the RTL test language: English text, right to left", async () => {
+		await changeLanguage(RTL_TEST_LANGUAGE);
+		expect(i18n.language).toBe(RTL_TEST_LANGUAGE);
+		expect(i18n.t("common.cancel")).toBe("Cancel");
+		expect(directionOf(i18n.language, (code) => i18n.dir(code))).toBe("rtl");
 	});
 
 	it("builds sentences from problem codes", () => {

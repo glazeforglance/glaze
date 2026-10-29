@@ -159,7 +159,7 @@ The details and the reasoning behind them are in [docs/DESIGN.md](docs/DESIGN.md
 
 Ideas, bug reports and pull requests are very welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the setup and conventions, or open an issue with your use case or the widgets you'd most like to see supported next.
 
-**Translations:** Glaze speaks English and Dutch so far. Help translate it into your language, see [TRANSLATING.md](TRANSLATING.md).
+**Translations:** Glaze speaks English so far. Help translate it into your language, see [TRANSLATING.md](TRANSLATING.md).
 
 ## License
 

@@ -156,7 +156,7 @@ A few rules that keep the UI translatable:
 
 ### Testing right-to-left
 
-There's a pseudo-language `rtl-test`: English text, laid out right to left. In `pnpm dev` it's in the language picker; in a production build, set it in the browser console with `localStorage.setItem("glaze.language", "rtl-test")` and reload. `pnpm screenshots --locale rtl-test` (after `pnpm build`) saves the editor, the inspector and the Settings view to `.dev/screenshots/rtl-test/`; `--locale nl` does the same for Dutch, handy to check long labels.
+There's a pseudo-language `rtl-test`: English text, laid out right to left. In `pnpm dev` it's in the language picker; in a production build, set it in the browser console with `localStorage.setItem("glaze.language", "rtl-test")` and reload. `pnpm screenshots --locale rtl-test` (after `pnpm build`) saves the editor, the inspector and the Settings view to `.dev/screenshots/rtl-test/`; `--locale <code>` does the same for any translation, handy to check long labels.
 
 ## Tech stack
 
