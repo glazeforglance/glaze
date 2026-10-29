@@ -154,7 +154,7 @@ export function MapField({
 										className="flex min-h-9 min-w-0 flex-1 cursor-pointer items-center gap-2 text-start disabled:cursor-default"
 									>
 										<ChevronDownIcon
-											className={`size-3 shrink-0 text-muted transition-transform ${isOpen ? "" : "-rotate-90"}`}
+											className={`size-3 shrink-0 text-muted transition-transform ${isOpen ? "" : "-rotate-90 rtl:rotate-90"}`}
 										/>
 										<bdi className="truncate font-mono text-sm">{key}</bdi>
 									</button>

@@ -92,7 +92,7 @@ export function WidgetBlock({
 					<span className="min-w-0">
 						<span
 							// Nested blocks are narrow: the title may take two lines instead.
-							className={`font-semibold ${nested ? "line-clamp-2 text-[13px] break-words" : "block truncate text-sm"}`}
+							className={`font-semibold ${nested ? "line-clamp-2 text-[13px] break-words hyphens-auto" : "block truncate text-sm"}`}
 							dir="auto"
 						>
 							{title}
