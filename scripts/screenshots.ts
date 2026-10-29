@@ -5,6 +5,8 @@
 //   pnpm exec playwright install chromium      (once)
 //   pnpm screenshots
 //   GLANCE_BIN=/path/to/glance pnpm screenshots   (adds the live preview shot)
+//   pnpm screenshots --locale rtl-test            (editor, inspector and Settings
+//                                                  in one UI language, to .dev/screenshots/<locale>/)
 //
 // Every edit happens in the browser; the demo config is copied to a temp
 // folder, so nothing on disk changes. Runs on plain Node (built-in type
@@ -21,7 +23,7 @@ import {
 } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
-import { dirname, isAbsolute, join, resolve } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type Browser, chromium, type Page } from "playwright";
 
@@ -168,6 +170,12 @@ function unusableHash(): string {
 	return `scrypt:32768:8:1:${randomBytes(16).toString("base64url")}:${randomBytes(32).toString("base64url")}`;
 }
 
+/** With `--locale`: the UI language to start in (saved choice, as the picker stores it). */
+const LOCALE = (() => {
+	const index = process.argv.indexOf("--locale");
+	return index === -1 ? null : (process.argv[index + 1] ?? null);
+})();
+
 async function openPage(browser: Browser, url: string): Promise<Page> {
 	const context = await browser.newContext({
 		viewport: VIEWPORT,
@@ -177,6 +185,11 @@ async function openPage(browser: Browser, url: string): Promise<Page> {
 		// Only so the stabilising style tag may load; the app keeps its strict CSP.
 		bypassCSP: true,
 	});
+	if (LOCALE !== null) {
+		await context.addInitScript((language: string) => {
+			localStorage.setItem("glaze.language", language);
+		}, LOCALE);
+	}
 	const page = await context.newPage();
 	await page.goto(url);
 	await page.addStyleTag({ content: STABLE_CSS });
@@ -190,10 +203,30 @@ async function settle(page: Page): Promise<void> {
 	await page.waitForTimeout(300);
 }
 
-async function shoot(page: Page, name: string): Promise<void> {
+async function shoot(page: Page, name: string, folder = OUT): Promise<void> {
 	await settle(page);
-	await page.screenshot({ path: join(OUT, name) });
-	console.log(`✓ docs/screenshots/${name}`);
+	await page.screenshot({ path: join(folder, name) });
+	console.log(`✓ ${relative(ROOT, join(folder, name)).replaceAll("\\", "/")}`);
+}
+
+/**
+ * Editor, inspector and Settings in one UI language, for checking layouts
+ * (long labels, right-to-left). Uses no translated names to find things:
+ * page and widget titles come from the demo config, views from Ctrl+1–4.
+ */
+async function localeShots(browser: Browser, url: string, locale: string) {
+	const folder = join(ROOT, ".dev/screenshots", locale);
+	mkdirSync(folder, { recursive: true });
+	const page = await openEditor(browser, url);
+	await page.getByRole("tab", { name: "Homelab", exact: true }).click();
+	await shoot(page, "editor.png", folder);
+	await page.getByRole("button", { name: /^Services monitor/ }).click();
+	await page.locator("#inspector-panel-settings").waitFor();
+	await shoot(page, "inspector.png", folder);
+	await page.keyboard.press("Control+4");
+	await page.locator("nav").first().waitFor();
+	await shoot(page, "settings.png", folder);
+	await page.context().close();
 }
 
 async function openEditor(browser: Browser, url: string): Promise<Page> {
@@ -400,6 +433,10 @@ async function main(): Promise<void> {
 
 	const browser = await chromium.launch();
 	try {
+		if (LOCALE !== null) {
+			await localeShots(browser, editorUrl, LOCALE);
+			return;
+		}
 		await editorShot(browser, editorUrl);
 		if (glanceUrl !== null) await codePreviewShot(browser, editorUrl);
 		await validationShot(browser, editorUrl);
