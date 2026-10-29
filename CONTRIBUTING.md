@@ -32,6 +32,7 @@ pnpm biome format --write .
 pnpm build
 pnpm brand --check
 pnpm schemas --check
+pnpm i18n --check
 ```
 
 CI runs the same checks, builds the Docker image and smoke-tests it. Every `pnpm` script is described in
@@ -48,6 +49,14 @@ If your change is visible in the UI, update [docs/usage.md](docs/usage.md) and r
 - Tests: Vitest, in each package's `test/` folder.
 - Commits follow [Conventional Commits](https://www.conventionalcommits.org/):
   `feat(core): …`, `fix(web): …`, `test(server): …`, `docs: …`, `chore: …`.
+
+## Text in the UI
+
+Every text people see goes through `t()`; add the English text to
+`apps/web/src/locales/en/app.json` (widget and setting labels: to
+`packages/schemas/overrides.ts`, then `pnpm schemas`). See
+[docs/development.md](docs/development.md#adding-a-text-to-the-ui). Translations
+into other languages are welcome too: [TRANSLATING.md](TRANSLATING.md).
 
 ## Working on `packages/core`
 

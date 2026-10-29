@@ -140,7 +140,8 @@ describe("status table", () => {
 			{ name: "English", code: "en", translated: 1, total: 1 },
 			{ name: "Dutch (Nederlands)", code: "nl", translated: 1, total: 3 },
 		]);
-		assert.match(table, /\| Dutch \(Nederlands\) \| `nl` \| 33% \|/);
+		assert.match(table, /\| Dutch \(Nederlands\) \| `nl` +\| 33% +\|/);
+		assert.match(table, /^\| Language {11}\| Code \| Translated \|$/m);
 		const doc =
 			"a\n<!-- i18n-status:start -->\nold\n<!-- i18n-status:end -->\nb";
 		assert.equal(

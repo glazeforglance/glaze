@@ -14,11 +14,11 @@ A few words used below:
 
 The switch at the top right has four views. You can also switch with `Ctrl/Cmd + 1` to `4`.
 
-| View         | Use it to…                                                                                                    |
-| ------------ | ------------------------------------------------------------------------------------------------------------- |
-| **Design**   | Build pages: add, move and configure widgets and columns. This is where you spend most of your time.         |
-| **Code**     | See and edit the YAML itself, with the live preview of Glance next to it. Handy for copying or quick fixes.   |
-| **Preview**  | Look at your real Glance dashboard in full width, as a desktop or a phone.                                    |
+| View         | Use it to…                                                                                                  |
+| ------------ | ----------------------------------------------------------------------------------------------------------- |
+| **Design**   | Build pages: add, move and configure widgets and columns. This is where you spend most of your time.        |
+| **Code**     | See and edit the YAML itself, with the live preview of Glance next to it. Handy for copying or quick fixes. |
+| **Preview**  | Look at your real Glance dashboard in full width, as a desktop or a phone.                                  |
 | **Settings** | Change everything that isn't a page: Glance's server, its login, the document head, branding and the theme. |
 
 All four work on the same **draft**. Nothing reaches Glance until you press **Publish** (see [Publishing](#publishing)).
@@ -167,6 +167,14 @@ You never have to use the Code view, but it's there when you want it.
 
 While the YAML has an error that stops Glaze from reading it, the Design and Settings views wait until you've fixed it.
 
+## Language
+
+Glaze is available in English and Dutch (Nederlands). Pick your language in the user menu at the top right: click your name, or the globe when login is off. The login screen has a language picker too. Each language is listed in its own name, so you can find yours whatever the interface shows now. Glaze remembers the choice in this browser; without one, it follows your browser's language and falls back to English.
+
+The names of Glance's options (`hide-header`, `cache`, …) are never translated: they're shown small next to each label, so you can still find them in Glance's documentation. Your own texts (page names, widget titles) stay as you wrote them, and so does the YAML.
+
+Want Glaze in your language? See [TRANSLATING.md](../TRANSLATING.md).
+
 ## Keyboard shortcuts
 
 | Keys                       | Action                                     |
@@ -176,7 +184,9 @@ While the YAML has an error that stops Glaze from reading it, the Design and Set
 | `Delete`                   | Remove the selected widget (on the canvas) |
 | `Space`, arrows, `Space`   | Pick up, move and drop with the keyboard   |
 | `←` / `→` on a column edge | Switch the columns between small and full  |
-| `Ctrl/Cmd + F` (in code)   | Search in the file                         |
+
+In right-to-left languages the left and right arrows are mirrored, so they always move along the reading direction.
+| `Ctrl/Cmd + F` (in code) | Search in the file |
 
 ## What Glaze can't do (yet)
 

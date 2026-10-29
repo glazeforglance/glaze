@@ -140,6 +140,7 @@ Open <http://localhost:8090> and log in as `admin` with the password from step 1
 | [Configuration](docs/configuration.md)   | All environment variables, validation with Glance, the live preview, asset files     |
 | [Security](docs/security.md)             | How to run Glaze safely, sessions, reverse proxies                                   |
 | [Development](docs/development.md)       | Running from source, building, the Docker smoke test, screenshots, project structure |
+| [Translating](TRANSLATING.md)            | Glaze in your language: helping on Weblate or with a pull request                    |
 | [Changelog](CHANGELOG.md)                | What changed in each release                                                         |
 
 ## Security
@@ -157,6 +158,8 @@ The details and the reasoning behind them are in [docs/DESIGN.md](docs/DESIGN.md
 ## Contributing
 
 Ideas, bug reports and pull requests are very welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the setup and conventions, or open an issue with your use case or the widgets you'd most like to see supported next.
+
+**Translations:** Glaze speaks English and Dutch so far. Help translate it into your language, see [TRANSLATING.md](TRANSLATING.md).
 
 ## License
 

@@ -42,17 +42,18 @@ sh docker/smoke-test.sh glaze:smoke
 
 Run these from the repository root.
 
-| Command                      | What it does                                                                                                 |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `pnpm dev`                   | Starts the web app (Vite, port 5173) and the API server (port 8090) with live reload.                       |
-| `pnpm build`                 | Builds every package that has a `build` script: the web app (`apps/web/dist`) and the server bundle.         |
-| `pnpm test`                  | Runs the Vitest suites of every package, then `pnpm test:scripts`.                                           |
-| `pnpm test:scripts`          | Tests for the scripts in `scripts/` (release, schema generator), with Node's own test runner.                |
-| `pnpm typecheck`             | `tsc` for every package.                                                                                     |
-| `pnpm schemas`               | Regenerates `packages/schemas/src/generated/` from the Glance source; see [Widget schemas](#widget-schemas). |
-| `pnpm brand`                 | Regenerates the favicon, touch icon, PNG logo and social preview from `docs/brand/glaze-logo.svg`.           |
-| `pnpm screenshots`           | Re-takes the images in `docs/screenshots/`; see [Screenshots](#screenshots).                                 |
-| `pnpm release:prepare X.Y.Z` | Maintainers: sets the version and dates the changelog; see [RELEASING.md](../RELEASING.md).                   |
+| Command                      | What it does                                                                                                    |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `pnpm dev`                   | Starts the web app (Vite, port 5173) and the API server (port 8090) with live reload.                           |
+| `pnpm build`                 | Builds every package that has a `build` script: the web app (`apps/web/dist`) and the server bundle.            |
+| `pnpm test`                  | Runs the Vitest suites of every package, then `pnpm test:scripts`.                                              |
+| `pnpm test:scripts`          | Tests for the scripts in `scripts/` (release, schema generator), with Node's own test runner.                   |
+| `pnpm typecheck`             | `tsc` for every package.                                                                                        |
+| `pnpm schemas`               | Regenerates `packages/schemas/src/generated/` from the Glance source; see [Widget schemas](#widget-schemas).    |
+| `pnpm brand`                 | Regenerates the favicon, touch icon, PNG logo and social preview from `docs/brand/glaze-logo.svg`.              |
+| `pnpm screenshots`           | Re-takes the images in `docs/screenshots/`; see [Screenshots](#screenshots).                                    |
+| `pnpm i18n --check`          | Checks the translations; `--write` also updates the table in TRANSLATING.md. See [Translations](#translations). |
+| `pnpm release:prepare X.Y.Z` | Maintainers: sets the version and dates the changelog; see [RELEASING.md](../RELEASING.md).                     |
 
 Per package: `pnpm --filter web lint` (Oxlint), `pnpm --filter server start` (the production build) and `pnpm --filter server hash-password`. Formatting: `pnpm biome format --write .`. `pnpm brand --check` and `pnpm schemas --check` only compare, and fail when the committed files are stale; CI runs both.
 
@@ -129,6 +130,33 @@ GLANCE_BIN=/path/to/glance pnpm screenshots
 The live preview shot needs Glance: set `GLANCE_BIN` to a Glance v0.8.7 binary and keep port 8080 free. Without it, that shot is skipped. The script doesn't read `.env`, so pass `GLANCE_BIN` on the command line.
 
 To change or add a shot, edit the demo config (fake hosts and `${VAR}` secrets only, never anything from `.dev/`) and the matching function in [`scripts/screenshots.ts`](../scripts/screenshots.ts). Re-run the script whenever the UI changed, look at every image before committing, and keep each PNG under 400 KB.
+
+## Translations
+
+The UI uses [i18next](https://www.i18next.com/) with react-i18next. Texts live in `apps/web/src/locales/<lang>/` as i18next JSON v4: `app.json` for the interface and `fields.json` for the widget, page and setting labels. English is the source and the fallback; other languages are loaded when they're picked. How translators work (Weblate) is in [TRANSLATING.md](../TRANSLATING.md); the Weblate setup in [RELEASING.md](../RELEASING.md#weblate-setup).
+
+### Adding a text to the UI
+
+1. Add the English text to `apps/web/src/locales/en/app.json`, under the part of the app it belongs to (e.g. `canvas.addColumn`). Values go in `{{name}}`; plurals get `_one` and `_other` keys and are called with `count`.
+2. Use it: `const { t } = useTranslation();` and `t("canvas.addColumn")` in components, `i18n.t(…)` from `src/i18n.ts` outside them. Sentences with markup use `<Trans>` with named tags (`"…<file>{{file}}</file>…"`). The keys are typed, so a typo is a type error.
+3. Run `pnpm i18n --check`. It fails when the code and `en/app.json` disagree (a key nobody uses, or a key that doesn't exist).
+4. Don't touch the other languages: translators pick the new text up on Weblate. Until then it shows in English.
+
+Widget, page and setting labels are different: change them in `packages/schemas/overrides.ts` and run `pnpm schemas`, which regenerates `en/fields.json`. Never edit that file by hand.
+
+A few rules that keep the UI translatable:
+
+- Never build a sentence from pieces (`"Add " + name`); give translators the whole sentence with a placeholder.
+- Errors from `@glaze/core` and the server carry a `code` and `params`; `src/lib/messages.ts` turns them into sentences. Add a sentence there (and under `problems`, `editErrors` or `api`) when you add a code. Glance's own messages stay English.
+- Glance option names, YAML and code are never translated. Show user text (titles, page names) with `dir="auto"` or `<bdi>`, and code, URLs and keys with `dir="ltr"`.
+- Use logical Tailwind utilities (`ms-`, `pe-`, `start-`, `border-s`, `text-start`), never `ml-`/`left-`/`text-left`. Anything with a direction in behaviour (arrow keys, drag & drop, resize handles) goes through `src/lib/direction.ts`.
+- Dates and numbers: `formatTime` / `formatNumber` from `src/lib/format.ts`, with the locale from `useLanguage()`.
+
+`node apps/web/scripts/find-literals.ts` lists texts in JSX or attributes that don't go through `t()`, with the few justified exceptions (product name, file names, URL placeholders).
+
+### Testing right-to-left
+
+There's a pseudo-language `rtl-test`: English text, laid out right to left. In `pnpm dev` it's in the language picker; in a production build, set it in the browser console with `localStorage.setItem("glaze.language", "rtl-test")` and reload. `pnpm screenshots --locale rtl-test` (after `pnpm build`) saves the editor, the inspector and the Settings view to `.dev/screenshots/rtl-test/`; `--locale nl` does the same for Dutch, handy to check long labels.
 
 ## Tech stack
 

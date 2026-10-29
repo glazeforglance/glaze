@@ -243,16 +243,26 @@ export interface StatusRow {
  * @returns The table.
  */
 export function statusTable(rows: readonly StatusRow[]): string {
-	const lines = [
-		"| Language | Code | Translated |",
-		"| -------- | ---- | ---------- |",
+	const cells = [
+		["Language", "Code", "Translated"],
 		...rows.map((row) => {
 			const percent =
 				row.total === 0 ? 100 : Math.floor((row.translated / row.total) * 100);
-			return `| ${row.name} | \`${row.code}\` | ${percent}% |`;
+			return [row.name, `\`${row.code}\``, `${percent}%`];
 		}),
 	];
-	return lines.join("\n");
+	// Padded like Biome formats Markdown tables, so the two never disagree.
+	const widths = [0, 1, 2].map((column) =>
+		Math.max(...cells.map((row) => [...(row[column] ?? "")].length)),
+	);
+	const line = (row: readonly string[]) =>
+		`| ${row.map((cell, i) => cell + " ".repeat((widths[i] ?? 0) - [...cell].length)).join(" | ")} |`;
+	const [header = [], ...body] = cells;
+	return [
+		line(header),
+		`| ${widths.map((width) => "-".repeat(width)).join(" | ")} |`,
+		...body.map(line),
+	].join("\n");
 }
 
 export const STATUS_START = "<!-- i18n-status:start -->";
