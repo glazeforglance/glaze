@@ -1,0 +1,627 @@
+{
+	"problems": {
+		"atLine": "Regel {{line}}: {{text}}",
+		"emptySize": "leeg",
+		"unresolved-alias": "Alias *{{alias}} heeft geen bijbehorend anker &{{alias}}",
+		"no-pages": "De config heeft minstens één pagina nodig",
+		"no-columns": "Een pagina heeft minstens één kolom nodig",
+		"too-many-columns": "Een pagina kan hoogstens {{max}} kolommen hebben",
+		"invalid-column-size": "Kolomgrootte moet \"small\" of \"full\" zijn, niet {{size}}",
+		"full-column-count": "Een pagina heeft 1 of 2 \"full\"-kolommen nodig, deze heeft er {{count}}",
+		"nested-group": "Een group kan geen {{type}} bevatten",
+		"split-in-head": "Head-widgets kunnen niet gesplitst worden; zet de split-column in een kolom",
+		"column-needs-full": "Een pagina heeft minstens één brede kolom nodig, dus deze moet breed blijven.",
+		"column-too-many-full": "Een pagina kan hoogstens twee brede kolommen hebben; maak eerst een andere smal.",
+		"slug-reserved": "\"{{slug}}\" is gereserveerd door Glance; kies een ander URL-pad.",
+		"slug-taken": "Pagina {{page}} gebruikt het URL-pad \"{{slug}}\" al; Glance zou er maar één tonen.",
+		"host-not-text": "Host moet tekst zijn.",
+		"host-is-url": "Host is het adres waarop Glance luistert, geen URL. Laat het leeg om overal te luisteren.",
+		"host-unclosed-bracket": "Host heeft een [ zonder sluitende ].",
+		"host-bad-ipv6": "Host heeft haakjes, maar er staat geen geldig IPv6-adres tussen.",
+		"host-ipv6-needs-brackets": "Zet een IPv6-adres tussen haakjes, bijv. [{{host}}]. Glance zet de poort erachter.",
+		"host-invalid": "Host moet een IP-adres of hostnaam zijn. Laat het leeg om overal te luisteren.",
+		"port-invalid": "Poort moet een heel getal van 1 tot 65535 zijn.",
+		"base-url-invalid": "Base-URL moet met / beginnen (bijv. /glance) of een volledige http(s)-URL zijn.",
+		"listen-in-container": "Glance draait in een container. Dit is de poort binnen de container. Je Docker-poortkoppeling stuurt verkeer nog naar de oude poort, dus Glance wordt onbereikbaar. Pas liever de poortkoppeling aan.",
+		"missing-option": "{{widget}} heeft een waarde nodig voor “{{option}}”",
+		"missing-option-in-list": "{{widget}} heeft een waarde nodig voor “{{option}}” in {{list}}, item {{item}}",
+		"unknown-option": "Onbekende optie \"{{key}}\"; Glance negeert die",
+		"unknown-option-suggestion": "Onbekende optie \"{{key}}\". Bedoel je \"{{suggestion}}\"?",
+		"glance-validation-off": "Glance-validatie staat uit — stel GLANCE_BIN in",
+		"glance-output": "Glance: {{output}}",
+		"glance-output-machine": "Glance: {{output}} (kan hier niet gecontroleerd worden)",
+		"glance-reads-file": "{{reference}} leest een bestand op de machine van Glance; dat kan hier niet gecontroleerd worden",
+		"assets-unchecked": "De assets-map van Glance kan hier niet gecontroleerd worden. Stel GLAZE_ASSETS_PATH in zodat Glaze hem kan controleren.",
+		"assets-path-missing": "GLAZE_ASSETS_PATH bestaat niet binnen Glaze, dus de assets-map van Glance kan niet gecontroleerd worden.",
+		"glance-unrunnable": "GLANCE_BIN kan niet gestart worden; Glance-validatie is overgeslagen",
+		"glance-timeout": "Glance deed er te lang over om de config te valideren",
+		"glance-failed": "Glance-validatie kon niet draaien: {{reason}}",
+		"too-many-columns-slim": "Een smalle pagina kan hoogstens {{max}} kolommen hebben"
+	},
+	"editErrors": {
+		"invalid-path": "Die plek bestaat niet in de config.",
+		"not-found": "Dat deel van de config is veranderd. Probeer het opnieuw.",
+		"index-out-of-range": "Die positie bestaat niet meer. Probeer het opnieuw.",
+		"unsupported-structure": "Dit deel van de YAML is zo geschreven dat de editor het niet kan aanpassen. Gebruik de Code-weergave.",
+		"widget-is-alias": "Deze widget is een alias (*naam); pas de widget met het anker aan.",
+		"option-not-found": "Die optie staat hier niet.",
+		"option-inherited": "Deze waarde komt uit een merge key (<<: *anker); hier aanpassen zou het anker veranderen. Gebruik de Code-weergave.",
+		"option-is-alias": "Deze waarde is een alias (*naam); aanpassen zou de waarde bij het anker veranderen. Gebruik de Code-weergave.",
+		"invalid-move": "Een widget kan daar niet heen.",
+		"duplicate-key": "“{{key}}” staat hier al.",
+		"layout-violation": "Dat breekt een van de lay-outregels van Glance.",
+		"invalid-result": "Die wijziging zou de YAML breken.",
+		"invalid-result-detail": "Die wijziging zou de YAML breken: {{detail}}",
+		"invalid-result-alias": "Die wijziging zou de YAML breken: alias *{{alias}} heeft geen bijbehorend anker &{{alias}}"
+	},
+	"dnd": {
+		"list": {
+			"head": "head-widgets",
+			"column": "kolom {{number}}",
+			"splitIn": "split-column in {{where}}",
+			"groupIn": "group in {{where}}"
+		},
+		"dropToAdd": "Loslaten om “{{name}}” toe te voegen",
+		"dropToMove": "Loslaten om “{{name}}” te verplaatsen",
+		"add": "“{{name}}” toevoegen",
+		"move": "“{{name}}” verplaatsen",
+		"sideBySide": "naast elkaar",
+		"instructions": "Druk op spatie of Enter om een widget op te pakken. Verplaats hem met de pijltjestoetsen, zet hem neer met spatie of Enter, en annuleer met Escape.",
+		"announce": {
+			"nowhere": "geen neerzetplek",
+			"besideBefore": "{{list}}, naast elkaar, vóór de widget op positie {{position}}",
+			"besideAfter": "{{list}}, naast elkaar, na de widget op positie {{position}}",
+			"position": "{{list}}, positie {{position}}",
+			"widget": "widget",
+			"pickedUp": "{{name}} opgepakt.",
+			"willPlace": "{{name}} komt in {{where}}.",
+			"dropped": "{{name}} is neergezet in {{where}}.",
+			"droppedOutside": "{{name}} is buiten een neerzetplek losgelaten.",
+			"cancelled": "Verplaatsen van {{name}} is geannuleerd."
+		}
+	},
+	"api": {
+		"unreachable": "De Glaze-API is niet bereikbaar. Draait de server?",
+		"unreachableKept": "De Glaze-API is niet bereikbaar. Je wijzigingen zijn er nog.",
+		"aborted": "Geannuleerd",
+		"badResponse": "De API gaf een onverwacht antwoord",
+		"status": "De API antwoordde {{status}}",
+		"fileConflict": "{{name}} is op schijf veranderd sinds het geladen is. Herlaad Glaze voor de nieuwe versie.",
+		"fileError": "{{name}}: {{message}}",
+		"tooManyAttempts_one": "Te veel mislukte pogingen. Probeer het over {{count}} minuut opnieuw.",
+		"tooManyAttempts_other": "Te veel mislukte pogingen. Probeer het over {{count}} minuten opnieuw.",
+		"unauthorized": "Log in om Glaze te gebruiken",
+		"rate-limited": "Te veel mislukte inlogpogingen. Probeer het later opnieuw.",
+		"bad-request": "Glaze stuurde een verzoek dat de server niet begrijpt. Herlaad de pagina en probeer het opnieuw.",
+		"invalid-credentials": "Verkeerde gebruikersnaam of wachtwoord.",
+		"conflict": "Het bestand is op schijf veranderd sinds het geladen is",
+		"invalid": "Glance kan deze config niet gebruiken",
+		"unconfirmed": "Deze wijziging moet je bevestigen",
+		"not-found": "Het bestand is niet gevonden",
+		"io-error": "Het bestand kon niet gelezen of geschreven worden: {{reason}}",
+		"invalid-name": "Ongeldige bestandsnaam",
+		"not-referenced": "De config gebruikt dit bestand niet",
+		"no-assets-path": "De config heeft geen server.assets-path",
+		"outside-config-folder": "server.assets-path ligt buiten de map van de config. Koppel in Docker de assets-map van Glance ook in Glaze en zet GLAZE_ASSETS_PATH daarop (zie de README).",
+		"not-text": "Het bestand is geen UTF-8-tekst",
+		"too-large": "Het bestand is groter dan 1 MB",
+		"too-short": "Glance heeft een wachtwoord van minstens {{min}} tekens nodig",
+		"too-long": "Een wachtwoord kan hoogstens {{max}} bytes zijn (bcrypt negeert de rest)",
+		"invalidYaml": "De YAML bevat fouten"
+	},
+	"widget": {
+		"include": "Include",
+		"unknownType": "Onbekend"
+	},
+	"page": {
+		"newName": "Nieuwe pagina",
+		"newNameNumbered": "Nieuwe pagina {{number}}",
+		"untitled": "Naamloze pagina"
+	},
+	"views": {
+		"design": "Ontwerp",
+		"code": "Code",
+		"preview": "Voorbeeld",
+		"settings": "Instellingen",
+		"label": "Weergave",
+		"shortcut": "{{view}} (Ctrl+{{key}})"
+	},
+	"library": {
+		"groups": {
+			"basics": "Basis",
+			"server": "Server",
+			"media": "Media & nieuws",
+			"advanced": "Geavanceerd"
+		},
+		"panelName": "widgetbibliotheek",
+		"label": "Widgetbibliotheek",
+		"noMatch": "Geen widgets gevonden voor “<query>{{query}}</query>”.",
+		"add": "{{name}} toevoegen",
+		"searchLabel": "Widgets zoeken",
+		"searchPlaceholder": "Widgets zoeken…"
+	},
+	"canvas": {
+		"columnEdge": {
+			"alreadyFullSmall": "Kolom {{left}} is al breed en kolom {{right}} al smal.",
+			"alreadySmallFull": "Kolom {{left}} is al smal en kolom {{right}} al breed.",
+			"plan": "Kolom {{number}} → {{size}}",
+			"label": "Kolombreedtes rond de rand tussen kolom {{left}} en {{right}}",
+			"title": "Sleep (of gebruik de pijltjestoetsen) om de kolommen tussen smal en breed te wisselen"
+		},
+		"subtitle": {
+			"noType": "geen type",
+			"tabs_one": "{{type}} · {{count}} tab",
+			"tabs_other": "{{type}} · {{count}} tabs",
+			"widgets_one": "{{type}} · {{count}} widget",
+			"widgets_other": "{{type}} · {{count}} widgets",
+			"alias": "{{type}} · alias"
+		},
+		"addWidget": {
+			"label": "Widget toevoegen aan {{list}}",
+			"trigger": "Widget"
+		},
+		"noPages": "Deze config heeft nog geen pagina's.",
+		"pageLabel": "Pagina {{name}}",
+		"includedPage": "Deze pagina komt uit <file>{{file}}</file> en kan hier niet bewerkt worden.",
+		"codeError": {
+			"title": "De YAML bevat fouten — Ontwerp toont de laatste geldige versie.",
+			"open": "Code openen",
+			"blocked": "De YAML in de Code-weergave bevat fouten. Los die daar eerst op voordat je hier verder gaat."
+		},
+		"column": {
+			"label": "{{column}}, {{size}}",
+			"noSize": "geen grootte"
+		},
+		"columnSize": {
+			"label": "Grootte van {{column}}: {{size}}",
+			"remove": "Kolom verwijderen…",
+			"removeTitle": "{{column}} verwijderen?",
+			"removeConfirm": "Kolom verwijderen",
+			"removeBody_one": "De {{count}} widget erin wordt ook verwijderd. Er wordt niets naar schijf geschreven totdat je publiceert.",
+			"removeBody_other": "De {{count}} widgets erin worden ook verwijderd. Er wordt niets naar schijf geschreven totdat je publiceert."
+		},
+		"notChanged": "Niet gewijzigd:",
+		"head": {
+			"label": "Head-widgets",
+			"empty": "zet hier een widget neer om hem boven alle kolommen te tonen"
+		},
+		"split": {
+			"columns_one": "{{count}} kolom · elk {{fraction}}",
+			"columns_other": "{{count}} kolommen · elk {{fraction}}",
+			"approximateTitle": "Glance plaatst deze widgets als masonry: elke widget gaat naar de kortste kolom. Glaze toont ze in leesvolgorde, rij voor rij.",
+			"approximate": "bij benadering",
+			"sharedWidth": "Alle {{count}} widgets in deze split-column krijgen deze breedte (Glance tekent gelijke kolommen).",
+			"equalColumns": "Glance tekent gelijke kolommen, dus de rest van de rij blijft leeg.",
+			"widthOf": "Breedte van {{name}}",
+			"valueText_one": "{{fraction}} van de split-column, {{count}} kolom, gedeeld door al zijn widgets",
+			"valueText_other": "{{fraction}} van de split-column, {{count}} kolommen, gedeeld door al zijn widgets",
+			"handleTitle": "Sleep om de breedte te wijzigen: ½, ⅓ of ¼ (alle widgets in deze split-column)",
+			"dissolved": "De split-column had nog maar één widget, dus die is weer een gewone widget geworden."
+		},
+		"group": {
+			"tabsOf": "Tabs van {{name}}",
+			"fallbackName": "group",
+			"empty": "Nog geen tabs: zet hier een widget neer.",
+			"tabRole": "versleepbare tab"
+		},
+		"pageSettings": "Pagina-instellingen",
+		"columnCount_one": "{{count}} kolom",
+		"columnCount_other": "{{count}} kolommen",
+		"addColumn": "Kolom toevoegen",
+		"widget": {
+			"duplicateLabel": "{{name}} dupliceren",
+			"duplicate": "Dupliceren",
+			"deleteLabel": "{{name}} verwijderen",
+			"delete": "Verwijderen (Del)",
+			"move": "{{name}} verplaatsen"
+		}
+	},
+	"settings": {
+		"auth": {
+			"usernameTooShort_one": "Glance heeft een gebruikersnaam van minstens {{count}} teken nodig.",
+			"usernameTooShort_other": "Glance heeft een gebruikersnaam van minstens {{count}} tekens nodig.",
+			"usernameTaken": "Er is al een gebruiker “{{name}}”.",
+			"usernameInCode": "Namen met punten of alleen cijfers kun je in de Code-weergave toevoegen.",
+			"newKeySet": "Er is een nieuwe geheime sleutel ingesteld. Na publiceren is iedereen uitgelogd bij Glance.",
+			"secretKey": "Geheime sleutel",
+			"secretKeyIntro": "Ondertekent de inlogsessies van Glance. Glance heeft er een nodig zodra er gebruikers zijn; wijzigen logt iedereen uit.",
+			"keyNeeded": "Glance weigert gebruikers zonder geheime sleutel. Genereer er hieronder een.",
+			"keySet": "Ingesteld:",
+			"keyHint": "Of {{env}} om hem buiten glance.yml te houden.",
+			"generate": "Nieuwe sleutel genereren",
+			"replaceTitle": "Geheime sleutel vervangen?",
+			"replaceBody": "Zodra je publiceert, moet iedereen die bij Glance is ingelogd opnieuw inloggen.",
+			"users": "Gebruikers",
+			"usersIntro": "Glance toont elke pagina aan elke gebruiker; er is geen toegang per pagina.",
+			"noUsers": "Geen gebruikers: iedereen die Glance kan bereiken, ziet het dashboard.",
+			"keyGenerated": "Glance heeft een geheime sleutel nodig voor gebruikers, dus er is er een gegenereerd.",
+			"newNameFor": "Nieuwe naam voor {{name}}",
+			"rename": "Hernoemen",
+			"saveName": "Naam opslaan",
+			"remove": "Verwijderen",
+			"hashFromEnv": "Wachtwoordhash uit <hash>{{hash}}</hash>.",
+			"hashSet": "Wachtwoord ingesteld (bcrypt-hash <hash>{{hash}}</hash>).",
+			"plainPassword": "Het wachtwoord staat als platte tekst opgeslagen; stel het opnieuw in om een hash op te slaan.",
+			"noPassword": "Geen wachtwoord: Glance weigert deze gebruiker tot er een is.",
+			"newPasswordFor": "Nieuw wachtwoord voor {{name}}",
+			"setPassword": "Wachtwoord instellen",
+			"passwordPlaceholder_one": "Minstens {{count}} teken",
+			"passwordPlaceholder_other": "Minstens {{count}} tekens",
+			"hashing": "Hashen…",
+			"addUserTitle": "Gebruiker toevoegen",
+			"userName": "Gebruikersnaam",
+			"passwordFor": "Wachtwoord voor {{name}}",
+			"passwordForNew": "Wachtwoord voor de nieuwe gebruiker",
+			"addUser": "Gebruiker toevoegen"
+		},
+		"server": {
+			"noGlanceUrl": "GLANCE_URL is niet ingesteld, dus Glaze toont geen live voorbeeld; deze opties hebben geen invloed op Glaze.",
+			"portDiffers": "Glaze opent Glance op {{url}}, maar Glance zou op poort {{port}} luisteren: pas GLANCE_URL aan als je dit publiceert.",
+			"baseUrlMoves": "Met een base-URL van {{base}} verhuizen de pagina's van Glance naar dat pad; GLANCE_URL ({{url}}) heeft dat misschien ook nodig."
+		},
+		"sectionsLabel": "Onderdelen van de instellingen",
+		"codeError": "De YAML in de Code-weergave bevat fouten. Los die daar eerst op voordat je instellingen wijzigt.",
+		"sections": {
+			"server": {
+				"name": "Server",
+				"text": "Waar Glance luistert binnen zijn eigen container of machine. Wil je Glance op een ander adres of een andere poort bereiken, pas dan je Docker-poortkoppeling of reverse proxy aan, niet deze opties."
+			},
+			"auth": {
+				"name": "Inloggen",
+				"text": "De eigen login van Glance: gebruikers en de geheime sleutel."
+			},
+			"document": {
+				"name": "Documentkop",
+				"text": "Extra HTML in de <head> van elke pagina."
+			},
+			"branding": {
+				"name": "Huisstijl",
+				"text": "Logo, footer, favicon en appnaam."
+			},
+			"theme": {
+				"name": "Thema",
+				"text": "Kleuren, contrast en themapresets."
+			}
+		},
+		"document": {
+			"warning": "Scripts hier draaien op elke pagina van je dashboard, voor iedereen die hem opent. Voeg alleen code toe die je vertrouwt.",
+			"label": "Extra <head>-HTML",
+			"hint": "Bijv. een <link> naar een lettertype, een <meta>-tag of een script zoals de Bewerk-knop van Glaze."
+		}
+	},
+	"common": {
+		"cancel": "Annuleren",
+		"dismiss": "Sluiten",
+		"undo": "Ongedaan maken",
+		"close": "Sluiten",
+		"tryAgain": "Opnieuw proberen",
+		"loading": "Laden…"
+	},
+	"topBar": {
+		"authOff": "Auth uit (dev)",
+		"authOffTitle": "Glaze v{{version}}: GLAZE_AUTH=off, iedereen die Glaze kan bereiken kan de config aanpassen. Alleen voor ontwikkeling.",
+		"undo": "Ongedaan maken",
+		"comingSoon": "Binnenkort",
+		"unsaved": "Niet-gepubliceerde wijzigingen"
+	},
+	"glanceDown": {
+		"title": "Glance kwam niet terug na deze wijziging",
+		"body": "Een verkeerd luisteradres of een verkeerde poort kan voorkomen dat Glance start, of laat het luisteren waar je Docker-poortkoppeling niet komt.",
+		"dropsEdits": "Ongedaan maken gooit ook je niet-gepubliceerde wijzigingen weg.",
+		"undo": "Laatste publicatie ongedaan maken",
+		"undoing": "Bezig met ongedaan maken…",
+		"changedSince": "glance.yml is veranderd sinds deze publicatie, dus die is niet ongedaan gemaakt. Los het op in de Code-weergave."
+	},
+	"pages": {
+		"nameLabel": "Paginanaam",
+		"thisPage": "deze pagina",
+		"actionsFor": "Acties voor pagina {{name}}",
+		"rename": "Hernoemen",
+		"moveEarlier": "Naar links",
+		"moveLater": "Naar rechts",
+		"deleteMenu": "Pagina verwijderen…",
+		"deleteTitle": "“<name>{{name}}</name>” verwijderen?",
+		"delete": "Pagina verwijderen",
+		"deleteBody": "De pagina en al haar kolommen en widgets worden uit de config verwijderd. Er wordt niets naar schijf geschreven totdat je publiceert.",
+		"tabsLabel": "Pagina's",
+		"includeNumber": "Include {{number}}",
+		"pageNumber": "Pagina {{number}}",
+		"add": "Pagina",
+		"nameRequired": "Een pagina heeft een naam nodig."
+	},
+	"publish": {
+		"published": "Gepubliceerd",
+		"buttonTitle": "Publiceren (Ctrl+S)",
+		"publishing": "Publiceren…",
+		"nothingToPublish": "Geen wijzigingen om te publiceren",
+		"button": "Publiceren",
+		"failed": "Publiceren mislukt",
+		"nothingWritten": "Er is niets geschreven. {{message}}",
+		"conflict": {
+			"title": "Het bestand is op schijf veranderd",
+			"reload": "Herladen",
+			"missing": "Het bestand ontbreekt",
+			"overwrite": "Overschrijven",
+			"body": "Iemand heeft <file>glance.yml</file> aangepast sinds je het opende.",
+			"choice": "<strong>Herladen</strong> laadt hun versie en gooit je niet-gepubliceerde wijzigingen weg. <strong>Overschrijven</strong> vervangt hun versie door de jouwe."
+		},
+		"review": {
+			"title": "Wijzigingen publiceren",
+			"checking": "Config controleren…",
+			"fixFirst": "Los eerst de fouten op, of kies Toch publiceren",
+			"confirmFirst": "Bevestig eerst de waarschuwing",
+			"anyway": "Toch publiceren",
+			"filesLabel": "Bestanden die veranderen",
+			"nothing": "Er is niets veranderd.",
+			"files_one": "{{count}} bestand wordt geschreven:",
+			"files_other": "{{count}} bestanden worden geschreven:",
+			"validation": "Validatie",
+			"checkFailed": "De config kon niet gecontroleerd worden: {{message}}. De server controleert hem opnieuw als je publiceert.",
+			"errors_one": "{{count}} fout",
+			"errors_other": "{{count}} fouten",
+			"warnings_one": "{{count}} waarschuwing",
+			"warnings_other": "{{count}} waarschuwingen",
+			"ready": "klaar om te publiceren.",
+			"yamlBroken": "De YAML kan niet gelezen worden, dus hij kan niet gepubliceerd worden, ook niet met Toch publiceren.",
+			"openCode": "Open de Code-weergave",
+			"understand": "Ik begrijp dat Glance onbereikbaar kan worden. Publiceer deze wijziging toch."
+		}
+	},
+	"userMenu": {
+		"language": "Taal",
+		"signedInAs": "Ingelogd als {{user}}",
+		"signedIn": "Ingelogd als",
+		"logOut": "Uitloggen",
+		"logOutTitle": "Uitloggen met niet-gepubliceerde wijzigingen?",
+		"logOutBody": "Je wijzigingen zijn nog niet gepubliceerd. Als je nu uitlogt, ben je ze kwijt."
+	},
+	"widths": {
+		"label_one": "{{fraction}} · {{count}} kolom",
+		"label_other": "{{fraction}} · {{count}} kolommen"
+	},
+	"panel": {
+		"show": "{{panel}} tonen",
+		"hide": "{{panel}} verbergen",
+		"resize": "Breedte van {{panel}} aanpassen"
+	},
+	"resize": {
+		"title": "Sleep om de breedte te wijzigen · dubbelklik om te herstellen"
+	},
+	"code": {
+		"resizeSplit": "Verdeling tussen code en voorbeeld aanpassen",
+		"editorLabel": "Broncode van {{file}}",
+		"fixName": "Oplossen: {{to}}",
+		"label": "Code",
+		"cursor": "regel {{line}} · {{language}}",
+		"showPreview": "Voorbeeld tonen",
+		"yamlError": "YAML-fout:",
+		"assetsUnavailable": "Assetbestanden kunnen hier niet bewerkt worden: {{reason}}",
+		"files": "Bestanden",
+		"unsavedFile": "(niet gepubliceerd)",
+		"problems": "Problemen",
+		"checking": "Controleren…",
+		"noProblems": "Geen problemen gevonden.",
+		"severity": {
+			"error": "fout:",
+			"warning": "waarschuwing:",
+			"info": "opmerking:"
+		},
+		"line": "Regel {{line}}:",
+		"fixLabel": "Oplossen: {{from}} hernoemen naar {{to}}",
+		"fix": "Oplossen",
+		"howToSetUp": "Zo stel je het in",
+		"validationUnavailable": "Validatie is niet beschikbaar: {{message}}",
+		"notLoaded": "Niet geladen"
+	},
+	"inspector": {
+		"tabs": {
+			"settings": "Instellingen",
+			"style": "Stijl",
+			"yaml": "YAML"
+		},
+		"label": "Inspector",
+		"panelName": "inspector",
+		"empty": "Selecteer een widget om de instellingen te zien, of klik op de paginatitel voor de pagina-instellingen.",
+		"page": {
+			"widthHint": "Smalle pagina's hebben hoogstens 2 kolommen; standaard en brede pagina's hoogstens 3.",
+			"included": "Deze pagina komt uit <file>{{file}}</file>; bewerk dat bestand.",
+			"slugHint": "Glance gebruikt /{{slug}} als dit leeg is.",
+			"writeSlug": "“{{slug}}” in de config zetten"
+		},
+		"yaml": {
+			"unavailable": "De YAML van deze widget kan niet getoond worden.",
+			"label": "YAML van de widget",
+			"readOnly": "Hier alleen-lezen.",
+			"edit": "Bewerk hem in de Code-weergave"
+		}
+	},
+	"preview": {
+		"connect": {
+			"title": "Koppel het live voorbeeld",
+			"body": "Vertel Glaze waar je browser Glance kan bereiken door <code>GLANCE_URL</code> in te stellen, bijvoorbeeld in <code>.env</code>:",
+			"restart": "Start daarna de Glaze-server opnieuw.",
+			"login": "Het voorbeeld toont de gepubliceerde config. Heeft Glance een login, dan log je één keer in binnen het voorbeeld."
+		},
+		"label": "Live voorbeeld",
+		"waiting": "Wachten tot Glance herladen is…",
+		"reloaded": "Glance herladen · {{time}}",
+		"device": "Apparaat",
+		"desktop": "Desktop",
+		"phone": "Telefoon (390 px)",
+		"reload": "Voorbeeld herladen",
+		"hide": "Voorbeeld verbergen",
+		"frameTitle": "Glance-voorbeeld: {{page}}",
+		"firstPage": "eerste pagina",
+		"lastPublished": "Het voorbeeld toont de laatst gepubliceerde versie.",
+		"unsavedNotIn": "Niet-gepubliceerde wijzigingen staan er nog niet in; publiceer om ze te zien."
+	},
+	"app": {
+		"loadingConfig": "glance.yml laden…",
+		"openFailed": "De config kon niet geopend worden",
+		"starting": "Glaze starten…",
+		"unreachable": "Glaze is niet bereikbaar"
+	},
+	"login": {
+		"title": "Inloggen bij Glaze",
+		"username": "Gebruikersnaam",
+		"password": "Wachtwoord",
+		"busy": "Inloggen…",
+		"submit": "Inloggen",
+		"again": "Opnieuw inloggen",
+		"sessionEnded": "Je sessie is verlopen. Log opnieuw in om verder te gaan; je niet-gepubliceerde wijzigingen zijn er nog."
+	},
+	"forms": {
+		"inheritedTitle": "Komt uit een YAML-merge key (<<: *anker)",
+		"inherited": "geërfd",
+		"override": "Overschrijven",
+		"secretTip": "Tip: schrijf hier {{env}} zodat de sleutel buiten glance.yml blijft.",
+		"hideValue": "{{label}} verbergen",
+		"showValue": "{{label}} tonen",
+		"hide": "Verberg",
+		"show": "Toon",
+		"default": "Standaard",
+		"defaultIs": "Standaard ({{value}})",
+		"valueIsDefault": "{{value}} (standaard)",
+		"glanceDefault": "Standaard van Glance",
+		"glanceDefaultValue": "Standaard van Glance ({{value}})",
+		"glanceDefaultIs": "Standaard van Glance: {{value}}.",
+		"custom": "Aangepast…",
+		"customValue": "{{label}} (aangepast)",
+		"moreOptions": "Meer opties",
+		"commaSeparated": "Scheid waarden met komma's.",
+		"envTitle": "Glance leest dit uit {{reference}}",
+		"included": "Deze widget komt uit een ander bestand: <file>{{file}}</file>. Glaze kan ingevoegde bestanden nog niet bewerken.",
+		"alias": "Deze widget is een YAML-alias (<code>*name</code>): hij toont de instellingen van een andere widget. Bewerk die widget, of pas dit item aan in de YAML.",
+		"duration": {
+			"placeholder": "bijv. 90s, 2h",
+			"every": {
+				"seconds_one": "Elke seconde",
+				"seconds_other": "Elke {{count}} seconden",
+				"minutes_one": "Elke minuut",
+				"minutes_other": "Elke {{count}} minuten",
+				"hours_one": "Elk uur",
+				"hours_other": "Elke {{count}} uur",
+				"days_one": "Elke dag",
+				"days_other": "Elke {{count}} dagen"
+			},
+			"seconds_one": "{{count}} seconde",
+			"seconds_other": "{{count}} seconden",
+			"minutes_one": "{{count}} minuut",
+			"minutes_other": "{{count}} minuten",
+			"hours_one": "{{count}} uur",
+			"hours_other": "{{count}} uur",
+			"days_one": "{{count}} dag",
+			"days_other": "{{count}} dagen"
+		},
+		"icon": {
+			"source": "{{label}}: bron",
+			"imageUrl": "Afbeeldings-URL",
+			"example": "bijv. {{example}}",
+			"invert": "Omkeren bij lichte thema's"
+		},
+		"color": {
+			"pick": "{{label}}: kies een kleur",
+			"placeholder": "tint verzadiging lichtheid",
+			"hex": "{{label}} als hex"
+		},
+		"list": {
+			"moveUp": "{{name}} omhoog",
+			"moveDown": "{{name}} omlaag",
+			"remove": "{{name}} verwijderen",
+			"add": "{{item}} toevoegen",
+			"itemNumber": "{{item}} {{number}}"
+		},
+		"map": {
+			"newKeyFor": "Nieuwe {{label}} voor {{key}}",
+			"editInYaml": "Bewerk deze in het YAML-tabblad",
+			"renameKey": "{{key}} hernoemen",
+			"rename": "Hernoemen",
+			"remove": "{{key}} verwijderen",
+			"name": "Naam",
+			"add": "Toevoegen",
+			"enterName": "Vul eerst een naam in.",
+			"taken": "\"{{key}}\" staat al in de lijst.",
+			"inYaml": "Namen met punten of alleen cijfers kun je in het YAML-tabblad toevoegen."
+		},
+		"any": {
+			"text": "Tekst",
+			"number": "Getal",
+			"boolean": "Ja/nee",
+			"list": "Lijst",
+			"map": "Map",
+			"typeOf": "{{label}}: type",
+			"removeItem": "{{label}} {{number}} verwijderen",
+			"newKeyIn": "Nieuwe sleutel in {{label}}",
+			"newKey": "Nieuwe sleutel",
+			"addItem": "Item toevoegen"
+		},
+		"base": {
+			"tabName": "Tabnaam",
+			"cssPlaceholder": "bijv. my-card"
+		},
+		"other": {
+			"title": "Andere opties",
+			"unknownFor": "Glance kent deze niet voor {{widget}}. Ze blijven zoals ze zijn; pas ze aan in het <yaml>YAML-tabblad</yaml>.",
+			"unknownType": "Glance kent dit widgettype niet. De opties blijven zoals ze zijn; pas ze aan in het <yaml>YAML-tabblad</yaml>."
+		},
+		"width": {
+			"inGroup": "Widgets in een group zijn tabs en delen de breedte van de group.",
+			"inHead": "Head-widgets kunnen niet gesplitst worden; ze blijven één rij boven de kolommen.",
+			"splitLabel": "Kolommen naast elkaar",
+			"label": "Breedte",
+			"full": "Vol",
+			"fullLabel": "Volle breedte",
+			"fractionLabel_one": "{{fraction}} breedte, {{count}} kolom",
+			"fractionLabel_other": "{{fraction}} breedte, {{count}} kolommen",
+			"shared_one": "{{count}} widget in deze split-column deelt deze breedte: Glance tekent gelijke kolommen.",
+			"shared_other": "Alle {{count}} widgets in deze split-column delen deze breedte: Glance tekent gelijke kolommen.",
+			"alone": "Alleen in zijn split-column: de rest van de rij blijft leeg tot je er een widget naast zet.",
+			"noWidth": "Glance kent geen breedte per widget; ½, ⅓ en ¼ zetten hem in een split-column.",
+			"unwrap": "Zet deze widgets weer onder elkaar",
+			"nested": "Deze split-column zit in een andere split-column, die zijn buitenbreedte bepaalt."
+		},
+		"template": {
+			"title": "Spiekbriefje voor templates",
+			"jsonString": "een waarde uit het antwoord (ook .Int, .Float, .Bool)",
+			"jsonArray": "een lijst om met range doorheen te lopen",
+			"jsonExists": "of een waarde bestaat",
+			"subrequest": "het antwoord van een subrequest",
+			"options": "een waarde uit options",
+			"relativeTime": "“2 uur geleden”, steeds bijgewerkt",
+			"numbers": "1.234 en 1,2k",
+			"arithmetic": "rekenen",
+			"text": "teksthulpjes",
+			"classes": "de eigen CSS-klassen van Glance"
+		},
+		"containers": {
+			"name": "Containernaam",
+			"displayName": "Weergavenaam",
+			"url": "URL",
+			"description": "Beschrijving",
+			"icon": "Icoon",
+			"hide": "Deze container verbergen",
+			"sameTab": "In hetzelfde tabblad openen",
+			"parent": "Ouder",
+			"parentHint": "De glance.id van een container om deze eronder te tonen.",
+			"id": "Id"
+		},
+		"errors": {
+			"text": "{{label}}: gebruik tekst",
+			"wholeNumber": "{{label}}: vul een heel getal in",
+			"min": "{{label}}: gebruik {{min}} of meer",
+			"number": "{{label}}: vul een getal in",
+			"variant": "{{label}}: deze vorm wordt niet ondersteund",
+			"boolean": "{{label}}: gebruik true of false",
+			"list": "{{label}}: gebruik een lijst",
+			"map": "{{label}}: gebruik namen met waarden",
+			"required": "{{label}} is verplicht",
+			"duration": "Gebruik een getal en een eenheid: 30s, 5m, 1h of 1d",
+			"url": "Begin het adres met http:// of https://",
+			"wholeNumberPlain": "Vul een heel getal in",
+			"minPlain": "Gebruik {{min}} of meer",
+			"oneOf": "Gebruik een van: {{values}}",
+			"color": "Gebruik tint verzadiging lichtheid, bijv. 240 13 95",
+			"booleanPlain": "Gebruik true of false"
+		}
+	}
+}
