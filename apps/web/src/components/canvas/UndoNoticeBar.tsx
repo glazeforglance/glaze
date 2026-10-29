@@ -1,4 +1,5 @@
 import { useEditor } from "../../store/editor-store.ts";
+import { useTranslation } from "react-i18next";
 
 /**
  * Tells the user about a change Glaze made by itself (e.g. dissolving a
@@ -6,6 +7,7 @@ import { useEditor } from "../../store/editor-store.ts";
  * @returns The message, or nothing when there is none.
  */
 export function UndoNoticeBar() {
+	const { t } = useTranslation();
 	const notice = useEditor((state) => state.undoNotice);
 	const undo = useEditor((state) => state.undoFromNotice);
 	const dismiss = useEditor((state) => state.dismissUndoNotice);
@@ -21,14 +23,14 @@ export function UndoNoticeBar() {
 				onClick={undo}
 				className="cursor-pointer rounded-sm px-2 font-semibold text-info hover:underline"
 			>
-				Undo
+				{t("common.undo")}
 			</button>
 			<button
 				type="button"
 				onClick={dismiss}
 				className="cursor-pointer rounded-sm px-2 text-muted hover:text-text"
 			>
-				Dismiss
+				{t("common.dismiss")}
 			</button>
 		</div>
 	);

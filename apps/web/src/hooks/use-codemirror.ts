@@ -18,6 +18,7 @@ import {
 	glazeEditorTheme,
 	glazeHighlightStyle,
 } from "../lib/codemirror/theme.ts";
+import { i18n } from "../i18n.ts";
 
 /** The languages the code view can show. */
 export type CodeLanguage = "yaml" | "css" | "javascript";
@@ -110,7 +111,11 @@ export function useCodeMirror(options: CodeMirrorOptions): {
 					selectionHighlightField,
 					// Lets CodeMirror's <style> elements pass the CSP (see lib/csp.ts).
 					EditorView.cspNonce.of(cspNonce()),
-					EditorView.contentAttributes.of({ "aria-label": `${label} source` }),
+					EditorView.contentAttributes.of({
+						"aria-label": i18n.t("code.editorLabel", { file: label }),
+					}),
+					// Code is always left to right, whatever the UI language.
+					EditorView.editorAttributes.of({ dir: "ltr" }),
 					EditorView.updateListener.of((update) => {
 						const external = update.transactions.some(
 							(transaction) => transaction.annotation(External) === true,

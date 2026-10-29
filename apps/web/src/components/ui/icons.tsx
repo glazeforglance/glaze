@@ -46,9 +46,14 @@ export function PlusIcon({ className = "size-3.5" }: IconProps) {
 	);
 }
 
+/** Points backwards, so it is mirrored in right-to-left languages. */
 export function UndoIcon({ className = "size-4" }: IconProps) {
 	return (
-		<svg viewBox="0 0 16 16" className={className} aria-hidden="true">
+		<svg
+			viewBox="0 0 16 16"
+			className={`${className} rtl:-scale-x-100`}
+			aria-hidden="true"
+		>
 			<path d="M6 4 3 7l3 3M3 7h6.5a3.5 3.5 0 0 1 0 7H7" {...STROKE} />
 		</svg>
 	);
@@ -164,15 +169,35 @@ export function UserIcon({ className = "size-4" }: IconProps) {
 	);
 }
 
-/** A window with a side bar: collapse or expand a side panel. */
+/** A globe: the UI language. */
+export function LanguageIcon({ className = "size-4" }: IconProps) {
+	return (
+		<svg viewBox="0 0 16 16" className={className} aria-hidden="true">
+			<circle cx="8" cy="8" r="5.75" {...STROKE} />
+			<path
+				d="M2.25 8h11.5M8 2.25c1.6 1.6 2.4 3.5 2.4 5.75S9.6 12.15 8 13.75M8 2.25C6.4 3.85 5.6 5.75 5.6 8s.8 4.15 2.4 5.75"
+				{...STROKE}
+			/>
+		</svg>
+	);
+}
+
+/**
+ * A window with a side bar: collapse or expand a side panel. `side` is in
+ * reading order; the icon is mirrored in right-to-left languages.
+ */
 export function PanelIcon({
 	className = "size-4",
 	side,
-}: IconProps & { readonly side: "left" | "right" }) {
+}: IconProps & { readonly side: "start" | "end" }) {
 	return (
-		<svg viewBox="0 0 16 16" className={className} aria-hidden="true">
+		<svg
+			viewBox="0 0 16 16"
+			className={`${className} rtl:-scale-x-100`}
+			aria-hidden="true"
+		>
 			<rect x="2" y="3" width="12" height="10" rx="1.5" {...STROKE} />
-			<path d={side === "left" ? "M6 3v10" : "M10 3v10"} {...STROKE} />
+			<path d={side === "start" ? "M6 3v10" : "M10 3v10"} {...STROKE} />
 		</svg>
 	);
 }

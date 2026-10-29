@@ -1,26 +1,28 @@
 import { PresetField } from "./PresetField.tsx";
 import type { SelectOption } from "./SelectField.tsx";
+import { i18n } from "../../i18n.ts";
 
-const PRESETS: readonly SelectOption[] = [
-	{ value: "30s", label: "Every 30 seconds" },
-	{ value: "1m", label: "Every minute" },
-	{ value: "5m", label: "Every 5 minutes" },
-	{ value: "15m", label: "Every 15 minutes" },
-	{ value: "30m", label: "Every 30 minutes" },
-	{ value: "1h", label: "Every hour" },
-	{ value: "6h", label: "Every 6 hours" },
-	{ value: "12h", label: "Every 12 hours" },
-	{ value: "1d", label: "Every day" },
-];
+const PRESETS = ["30s", "1m", "5m", "15m", "30m", "1h", "6h", "12h", "1d"];
 
 /** Short choices for a timeout-like duration rather than a refresh interval. */
-const SHORT_PRESETS: readonly SelectOption[] = [
-	{ value: "1s", label: "1 second" },
-	{ value: "3s", label: "3 seconds" },
-	{ value: "5s", label: "5 seconds" },
-	{ value: "10s", label: "10 seconds" },
-	{ value: "30s", label: "30 seconds" },
-];
+const SHORT_PRESETS = ["1s", "3s", "5s", "10s", "30s"];
+
+const UNITS = { s: "seconds", m: "minutes", h: "hours", d: "days" } as const;
+
+/** "Every 5 minutes" or "5 seconds" for a duration like `5m`, in the UI language. */
+function presetLabel(value: string, every: boolean): string {
+	const match = /^(\d+)([smhd])$/.exec(value);
+	const unit = match ? UNITS[match[2] as keyof typeof UNITS] : undefined;
+	if (!match || !unit) return value;
+	const count = Number(match[1]);
+	return every
+		? i18n.t(`forms.duration.every.${unit}`, { count })
+		: i18n.t(`forms.duration.${unit}`, { count });
+}
+
+function presets(values: readonly string[], every: boolean): SelectOption[] {
+	return values.map((value) => ({ value, label: presetLabel(value, every) }));
+}
 
 export interface DurationFieldProps {
 	readonly name: string;
@@ -45,8 +47,13 @@ export function DurationField({
 	return (
 		<PresetField
 			{...props}
-			presets={scale === "short" ? SHORT_PRESETS : PRESETS}
-			customPlaceholder="e.g. 90s, 2h"
+			defaultLabel={props.defaultLabel ?? i18n.t("forms.glanceDefault")}
+			presets={
+				scale === "short"
+					? presets(SHORT_PRESETS, false)
+					: presets(PRESETS, true)
+			}
+			customPlaceholder={i18n.t("forms.duration.placeholder")}
 		/>
 	);
 }

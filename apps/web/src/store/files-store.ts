@@ -7,6 +7,7 @@ import {
 	fetchFile,
 	fetchFiles,
 } from "../lib/api.ts";
+import { i18n } from "../i18n.ts";
 
 /** One asset file open in the code view. */
 export interface AssetFile {
@@ -100,7 +101,7 @@ export function createFilesStore(): StoreApi<FilesStore> {
 								name,
 								language,
 								status: "error",
-								error: content ?? "Not loaded",
+								error: content ?? i18n.t("code.notLoaded"),
 								text: "",
 								savedText: "",
 								version: null,

@@ -19,6 +19,8 @@ import {
 	widgetTarget,
 	WidgetFormContext,
 } from "./use-widget-form.ts";
+import { Trans } from "react-i18next";
+import { editErrorText } from "../lib/messages.ts";
 
 const NO_OPTIONS: ReadonlyMap<string, WidgetOption> = new Map();
 
@@ -51,14 +53,18 @@ export function WidgetForm({ widget, tab, onShowYaml }: WidgetFormProps) {
 	if (widget.include !== null) {
 		return (
 			<FormNotice>
-				This widget comes from another file:{" "}
-				<code className="font-mono text-text">{widget.include}</code>. Glaze
-				can't edit included files yet.
+				<Trans
+					i18nKey="forms.included"
+					values={{ file: widget.include }}
+					components={{
+						file: <code dir="ltr" className="font-mono text-text" />,
+					}}
+				/>
 			</FormNotice>
 		);
 	}
 	if (!read) return null;
-	if (!read.ok) return <FormNotice>{read.error.message}</FormNotice>;
+	if (!read.ok) return <FormNotice>{editErrorText(read.error)}</FormNotice>;
 
 	const definition = formFor(widget.type);
 	const readOnly = read.value.isAlias;
@@ -87,10 +93,10 @@ export function WidgetForm({ widget, tab, onShowYaml }: WidgetFormProps) {
 			<WidgetTypeContext value={schema?.type ?? null}>
 				{readOnly && (
 					<FormNotice tone="violet">
-						This widget is a YAML alias (
-						<code className="font-mono">*name</code>
-						): it shows another widget's settings. Edit that widget instead, or
-						change this item in the YAML.
+						<Trans
+							i18nKey="forms.alias"
+							components={{ code: <code dir="ltr" className="font-mono" /> }}
+						/>
 					</FormNotice>
 				)}
 				<form noValidate onSubmit={(event) => event.preventDefault()}>

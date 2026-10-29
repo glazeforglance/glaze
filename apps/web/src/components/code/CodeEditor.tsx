@@ -10,5 +10,12 @@ import {
  */
 export function CodeEditor(props: CodeMirrorOptions) {
 	const { containerRef } = useCodeMirror(props);
-	return <div ref={containerRef} className="h-full min-h-0 overflow-hidden" />;
+	// Code reads left to right in every UI language.
+	return (
+		<div
+			ref={containerRef}
+			dir="ltr"
+			className="h-full min-h-0 overflow-hidden"
+		/>
+	);
 }

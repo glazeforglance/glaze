@@ -5,6 +5,7 @@ import { listsOfPage } from "../../lib/drop-target.ts";
 import { selectCurrentPage, useEditor } from "../../store/editor-store.ts";
 import { DragPreview } from "./DragPreview.tsx";
 import { DragStateContext } from "./drag-state.ts";
+import { useLanguage } from "../../i18n.ts";
 
 export interface EditorDndContextProps {
 	readonly children: ReactNode;
@@ -17,7 +18,12 @@ export interface EditorDndContextProps {
  */
 export function EditorDndContext({ children }: EditorDndContextProps) {
 	const page = useEditor(selectCurrentPage);
-	const lists = useMemo(() => (page ? listsOfPage(page) : []), [page]);
+	// The lists carry translated labels, so they follow the language too.
+	const { language } = useLanguage();
+	const lists = useMemo(
+		() => (page && language ? listsOfPage(page) : []),
+		[page, language],
+	);
 	const { state, dndProps } = useEditorDnd(lists);
 
 	return (

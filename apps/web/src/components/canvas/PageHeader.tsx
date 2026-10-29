@@ -2,6 +2,7 @@ import type { PageNode } from "@glaze/core";
 import { useEditor } from "../../store/editor-store.ts";
 import { Button } from "../ui/Button.tsx";
 import { PlusIcon } from "../ui/icons.tsx";
+import { useTranslation } from "react-i18next";
 
 export interface PageHeaderProps {
 	readonly page: PageNode;
@@ -13,6 +14,7 @@ export interface PageHeaderProps {
  * @returns The header row.
  */
 export function PageHeader({ page }: PageHeaderProps) {
+	const { t } = useTranslation();
 	const count = page.columns.length;
 	const addColumn = useEditor((state) => state.addColumn);
 	const openPageSettings = useEditor((state) => state.openPageSettings);
@@ -22,24 +24,29 @@ export function PageHeader({ page }: PageHeaderProps) {
 				<button
 					type="button"
 					onClick={openPageSettings}
-					title="Page settings"
-					className="cursor-pointer rounded-sm text-left hover:text-accent"
+					title={t("canvas.pageSettings")}
+					dir="auto"
+					className="cursor-pointer rounded-sm text-start hover:text-accent"
 				>
-					{page.name ?? "Untitled page"}
+					{page.name ?? t("page.untitled")}
 				</button>
 			</h1>
 			<p className="font-mono text-xs text-muted">
-				{page.slug ? `/${page.slug} · ` : ""}
-				{count} {count === 1 ? "column" : "columns"}
+				{page.slug && (
+					<>
+						<bdi dir="ltr">/{page.slug}</bdi> ·{" "}
+					</>
+				)}
+				{t("canvas.columnCount", { count })}
 				{page.width ? ` · ${page.width}` : ""}
 			</p>
-			<div className="ml-auto flex gap-2">
+			<div className="ms-auto flex gap-2">
 				{/* New columns are small; core refuses a 4th column (3rd on a slim page) with a notice. */}
 				<Button onClick={() => addColumn("small")}>
 					<PlusIcon />
-					Add column
+					{t("canvas.addColumn")}
 				</Button>
-				<Button onClick={openPageSettings}>Page settings</Button>
+				<Button onClick={openPageSettings}>{t("canvas.pageSettings")}</Button>
 			</div>
 		</div>
 	);

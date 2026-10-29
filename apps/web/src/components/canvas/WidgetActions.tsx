@@ -1,11 +1,12 @@
 import { useEditor } from "../../store/editor-store.ts";
 import { CopyIcon, TrashIcon } from "../ui/icons.tsx";
+import { useTranslation } from "react-i18next";
 
 export interface WidgetActionsProps {
 	readonly widgetId: string;
 	/** Widget title, for the buttons' accessible names. */
 	readonly title: string;
-	/** `corner`: over the block's top-right corner; `row`: a row of its own (narrow nested blocks). */
+	/** `corner`: over the block's top inline-end corner; `row`: a row of its own (narrow nested blocks). */
 	readonly placement?: "corner" | "row";
 }
 
@@ -23,20 +24,21 @@ export function WidgetActions({
 	title,
 	placement = "corner",
 }: WidgetActionsProps) {
+	const { t } = useTranslation();
 	const duplicateWidget = useEditor((state) => state.duplicateWidget);
 	const removeWidget = useEditor((state) => state.removeWidget);
 	return (
 		<div
 			className={
 				placement === "corner"
-					? "absolute top-2 right-2 flex gap-1"
+					? "absolute top-2 end-2 flex gap-1"
 					: "flex justify-end gap-1 px-1.5 pb-1.5"
 			}
 		>
 			<button
 				type="button"
-				aria-label={`Duplicate ${title}`}
-				title="Duplicate"
+				aria-label={t("canvas.widget.duplicateLabel", { name: title })}
+				title={t("canvas.widget.duplicate")}
 				onClick={() => duplicateWidget(widgetId)}
 				className={`${ACTION} hover:text-text`}
 			>
@@ -44,8 +46,8 @@ export function WidgetActions({
 			</button>
 			<button
 				type="button"
-				aria-label={`Delete ${title}`}
-				title="Delete (Del)"
+				aria-label={t("canvas.widget.deleteLabel", { name: title })}
+				title={t("canvas.widget.delete")}
 				onClick={() => removeWidget(widgetId)}
 				className={`${ACTION} hover:border-danger/50 hover:text-danger`}
 			>

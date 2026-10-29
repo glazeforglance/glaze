@@ -2,6 +2,7 @@ import { serializeConfig } from "@glaze/core";
 import { useEffect } from "react";
 import { validateConfig } from "../lib/api.ts";
 import { editorStore, useEditor } from "../store/editor-store.ts";
+import { i18n } from "../i18n.ts";
 
 /**
  * Waits this long after the draft changes before validating. The draft itself
@@ -44,7 +45,9 @@ export function useValidation(enabled = true): void {
 							{
 								severity: "warning",
 								source: "glaze",
-								message: `Validation is unavailable: ${result.error.message}`,
+								message: i18n.t("code.validationUnavailable", {
+									message: result.error.message,
+								}),
 							},
 						],
 			});

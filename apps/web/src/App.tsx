@@ -16,6 +16,7 @@ import { useOnceTrue } from "./hooks/use-once-true.ts";
 import { useShortcuts } from "./hooks/use-shortcuts.ts";
 import { authStore, useAuth } from "./store/auth-store.ts";
 import { useEditor } from "./store/editor-store.ts";
+import { useTranslation } from "react-i18next";
 
 /**
  * The Glaze editor: loads the config, then shows top bar, library, canvas and inspector.
@@ -23,6 +24,7 @@ import { useEditor } from "./store/editor-store.ts";
  * @returns The editor.
  */
 function Editor() {
+	const { t } = useTranslation();
 	useLoadConfig();
 	useShortcuts();
 	const status = useEditor((state) => state.status);
@@ -37,12 +39,14 @@ function Editor() {
 				<GlazeMark className="size-10" />
 				{status === "loading" ? (
 					<p role="status" className="text-muted">
-						Loading glance.yml…
+						{t("app.loadingConfig")}
 					</p>
 				) : (
 					<div role="alert" className="max-w-xl">
-						<p className="font-semibold">Couldn't open the config</p>
-						<p className="mt-1 font-mono text-sm text-danger">{error}</p>
+						<p className="font-semibold">{t("app.openFailed")}</p>
+						<p dir="auto" className="mt-1 font-mono text-sm text-danger">
+							{error}
+						</p>
 					</div>
 				)}
 			</div>
@@ -78,6 +82,7 @@ function Editor() {
  * @returns The app.
  */
 export function App() {
+	const { t } = useTranslation();
 	useAuthSetup();
 	const status = useAuth((state) => state.status);
 	const error = useAuth((state) => state.error);
@@ -88,7 +93,7 @@ export function App() {
 			<div className="flex h-full flex-col items-center justify-center gap-4">
 				<GlazeMark className="size-10" />
 				<p role="status" className="text-muted">
-					Starting Glaze…
+					{t("app.starting")}
 				</p>
 			</div>
 		);
@@ -98,11 +103,13 @@ export function App() {
 			<div className="flex h-full flex-col items-center justify-center gap-4 px-6 text-center">
 				<GlazeMark className="size-10" />
 				<div role="alert" className="max-w-xl">
-					<p className="font-semibold">Can't reach Glaze</p>
-					<p className="mt-1 font-mono text-sm text-danger">{error}</p>
+					<p className="font-semibold">{t("app.unreachable")}</p>
+					<p dir="auto" className="mt-1 font-mono text-sm text-danger">
+						{error}
+					</p>
 				</div>
 				<Button onClick={() => void authStore.getState().check()}>
-					Try again
+					{t("common.tryAgain")}
 				</Button>
 			</div>
 		);

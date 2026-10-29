@@ -1,4 +1,6 @@
 import { useEditor } from "../../store/editor-store.ts";
+import { useTranslation } from "react-i18next";
+import { parseErrorText } from "../../lib/messages.ts";
 
 /**
  * Tells the user that the YAML typed in the Code view doesn't parse, so
@@ -6,6 +8,7 @@ import { useEditor } from "../../store/editor-store.ts";
  * @returns The banner, or nothing while the YAML is valid.
  */
 export function CodeErrorBanner() {
+	const { t } = useTranslation();
 	const codeError = useEditor((state) => state.codeError);
 	const setView = useEditor((state) => state.setView);
 	if (codeError === null) return null;
@@ -16,17 +19,16 @@ export function CodeErrorBanner() {
 		>
 			<p className="flex-1">
 				<span className="font-semibold text-danger">
-					YAML has errors — Design shows the last valid version.
+					{t("canvas.codeError.title")}
 				</span>{" "}
-				{codeError.line !== null && `Line ${codeError.line}: `}
-				{codeError.message}
+				{parseErrorText(codeError)}
 			</p>
 			<button
 				type="button"
 				onClick={() => setView("code")}
 				className="cursor-pointer rounded-sm px-2 font-semibold text-text hover:underline"
 			>
-				Open Code
+				{t("canvas.codeError.open")}
 			</button>
 		</div>
 	);

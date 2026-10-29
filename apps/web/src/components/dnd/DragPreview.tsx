@@ -16,7 +16,9 @@ export function DragPreview({ drag }: DragPreviewProps) {
 		<div className="flex min-h-14 w-[220px] cursor-grabbing items-center gap-2.5 rounded-md border border-accent bg-card-hover px-3 py-2 shadow-2xl shadow-black/60">
 			<GripIcon className="size-3.5 shrink-0 text-faint" />
 			<Badge text={drag.abbr} tone={drag.tone} />
-			<span className="truncate text-sm font-semibold">{drag.label}</span>
+			<span dir="auto" className="truncate text-sm font-semibold">
+				{drag.label}
+			</span>
 		</div>
 	);
 }

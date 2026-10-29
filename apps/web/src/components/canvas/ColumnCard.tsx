@@ -3,6 +3,7 @@ import type { WidgetList as WidgetListModel } from "../../lib/drop-target.ts";
 import { AddWidgetMenu } from "./AddWidgetMenu.tsx";
 import { ColumnSizeMenu } from "./ColumnSizeMenu.tsx";
 import { WidgetList } from "./WidgetList.tsx";
+import { useTranslation } from "react-i18next";
 
 export interface ColumnCardProps {
 	readonly column: ColumnNode;
@@ -17,10 +18,14 @@ export interface ColumnCardProps {
  * @returns The section element.
  */
 export function ColumnCard({ column, list }: ColumnCardProps) {
+	const { t } = useTranslation();
 	const isFull = column.size === "full";
 	return (
 		<section
-			aria-label={`${list.label}, ${column.size ?? "no size"}`}
+			aria-label={t("canvas.column.label", {
+				column: list.label,
+				size: column.size ?? t("canvas.column.noSize"),
+			})}
 			className={`flex flex-col gap-2 self-stretch rounded-lg border border-dashed border-line-strong bg-bg/60 p-3 ${
 				isFull ? "min-w-[280px] flex-1" : "w-[240px] shrink-0"
 			}`}

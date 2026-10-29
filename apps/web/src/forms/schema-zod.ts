@@ -9,12 +9,15 @@ import {
 	optional,
 	orEnv,
 } from "./schema.ts";
+import { i18n } from "../i18n.ts";
 
 /*
  * Form validation, derived from the generated schemas. It only checks what
  * Glance itself would refuse (types, enums, duration and color formats,
  * required options), so a config Glance accepts never shows an error here.
- * Unknown keys always pass (`looseObject`).
+ * Unknown keys always pass (`looseObject`). Messages are functions, so they
+ * are built in the UI language when a value is checked; `label` is the
+ * field's translated label (the registry passes a translated schema).
  */
 
 /** Text, also for numbers and booleans: YAML reads `id: 123` as a number, Glance as text. */
@@ -26,20 +29,30 @@ const scalarText = (label: string) =>
 				typeof value === "string" ||
 				typeof value === "number" ||
 				typeof value === "boolean",
-			`${label}: use text`,
+			{ error: () => i18n.t("forms.errors.text", { label }) },
 		);
 
 function wholeNumber(label: string, min: number | undefined) {
 	let base = z
-		.number({ error: `${label}: enter a whole number` })
-		.int(`${label}: enter a whole number`);
-	if (min !== undefined) base = base.min(min, `${label}: use ${min} or more`);
+		.number({ error: () => i18n.t("forms.errors.wholeNumber", { label }) })
+		.int({ error: () => i18n.t("forms.errors.wholeNumber", { label }) });
+	if (min !== undefined) {
+		base = base.min(min, {
+			error: () => i18n.t("forms.errors.min", { label, min }),
+		});
+	}
 	return orEnv(base);
 }
 
 function decimal(label: string, min: number | undefined) {
-	let base = z.number({ error: `${label}: enter a number` });
-	if (min !== undefined) base = base.min(min, `${label}: use ${min} or more`);
+	let base = z.number({
+		error: () => i18n.t("forms.errors.number", { label }),
+	});
+	if (min !== undefined) {
+		base = base.min(min, {
+			error: () => i18n.t("forms.errors.min", { label, min }),
+		});
+	}
 	return orEnv(base);
 }
 
@@ -50,7 +63,7 @@ function anyOf(label: string, variants: readonly z.ZodType[]) {
 		if (variants.some((variant) => variant.safeParse(value).success)) return;
 		ctx.addIssue({
 			code: "custom",
-			message: `${label}: this form isn't supported`,
+			message: i18n.t("forms.errors.variant", { label }),
 		});
 	});
 }
@@ -73,7 +86,9 @@ export function zodForValue(field: FieldSchema): z.ZodType {
 		case "integer":
 			return wholeNumber(label, field.min);
 		case "boolean":
-			return orEnv(z.boolean({ error: `${label}: use true or false` }));
+			return orEnv(
+				z.boolean({ error: () => i18n.t("forms.errors.boolean", { label }) }),
+			);
 		case "duration":
 			return orEnv(duration);
 		case "color":
@@ -89,7 +104,7 @@ export function zodForValue(field: FieldSchema): z.ZodType {
 				.array(
 					field.item ? zodForValue(childOf(field, field.item)) : z.unknown(),
 					{
-						error: `${label}: use a list`,
+						error: () => i18n.t("forms.errors.list", { label }),
 					},
 				)
 				.nullable();
@@ -101,7 +116,7 @@ export function zodForValue(field: FieldSchema): z.ZodType {
 					z.string(),
 					field.item ? zodForValue(childOf(field, field.item)) : z.unknown(),
 					{
-						error: `${label}: use names with values`,
+						error: () => i18n.t("forms.errors.map", { label }),
 					},
 				)
 				.nullable();
@@ -123,10 +138,12 @@ export function zodForValue(field: FieldSchema): z.ZodType {
 export function zodForField(field: FieldSchema): z.ZodType {
 	const value = zodForValue(field);
 	if (!field.required) return optional(value);
-	const message = `${field.label} is required`;
 	return z.unknown().superRefine((current, ctx) => {
 		if (current === undefined || current === null || current === "") {
-			ctx.addIssue({ code: "custom", message });
+			ctx.addIssue({
+				code: "custom",
+				message: i18n.t("forms.errors.required", { label: field.label }),
+			});
 			return;
 		}
 		const result = value.safeParse(current);

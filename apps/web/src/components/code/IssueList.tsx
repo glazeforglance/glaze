@@ -1,6 +1,8 @@
 import type { RenameKeyFix, ValidationIssue } from "@glaze/core";
 import { Button } from "../ui/Button.tsx";
 import { IssueNote } from "./IssueNote.tsx";
+import { useTranslation } from "react-i18next";
+import { problemText } from "../../lib/messages.ts";
 
 const DOT: Record<ValidationIssue["severity"], string> = {
 	error: "bg-danger",
@@ -24,16 +26,17 @@ export interface IssueListProps {
  * @returns The list, or a short "no problems" line.
  */
 export function IssueList({ issues, stale, onJump, onFix }: IssueListProps) {
+	const { t } = useTranslation();
 	const problems = issues.filter((issue) => issue.severity !== "info");
 	const notes = issues.filter((issue) => issue.severity === "info");
 	return (
 		<section
-			aria-label="Problems"
+			aria-label={t("code.problems")}
 			className={`max-h-48 shrink-0 overflow-y-auto border-t border-line bg-canvas ${stale ? "opacity-70" : ""}`}
 		>
 			{problems.length === 0 && (
 				<p className="px-4 py-3 text-sm text-muted">
-					{stale ? "Checking…" : "No problems found."}
+					{stale ? t("code.checking") : t("code.noProblems")}
 				</p>
 			)}
 			<ul>
@@ -51,21 +54,28 @@ export function IssueList({ issues, stale, onJump, onFix }: IssueListProps) {
 							type="button"
 							disabled={issue.line === undefined}
 							onClick={() => issue.line !== undefined && onJump(issue.line)}
-							className="min-w-0 flex-1 cursor-pointer text-left text-sm disabled:cursor-default"
+							className="min-w-0 flex-1 cursor-pointer text-start text-sm disabled:cursor-default"
 						>
-							<span className="sr-only">{issue.severity}: </span>
+							<span className="sr-only">
+								{t(`code.severity.${issue.severity}`)}{" "}
+							</span>
 							{issue.line !== undefined && (
-								<span className="font-semibold">Line {issue.line}: </span>
+								<span className="font-semibold">
+									{t("code.line", { line: issue.line })}{" "}
+								</span>
 							)}
-							<span className="text-muted">{issue.message}</span>
+							<span className="text-muted">{problemText(issue)}</span>
 						</button>
 						{issue.fix && onFix && (
 							<Button
 								className="shrink-0"
-								aria-label={`Fix: rename ${issue.fix.from} to ${issue.fix.to}`}
+								aria-label={t("code.fixLabel", {
+									from: issue.fix.from,
+									to: issue.fix.to,
+								})}
 								onClick={() => issue.fix && onFix(issue.fix)}
 							>
-								Fix
+								{t("code.fix")}
 							</Button>
 						)}
 					</li>

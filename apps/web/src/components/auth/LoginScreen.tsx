@@ -4,6 +4,8 @@ import { authStore, useAuth } from "../../store/auth-store.ts";
 import { borderClass, INPUT_CLASS } from "../../forms/fields/field-styles.ts";
 import { Button } from "../ui/Button.tsx";
 import { GlazeMark } from "../ui/icons.tsx";
+import { useTranslation } from "react-i18next";
+import { LanguageSelect } from "../ui/LanguageSelect.tsx";
 
 export interface LoginFormProps {
 	/** Shown above the form, e.g. why the user has to log in again. */
@@ -17,6 +19,7 @@ export interface LoginFormProps {
  * @returns The form.
  */
 function LoginForm({ notice }: LoginFormProps) {
+	const { t } = useTranslation();
 	const lastUser = useAuth((state) => state.user);
 	const [username, setUsername] = useState(lastUser ?? "admin");
 	const [password, setPassword] = useState("");
@@ -47,7 +50,7 @@ function LoginForm({ notice }: LoginFormProps) {
 		>
 			<div className="flex flex-col items-center gap-3 text-center">
 				<GlazeMark className="size-11" />
-				<h1 className="text-xl font-bold tracking-tight">Log in to Glaze</h1>
+				<h1 className="text-xl font-bold tracking-tight">{t("login.title")}</h1>
 				{notice && (
 					<p id={`${id}-notice`} className="text-sm text-muted">
 						{notice}
@@ -55,9 +58,12 @@ function LoginForm({ notice }: LoginFormProps) {
 				)}
 			</div>
 			<label className="flex flex-col gap-1.5 text-sm">
-				<span className="font-mono text-xs text-muted">Username</span>
+				<span className="font-mono text-xs text-muted">
+					{t("login.username")}
+				</span>
 				<input
 					name="username"
+					dir="auto"
 					autoComplete="username"
 					autoCapitalize="none"
 					spellCheck={false}
@@ -68,7 +74,9 @@ function LoginForm({ notice }: LoginFormProps) {
 				/>
 			</label>
 			<label className="flex flex-col gap-1.5 text-sm">
-				<span className="font-mono text-xs text-muted">Password</span>
+				<span className="font-mono text-xs text-muted">
+					{t("login.password")}
+				</span>
 				<input
 					ref={passwordRef}
 					name="password"
@@ -93,10 +101,10 @@ function LoginForm({ notice }: LoginFormProps) {
 			<Button
 				type="submit"
 				variant="primary"
-				unavailable={busy ? "Logging in…" : undefined}
+				unavailable={busy ? t("login.busy") : undefined}
 				className="min-h-11"
 			>
-				{busy ? "Logging in…" : "Log in"}
+				{busy ? t("login.busy") : t("login.submit")}
 			</Button>
 		</form>
 	);
@@ -112,7 +120,12 @@ export function LoginScreen() {
 			<div className="w-full max-w-sm rounded-lg border border-line bg-card p-6 shadow-2xl shadow-black/40">
 				<LoginForm />
 			</div>
-			<p className="font-mono text-[11px] text-faint">Glaze v{GLAZE_VERSION}</p>
+			<div className="flex items-center gap-4">
+				<LanguageSelect />
+				<p dir="ltr" className="font-mono text-[11px] text-faint">
+					Glaze v{GLAZE_VERSION}
+				</p>
+			</div>
 		</main>
 	);
 }
@@ -125,6 +138,7 @@ export function LoginScreen() {
  * @returns The overlay.
  */
 export function LoginOverlay() {
+	const { t } = useTranslation();
 	const ref = useRef<HTMLDialogElement>(null);
 	useEffect(() => {
 		const dialog = ref.current;
@@ -136,11 +150,11 @@ export function LoginOverlay() {
 	return (
 		<dialog
 			ref={ref}
-			aria-label="Log in again"
+			aria-label={t("login.again")}
 			onCancel={(event) => event.preventDefault()}
 			className="m-auto w-[min(400px,calc(100vw-32px))] rounded-lg border border-line-strong bg-card p-6 text-text shadow-2xl backdrop:bg-black/70 backdrop:backdrop-blur-sm"
 		>
-			<LoginForm notice="Your session ended. Log in again to continue; your unpublished changes are still here." />
+			<LoginForm notice={t("login.sessionEnded")} />
 		</dialog>
 	);
 }

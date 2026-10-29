@@ -1,4 +1,5 @@
 import type { PageNode, WidgetNode, YamlPath } from "@glaze/core";
+import { i18n } from "../i18n.ts";
 import {
 	type BadgeTone,
 	badgeToneFor,
@@ -72,15 +73,16 @@ export function parentWidget(
  */
 export function widgetSubtitle(widget: WidgetNode): string {
 	if (widget.include !== null) return widget.include;
-	const type = widget.type ?? "no type";
+	// The type is a Glance option value: never translated.
+	const type = widget.type ?? i18n.t("canvas.subtitle.noType");
 	const count = widget.children.length;
 	if (widget.type === "group") {
-		return `${type} · ${count} ${count === 1 ? "tab" : "tabs"}`;
+		return i18n.t("canvas.subtitle.tabs", { type, count });
 	}
 	if (widget.type === "split-column") {
-		return `${type} · ${count} ${count === 1 ? "widget" : "widgets"}`;
+		return i18n.t("canvas.subtitle.widgets", { type, count });
 	}
-	return widget.isAlias ? `${type} · alias` : type;
+	return widget.isAlias ? i18n.t("canvas.subtitle.alias", { type }) : type;
 }
 
 /** How a widget is shown: its title and two-letter badge. */
@@ -92,26 +94,30 @@ export interface WidgetDisplay {
 
 /**
  * Picks the title and badge for a widget: its own `title`, else the type's
- * label from the catalog; `$include` items get a fixed "Include".
+ * name from the catalog; `$include` items get a fixed "Include".
  * @param widget - The widget.
  * @returns Title, badge text and badge color.
  */
 export function widgetDisplay(widget: WidgetNode): WidgetDisplay {
 	const tone = badgeToneFor(widget.type);
-	if (widget.include !== null) return { title: "Include", abbr: "IN", tone };
+	if (widget.include !== null) {
+		return { title: i18n.t("widget.include"), abbr: "IN", tone };
+	}
 	const entry = catalogEntry(widget.type);
 	return { title: widget.title ?? entry.label, abbr: entry.abbr, tone };
 }
 
 /**
  * Picks a name for a new page that no page has yet: "New page", "New page 2", …
+ * in the UI language (it is written to glance.yml as the page's name).
  * @param pages - The existing pages.
  * @returns An unused name.
  */
 export function nextPageName(pages: readonly PageNode[]): string {
 	const taken = new Set(pages.map((page) => page.name));
-	if (!taken.has("New page")) return "New page";
+	const first = i18n.t("page.newName");
+	if (!taken.has(first)) return first;
 	let number = 2;
-	while (taken.has(`New page ${number}`)) number += 1;
-	return `New page ${number}`;
+	while (taken.has(i18n.t("page.newNameNumbered", { number }))) number += 1;
+	return i18n.t("page.newNameNumbered", { number });
 }

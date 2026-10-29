@@ -2,6 +2,8 @@ import { useId } from "react";
 import { CheckIcon } from "../../components/ui/icons.tsx";
 import { useWidgetField } from "../use-widget-form.ts";
 import { describedBy } from "./field-styles.ts";
+import { useTranslation } from "react-i18next";
+import { OptionKey } from "./OptionKey.tsx";
 
 export interface ToggleFieldProps {
 	readonly name: string;
@@ -23,6 +25,7 @@ export function ToggleField({
 	hint,
 	glanceDefault = false,
 }: ToggleFieldProps) {
+	const { t } = useTranslation();
 	const id = useId();
 	const widgetField = useWidgetField(name, { glanceDefault });
 	const { field, error, disabled, status } = widgetField;
@@ -53,18 +56,19 @@ export function ToggleField({
 				<label htmlFor={id} className="cursor-pointer text-sm">
 					{label}
 				</label>
+				<OptionKey name={name} />
 				{status === "inherited" && (
 					<span className="rounded-[6px] bg-violet/12 px-1.5 py-0.5 font-mono text-[10px] text-violet">
-						inherited
+						{t("forms.inherited")}
 					</span>
 				)}
 				{status === "inherited" && !widgetField.readOnly && (
 					<button
 						type="button"
 						onClick={widgetField.override}
-						className="ml-auto cursor-pointer rounded-[6px] px-1.5 py-0.5 font-mono text-[11px] text-accent hover:bg-accent/10"
+						className="ms-auto cursor-pointer rounded-[6px] px-1.5 py-0.5 font-mono text-[11px] text-accent hover:bg-accent/10"
 					>
-						Override
+						{t("forms.override")}
 					</button>
 				)}
 			</div>

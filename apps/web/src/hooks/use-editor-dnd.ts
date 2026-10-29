@@ -34,6 +34,7 @@ import {
 } from "../lib/drop-target.ts";
 import { newWidgetOf } from "../lib/widget-catalog.ts";
 import { useEditor } from "../store/editor-store.ts";
+import { currentDirection, i18n } from "../i18n.ts";
 
 const IDLE: DragState = { active: null, target: null, indicator: null };
 
@@ -65,6 +66,8 @@ function subjectOf(active: ActiveDrag): DragSubject {
 
 /** Measures the lists and works out where to draw the indicator for `target`. */
 function indicatorFor(target: DropTarget | null): DragIndicator | null {
+	// Read when the drag happens, so the indicator follows the UI direction.
+	const direction = currentDirection();
 	if (!target) return null;
 	const list = measureLists().find(
 		(candidate) => candidate.id === target.listId,
@@ -72,7 +75,7 @@ function indicatorFor(target: DropTarget | null): DragIndicator | null {
 	return list
 		? {
 				listId: list.id,
-				...indicatorLine(list, target.index, target.side),
+				...indicatorLine(list, target.index, target.side, direction),
 				...(target.side ? { side: target.side } : {}),
 			}
 		: null;
@@ -134,6 +137,7 @@ export function useEditorDnd(lists: readonly WidgetList[]): {
 			pointer.current,
 			current.target,
 			subjectOf(current.active),
+			currentDirection(),
 		);
 		if (sameTarget(target, current.target)) return;
 		update({ ...current, target, indicator: indicatorFor(target) });
@@ -164,11 +168,19 @@ export function useEditorDnd(lists: readonly WidgetList[]): {
 		const list = target
 			? listsRef.current.find((candidate) => candidate.id === target.listId)
 			: undefined;
-		if (!target || !list) return "no drop area";
+		if (!target || !list) return i18n.t("dnd.announce.nowhere");
 		if (target.side) {
-			return `${list.label}, side by side with the widget at position ${target.index + 1} (${target.side})`;
+			return i18n.t(
+				target.side === "left"
+					? "dnd.announce.besideBefore"
+					: "dnd.announce.besideAfter",
+				{ list: list.label, position: target.index + 1 },
+			);
 		}
-		return `${list.label}, position ${toCoreIndex(sourceOf(active), target) + 1}`;
+		return i18n.t("dnd.announce.position", {
+			list: list.label,
+			position: toCoreIndex(sourceOf(active), target) + 1,
+		});
 	};
 
 	const keyboardStep = useCallback<KeyboardCoordinateGetter>(
@@ -182,6 +194,7 @@ export function useEditorDnd(lists: readonly WidgetList[]): {
 				current.target,
 				sourceOf(current.active),
 				event.code,
+				currentDirection(),
 			);
 			if (!next) return undefined;
 			const indicator = indicatorFor(next);
@@ -264,10 +277,11 @@ export function useEditorDnd(lists: readonly WidgetList[]): {
 	};
 
 	const labelOf = (data: unknown): string =>
-		isDragData(data) ? data.label : "widget";
+		isDragData(data) ? data.label : i18n.t("dnd.announce.widget");
 
 	const announcements: Announcements = {
-		onDragStart: ({ active }) => `Picked up ${labelOf(active.data.current)}.`,
+		onDragStart: ({ active }) =>
+			i18n.t("dnd.announce.pickedUp", { name: labelOf(active.data.current) }),
 		// Announce from our own drop position (not dnd-kit's "over"), and only when it changes.
 		onDragMove: ({ active }) => {
 			const { target } = latest.current;
@@ -275,15 +289,23 @@ export function useEditorDnd(lists: readonly WidgetList[]): {
 			const where = describe(target, latest.current.active);
 			if (where === announced.current) return undefined;
 			announced.current = where;
-			return `${labelOf(active.data.current)} will be placed in ${where}.`;
+			return i18n.t("dnd.announce.willPlace", {
+				name: labelOf(active.data.current),
+				where,
+			});
 		},
 		onDragOver: () => undefined,
 		onDragEnd: ({ active }) =>
 			announced.current
-				? `${labelOf(active.data.current)} was dropped in ${announced.current}.`
-				: `${labelOf(active.data.current)} was dropped outside a drop area.`,
+				? i18n.t("dnd.announce.dropped", {
+						name: labelOf(active.data.current),
+						where: announced.current,
+					})
+				: i18n.t("dnd.announce.droppedOutside", {
+						name: labelOf(active.data.current),
+					}),
 		onDragCancel: ({ active }) =>
-			`Moving ${labelOf(active.data.current)} was cancelled.`,
+			i18n.t("dnd.announce.cancelled", { name: labelOf(active.data.current) }),
 	};
 
 	return {
@@ -296,8 +318,7 @@ export function useEditorDnd(lists: readonly WidgetList[]): {
 			accessibility: {
 				announcements,
 				screenReaderInstructions: {
-					draggable:
-						"To pick up a widget, press Space or Enter. Use the arrow keys to move it, Space or Enter to drop it, and Escape to cancel.",
+					draggable: i18n.t("dnd.instructions"),
 				},
 			},
 		},

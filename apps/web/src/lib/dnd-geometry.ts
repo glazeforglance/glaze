@@ -5,7 +5,15 @@
  * The drop indicator is drawn on top of the lists (absolutely positioned),
  * so the layout never changes while dragging. That makes the measured
  * rectangles stable, which is what keeps the target from flickering.
+ *
+ * Rows (head widgets, split-columns) follow the UI direction: in RTL they run
+ * right to left, so "before" and the beside sides are mirrored (see direction.ts).
  */
+import {
+	type InlineSide,
+	mirrorSide,
+	type TextDirection,
+} from "./direction.ts";
 
 /** A rectangle in viewport coordinates, like `getBoundingClientRect()`. */
 export interface Rect {
@@ -48,10 +56,13 @@ export interface IndicatorLine {
 	readonly height: number;
 }
 
-/** A "beside" position: the item under the pointer and which edge. */
+/**
+ * A "beside" position: the item under the pointer and which edge, in reading
+ * order (`left` = before it, `right` = after it; mirrored on screen in RTL).
+ */
 export interface BesideHit {
 	readonly index: number;
-	readonly side: "left" | "right";
+	readonly side: InlineSide;
 }
 
 /**
@@ -174,6 +185,7 @@ function isBefore(
 	layout: ListLayout,
 	point: Point,
 	previous: number | null,
+	direction: TextDirection,
 ): boolean {
 	const size = layout === "stack" ? item.height : item.width;
 	const bias =
@@ -189,7 +201,10 @@ function isBefore(
 	// rows below are after it, and within the pointer's row the x position decides.
 	if (bottom(item) <= point.y) return true;
 	if (item.top > point.y) return false;
-	return point.x > item.left + item.width / 2 + bias;
+	const middle = item.left + item.width / 2;
+	return direction === "rtl"
+		? point.x < middle - bias
+		: point.x > middle + bias;
 }
 
 /**
@@ -200,6 +215,7 @@ function isBefore(
  * @param layout - How the list lays out its items.
  * @param point - The pointer.
  * @param previous - The current slot in this list, or `null` when the pointer just entered it.
+ * @param direction - The UI direction; rows run right to left in RTL.
  * @returns The slot index.
  */
 export function slotAt(
@@ -207,10 +223,13 @@ export function slotAt(
 	layout: ListLayout,
 	point: Point,
 	previous: number | null,
+	direction: TextDirection = "ltr",
 ): number {
 	let slot = 0;
 	items.forEach((item, index) => {
-		if (isBefore(item, index, layout, point, previous)) slot = index + 1;
+		if (isBefore(item, index, layout, point, previous, direction)) {
+			slot = index + 1;
+		}
 	});
 	return slot;
 }
@@ -223,22 +242,29 @@ export function slotAt(
  * @param items - The list's item rectangles.
  * @param point - The pointer.
  * @param previous - The current beside position in this list, or `null`.
- * @returns The item and edge, or `null` when the pointer isn't in a band.
+ * @param direction - The UI direction: in RTL the left edge means "after".
+ * @returns The item and edge (in reading order), or `null` when the pointer isn't in a band.
  */
 export function besideAt(
 	items: readonly Rect[],
 	point: Point,
 	previous: BesideHit | null,
+	direction: TextDirection = "ltr",
 ): BesideHit | null {
 	for (const [index, item] of items.entries()) {
 		if (!containsPoint(item, point)) continue;
 		const band = Math.min(BESIDE_BAND_PX, item.width * BESIDE_SHARE);
-		const grow = (side: BesideHit["side"]) =>
-			previous?.index === index && previous.side === side
+		// Bands are measured on screen; `previous` is in reading order.
+		const grow = (edge: InlineSide) =>
+			previous?.index === index && mirrorSide(previous.side, direction) === edge
 				? Math.min(band + HYSTERESIS_PX, item.width / 2)
 				: band;
-		if (point.x <= item.left + grow("left")) return { index, side: "left" };
-		if (point.x >= right(item) - grow("right")) return { index, side: "right" };
+		if (point.x <= item.left + grow("left")) {
+			return { index, side: mirrorSide("left", direction) };
+		}
+		if (point.x >= right(item) - grow("right")) {
+			return { index, side: mirrorSide("right", direction) };
+		}
 		return null;
 	}
 	return null;
@@ -250,13 +276,15 @@ export function besideAt(
  * `side`) a line on the left or right edge of item `slot`.
  * @param list - The measured list.
  * @param slot - The slot, 0..items.length; with `side`, the item's index.
- * @param side - For a "beside" target: which edge of the item.
+ * @param side - For a "beside" target: which edge of the item, in reading order.
+ * @param direction - The UI direction; rows and sides are mirrored in RTL.
  * @returns The indicator's position and size.
  */
 export function indicatorLine(
 	list: ListGeometry,
 	slot: number,
 	side?: BesideHit["side"],
+	direction: TextDirection = "ltr",
 ): IndicatorLine {
 	const { rect, items, layout } = list;
 	const half = LIST_GAP_PX / 2;
@@ -264,7 +292,9 @@ export function indicatorLine(
 	if (side && item) {
 		return {
 			kind: "beside",
-			x: (side === "left" ? item.left : right(item)) - rect.left,
+			x:
+				(mirrorSide(side, direction) === "left" ? item.left : right(item)) -
+				rect.left,
 			y: item.top - rect.top,
 			width: 0,
 			height: item.height,
@@ -292,9 +322,17 @@ export function indicatorLine(
 			height: 0,
 		};
 	}
-	// In a row the line goes in the gap left of the next item, or right of the last one.
+	// In a row the line goes in the gap before the next item, or after the last
+	// one: on the left and right in LTR, mirrored in RTL.
 	const anchor = next ?? previous ?? rect;
-	const x = next ? next.left - half : right(anchor) + half;
+	const rtl = direction === "rtl";
+	const x = next
+		? rtl
+			? right(next) + half
+			: next.left - half
+		: rtl
+			? anchor.left - half
+			: right(anchor) + half;
 	return {
 		kind: "vertical",
 		x: Math.max(0, x - rect.left),

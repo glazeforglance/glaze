@@ -3,6 +3,7 @@ import { IconField } from "../fields/IconField.tsx";
 import { MapField } from "../fields/MapField.tsx";
 import { TextField } from "../fields/TextField.tsx";
 import { ToggleField } from "../fields/ToggleField.tsx";
+import { useTranslation } from "react-i18next";
 
 /**
  * docker-containers `containers`: Glance labels per container name, set in
@@ -19,40 +20,57 @@ export function ContainerLabelsField({
 	readonly field: FieldSchema;
 	readonly name: string;
 }) {
+	const { t } = useTranslation();
 	return (
 		<MapField
 			name={name}
 			label={field.label}
-			keyLabel="Container name"
+			keyLabel={t("forms.containers.name")}
 			keyPlaceholder="jellyfin"
-			addLabel="Add"
+			addLabel={t("forms.map.add")}
 			newEntry={(key) => ({ name: key })}
 			hint={field.help}
 		>
 			{(entryName) => (
 				<>
-					<TextField name={`${entryName}.name`} label="Display name" />
+					<TextField
+						name={`${entryName}.name`}
+						label={t("forms.containers.displayName")}
+					/>
 					<TextField
 						name={`${entryName}.url`}
-						label="URL"
+						label={t("forms.containers.url")}
 						placeholder="https://"
 						inputMode="url"
 						mono
 					/>
-					<TextField name={`${entryName}.description`} label="Description" />
-					<IconField name={`${entryName}.icon`} label="Icon" />
-					<ToggleField name={`${entryName}.hide`} label="Hide this container" />
+					<TextField
+						name={`${entryName}.description`}
+						label={t("forms.containers.description")}
+					/>
+					<IconField
+						name={`${entryName}.icon`}
+						label={t("forms.containers.icon")}
+					/>
+					<ToggleField
+						name={`${entryName}.hide`}
+						label={t("forms.containers.hide")}
+					/>
 					<ToggleField
 						name={`${entryName}.same-tab`}
-						label="Open in the same tab"
+						label={t("forms.containers.sameTab")}
 					/>
 					<TextField
 						name={`${entryName}.parent`}
-						label="Parent"
-						hint="The glance.id of a container to show this one under."
+						label={t("forms.containers.parent")}
+						hint={t("forms.containers.parentHint")}
 						mono
 					/>
-					<TextField name={`${entryName}.id`} label="Id" mono />
+					<TextField
+						name={`${entryName}.id`}
+						label={t("forms.containers.id")}
+						mono
+					/>
 				</>
 			)}
 		</MapField>

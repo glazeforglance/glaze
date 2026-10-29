@@ -3,12 +3,14 @@ import { Button } from "../ui/Button.tsx";
 import { PlusIcon } from "../ui/icons.tsx";
 import { PageNameInput } from "./PageNameInput.tsx";
 import { PageTabMenu } from "./PageTabMenu.tsx";
+import { useTranslation } from "react-i18next";
 
 /**
  * One tab per page (double-click to rename), the open page's actions menu, and "+ Page".
  * @returns The tab bar.
  */
 export function PageTabs() {
+	const { t } = useTranslation();
 	const pages = useEditor((state) => state.pages);
 	const selectedPageId = useEditor((state) => state.selectedPageId);
 	const renamingPageId = useEditor((state) => state.renamingPageId);
@@ -22,7 +24,7 @@ export function PageTabs() {
 		<div className="flex min-w-0 items-center gap-1">
 			<div
 				role="tablist"
-				aria-label="Pages"
+				aria-label={t("pages.tabsLabel")}
 				className="flex min-w-0 items-center gap-1 overflow-x-auto"
 			>
 				{pages.map((page, index) =>
@@ -36,6 +38,7 @@ export function PageTabs() {
 							aria-selected={page.id === selectedPageId}
 							onClick={() => selectPage(page.id)}
 							onDoubleClick={() => startRename(page.id)}
+							dir="auto"
 							className={`min-h-9 cursor-pointer rounded-sm px-3.5 text-sm whitespace-nowrap transition-colors ${
 								page.id === selectedPageId
 									? "bg-card font-semibold text-text"
@@ -43,7 +46,9 @@ export function PageTabs() {
 							}`}
 						>
 							{page.name ??
-								(page.include ? `Include ${index + 1}` : `Page ${index + 1}`)}
+								(page.include
+									? t("pages.includeNumber", { number: index + 1 })
+									: t("pages.pageNumber", { number: index + 1 }))}
 						</button>
 					),
 				)}
@@ -56,9 +61,9 @@ export function PageTabs() {
 					count={pages.length}
 				/>
 			)}
-			<Button onClick={addPage} className="ml-1 border-dashed">
+			<Button onClick={addPage} className="ms-1 border-dashed">
 				<PlusIcon />
-				Page
+				{t("pages.add")}
 			</Button>
 		</div>
 	);

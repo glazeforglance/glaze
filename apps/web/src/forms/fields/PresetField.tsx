@@ -4,6 +4,7 @@ import { borderClass, describedBy, INPUT_CLASS } from "./field-styles.ts";
 import { FieldShell } from "./FieldShell.tsx";
 import type { SelectOption } from "./SelectField.tsx";
 import { useTextInput } from "./use-text-input.ts";
+import { useTranslation } from "react-i18next";
 
 // Not a valid value for any Glance option, so it can't clash with a preset.
 const CUSTOM = "__custom__";
@@ -30,9 +31,10 @@ export function PresetField({
 	label,
 	presets,
 	hint,
-	defaultLabel = "Glance default",
+	defaultLabel,
 	customPlaceholder,
 }: PresetFieldProps) {
+	const { t } = useTranslation();
 	const id = useId();
 	const widgetField = useWidgetField(name);
 	const { field, error, disabled } = widgetField;
@@ -46,6 +48,7 @@ export function PresetField({
 
 	return (
 		<FieldShell
+			name={name}
 			inputId={id}
 			label={label}
 			status={widgetField.status}
@@ -80,7 +83,7 @@ export function PresetField({
 						{preset.label}
 					</option>
 				))}
-				<option value={CUSTOM}>Custom…</option>
+				<option value={CUSTOM}>{t("forms.custom")}</option>
 			</select>
 			{showCustom && (
 				<input
@@ -90,7 +93,8 @@ export function PresetField({
 						field.ref(element);
 					}}
 					name={name}
-					aria-label={`${label} (custom)`}
+					aria-label={t("forms.customValue", { label })}
+					dir="ltr"
 					aria-invalid={error ? true : undefined}
 					aria-describedby={describedBy(id, error)}
 					placeholder={customPlaceholder}

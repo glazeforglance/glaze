@@ -2,6 +2,7 @@ import { useDraggable } from "@dnd-kit/core";
 import type { BadgeTone, CatalogEntry } from "../../lib/widget-catalog.ts";
 import type { DragData } from "../dnd/drag-state.ts";
 import { Badge } from "../ui/Badge.tsx";
+import { useTranslation } from "react-i18next";
 
 export interface LibraryItemProps {
 	readonly entry: CatalogEntry;
@@ -15,6 +16,7 @@ export interface LibraryItemProps {
  * @returns The list item with its drag button.
  */
 export function LibraryItem({ entry, tone }: LibraryItemProps) {
+	const { t } = useTranslation();
 	const data: DragData = {
 		kind: "library",
 		type: entry.type,
@@ -34,9 +36,9 @@ export function LibraryItem({ entry, tone }: LibraryItemProps) {
 				ref={setNodeRef}
 				{...attributes}
 				{...listeners}
-				aria-label={`Add ${entry.label}`}
+				aria-label={t("library.add", { name: entry.label })}
 				title={entry.type}
-				className={`flex min-h-11 w-full cursor-grab items-center gap-3 rounded-sm px-2 text-left text-[15px] text-text hover:bg-card active:cursor-grabbing ${
+				className={`flex min-h-11 w-full cursor-grab items-center gap-3 rounded-sm px-2 text-start text-[15px] text-text hover:bg-card active:cursor-grabbing ${
 					isDragging ? "opacity-40" : ""
 				}`}
 			>

@@ -4,6 +4,7 @@ import { useEditor } from "../../store/editor-store.ts";
 import { ConfirmDialog } from "../ui/ConfirmDialog.tsx";
 import { ChevronDownIcon } from "../ui/icons.tsx";
 import { Menu } from "../ui/Menu.tsx";
+import { useTranslation } from "react-i18next";
 
 export interface ColumnSizeMenuProps {
 	readonly column: ColumnNode;
@@ -19,6 +20,7 @@ export interface ColumnSizeMenuProps {
  * @returns The menu button and its confirmation dialog.
  */
 export function ColumnSizeMenu({ column, label }: ColumnSizeMenuProps) {
+	const { t } = useTranslation();
 	const [confirming, setConfirming] = useState(false);
 	const setColumnSize = useEditor((state) => state.setColumnSize);
 	const removeColumn = useEditor((state) => state.removeColumn);
@@ -27,8 +29,11 @@ export function ColumnSizeMenu({ column, label }: ColumnSizeMenuProps) {
 	return (
 		<>
 			<Menu
-				label={`Size of ${label}: ${column.size ?? "not set"}`}
-				align="right"
+				label={t("canvas.columnSize.label", {
+					column: label,
+					size: column.size ?? t("canvas.column.noSize"),
+				})}
+				align="end"
 				trigger={
 					<>
 						{column.size ?? "?"}
@@ -48,7 +53,7 @@ export function ColumnSizeMenu({ column, label }: ColumnSizeMenuProps) {
 						onSelect: () => setColumnSize(column.id, "full"),
 					},
 					{
-						label: "Remove column…",
+						label: t("canvas.columnSize.remove"),
 						danger: true,
 						onSelect: () =>
 							count === 0 ? removeColumn(column.id) : setConfirming(true),
@@ -57,16 +62,15 @@ export function ColumnSizeMenu({ column, label }: ColumnSizeMenuProps) {
 			/>
 			<ConfirmDialog
 				open={confirming}
-				title={`Remove ${label}?`}
-				confirmLabel="Remove column"
+				title={t("canvas.columnSize.removeTitle", { column: label })}
+				confirmLabel={t("canvas.columnSize.removeConfirm")}
 				onCancel={() => setConfirming(false)}
 				onConfirm={() => {
 					setConfirming(false);
 					removeColumn(column.id);
 				}}
 			>
-				Its {count} {count === 1 ? "widget is" : "widgets are"} removed too.
-				Nothing is written to disk until you publish.
+				{t("canvas.columnSize.removeBody", { count })}
 			</ConfirmDialog>
 		</>
 	);

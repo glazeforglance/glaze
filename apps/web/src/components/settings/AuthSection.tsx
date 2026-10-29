@@ -13,6 +13,7 @@ import {
 import { Button } from "../ui/Button.tsx";
 import { ConfirmDialog } from "../ui/ConfirmDialog.tsx";
 import { INPUT_CLASS, borderClass } from "../../forms/fields/field-styles.ts";
+import { Trans, useTranslation } from "react-i18next";
 
 const USERS = ["auth", "users"] as const;
 
@@ -30,6 +31,7 @@ function record(value: unknown): Record<string, unknown> {
  * @returns The section.
  */
 export function AuthSection() {
+	const { t } = useTranslation();
 	const { form, target } = useWidgetForm();
 	const auth = record(useWatch({ control: form.control, name: "auth" }));
 	const users = record(auth.users);
@@ -41,39 +43,39 @@ export function AuthSection() {
 
 	const writeKey = () => {
 		if (target.set(["auth", "secret-key"], makeSecretKey())) {
-			setNotice(
-				"A new secret key is set. Publishing logs everyone out of Glance.",
-			);
+			setNotice(t("settings.auth.newKeySet"));
 		}
 	};
 
 	return (
 		<>
-			<section aria-label="Secret key" className="mb-8">
-				<h2 className="mb-1 text-base font-semibold">Secret key</h2>
+			<section aria-label={t("settings.auth.secretKey")} className="mb-8">
+				<h2 className="mb-1 text-base font-semibold">
+					{t("settings.auth.secretKey")}
+				</h2>
 				<p className="mb-3 text-sm text-muted">
-					Signs Glance's login sessions. Glance needs one as soon as there are
-					users; changing it logs everyone out.
+					{t("settings.auth.secretKeyIntro")}
 				</p>
 				{names.length > 0 && secret === "" && (
-					<FieldWarning text="Glance refuses users without a secret key. Generate one below." />
+					<FieldWarning text={t("settings.auth.keyNeeded")} />
 				)}
 				{secret !== "" && !isEnvReference(secret) && (
 					<p className="mb-2 font-mono text-xs text-faint">
-						Set: {maskSecret(secret)}
+						{t("settings.auth.keySet")}{" "}
+						<bdi dir="ltr">{maskSecret(secret)}</bdi>
 					</p>
 				)}
 				<TextField
 					name="auth.secret-key"
-					label="Secret key"
+					label={t("settings.auth.secretKey")}
 					secret
-					hint="Or ${GLANCE_SECRET_KEY} to keep it out of glance.yml."
+					hint={t("settings.auth.keyHint", { env: "${GLANCE_SECRET_KEY}" })}
 				/>
 				<Button
 					variant="secondary"
 					onClick={() => (secret === "" ? writeKey() : setConfirmingKey(true))}
 				>
-					Generate a new key
+					{t("settings.auth.generate")}
 				</Button>
 				{notice && (
 					<p role="status" className="mt-2 text-xs text-accent">
@@ -82,23 +84,24 @@ export function AuthSection() {
 				)}
 				<ConfirmDialog
 					open={confirmingKey}
-					title="Replace the secret key?"
-					confirmLabel="Generate a new key"
+					title={t("settings.auth.replaceTitle")}
+					confirmLabel={t("settings.auth.generate")}
 					onCancel={() => setConfirmingKey(false)}
 					onConfirm={() => {
 						setConfirmingKey(false);
 						writeKey();
 					}}
 				>
-					Once you publish, everyone who is logged in to Glance has to log in
-					again.
+					{t("settings.auth.replaceBody")}
 				</ConfirmDialog>
 			</section>
 
-			<section aria-label="Users">
-				<h2 className="mb-1 text-base font-semibold">Users</h2>
+			<section aria-label={t("settings.auth.users")}>
+				<h2 className="mb-1 text-base font-semibold">
+					{t("settings.auth.users")}
+				</h2>
 				<p className="mb-3 text-sm text-muted">
-					Glance shows every page to every user; it has no per-page access.
+					{t("settings.auth.usersIntro")}
 				</p>
 				<ul className="mb-4 flex flex-col gap-2">
 					{names.map((name) => (
@@ -111,19 +114,13 @@ export function AuthSection() {
 						/>
 					))}
 					{names.length === 0 && (
-						<li className="text-sm text-faint">
-							No users: anyone who can reach Glance sees the dashboard.
-						</li>
+						<li className="text-sm text-faint">{t("settings.auth.noUsers")}</li>
 					)}
 				</ul>
 				<AddUser
 					existing={names}
 					needsKey={secret === ""}
-					onKeyAdded={() =>
-						setNotice(
-							"Glance needs a secret key for users, so one was generated.",
-						)
-					}
+					onKeyAdded={() => setNotice(t("settings.auth.keyGenerated"))}
 				/>
 			</section>
 		</>
@@ -141,6 +138,7 @@ function UserRow({
 	readonly others: readonly string[];
 	readonly isLast: boolean;
 }) {
+	const { t } = useTranslation();
 	const { target } = useWidgetForm();
 	const hash =
 		typeof user["password-hash"] === "string" ? user["password-hash"] : "";
@@ -170,10 +168,11 @@ function UserRow({
 		<li className="rounded-md border border-line bg-card p-3">
 			<div className="flex items-center gap-2">
 				{renaming === null ? (
-					<span className="flex-1 font-mono text-sm font-semibold">{name}</span>
+					<bdi className="flex-1 font-mono text-sm font-semibold">{name}</bdi>
 				) : (
 					<input
-						aria-label={`New name for ${name}`}
+						aria-label={t("settings.auth.newNameFor", { name })}
+						dir="auto"
 						value={renaming}
 						onChange={(event) => setRenaming(event.target.value)}
 						onKeyDown={(event) => {
@@ -185,28 +184,36 @@ function UserRow({
 				)}
 				{renaming === null ? (
 					<Button variant="secondary" onClick={() => setRenaming(name)}>
-						Rename
+						{t("settings.auth.rename")}
 					</Button>
 				) : (
 					<Button variant="secondary" onClick={rename}>
-						Save name
+						{t("settings.auth.saveName")}
 					</Button>
 				)}
 				<Button
 					variant="secondary"
 					onClick={() => target.remove(isLast ? [...USERS] : [...USERS, name])}
 				>
-					Remove
+					{t("settings.auth.remove")}
 				</Button>
 			</div>
 			<p className="mt-2 text-xs text-faint">
-				{hash !== ""
-					? isEnvReference(hash)
-						? `Password hash from ${hash}.`
-						: `Password set (bcrypt hash ${maskSecret(hash)}).`
-					: plain !== ""
-						? "The password is stored as plain text; set it again to store a hash instead."
-						: "No password: Glance refuses this user until it has one."}
+				{hash !== "" ? (
+					<Trans
+						i18nKey={
+							isEnvReference(hash)
+								? "settings.auth.hashFromEnv"
+								: "settings.auth.hashSet"
+						}
+						values={{ hash: isEnvReference(hash) ? hash : maskSecret(hash) }}
+						components={{ hash: <bdi dir="ltr" /> }}
+					/>
+				) : plain !== "" ? (
+					t("settings.auth.plainPassword")
+				) : (
+					t("settings.auth.noPassword")
+				)}
 			</p>
 			{error && (
 				<p role="alert" className="mt-1 text-xs text-danger">
@@ -214,8 +221,8 @@ function UserRow({
 				</p>
 			)}
 			<PasswordForm
-				label={`New password for ${name}`}
-				buttonLabel="Set password"
+				label={t("settings.auth.newPasswordFor", { name })}
+				buttonLabel={t("settings.auth.setPassword")}
 				onHash={(newHash) => {
 					const ok = target.set([...USERS, name, "password-hash"], newHash);
 					// The plain text password would win over nothing; drop it.
@@ -236,6 +243,7 @@ function PasswordForm({
 	readonly buttonLabel: string;
 	readonly onHash: (hash: string) => boolean;
 }) {
+	const { t } = useTranslation();
 	const id = useId();
 	const [password, setPassword] = useState("");
 	const [busy, setBusy] = useState(false);
@@ -265,7 +273,7 @@ function PasswordForm({
 					id={id}
 					type="password"
 					value={password}
-					placeholder="At least 6 characters"
+					placeholder={t("settings.auth.passwordPlaceholder", { count: 6 })}
 					autoComplete="new-password"
 					aria-invalid={error ? true : undefined}
 					onChange={(event) => {
@@ -286,7 +294,7 @@ function PasswordForm({
 					onClick={() => void submit()}
 					className="shrink-0"
 				>
-					{busy ? "Hashing…" : buttonLabel}
+					{busy ? t("settings.auth.hashing") : buttonLabel}
 				</Button>
 			</div>
 			{error && (
@@ -307,6 +315,7 @@ function AddUser({
 	readonly needsKey: boolean;
 	readonly onKeyAdded: () => void;
 }) {
+	const { t } = useTranslation();
 	const { target } = useWidgetForm();
 	const id = useId();
 	const [name, setName] = useState("");
@@ -314,15 +323,18 @@ function AddUser({
 
 	return (
 		<div className="rounded-md border border-dashed border-line-strong p-3">
-			<h3 className="mb-2 text-sm font-semibold">Add a user</h3>
+			<h3 className="mb-2 text-sm font-semibold">
+				{t("settings.auth.addUserTitle")}
+			</h3>
 			<label htmlFor={id} className="mb-1 block text-xs text-muted">
-				User name
+				{t("settings.auth.userName")}
 			</label>
 			<input
 				id={id}
 				value={name}
 				autoComplete="off"
 				spellCheck={false}
+				dir="auto"
 				aria-invalid={problem ? true : undefined}
 				onChange={(event) => setName(event.target.value)}
 				className={`${INPUT_CLASS} ${borderClass(problem !== null)} font-mono text-[13px]`}
@@ -333,8 +345,12 @@ function AddUser({
 				</p>
 			)}
 			<PasswordForm
-				label={`Password for ${name || "the new user"}`}
-				buttonLabel="Add user"
+				label={
+					name
+						? t("settings.auth.passwordFor", { name })
+						: t("settings.auth.passwordForNew")
+				}
+				buttonLabel={t("settings.auth.addUser")}
 				onHash={(hash) => {
 					const trimmed = name.trim();
 					if (usernameProblem(trimmed, existing) !== null) return false;

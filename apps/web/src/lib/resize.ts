@@ -26,8 +26,9 @@ export function clampSize(value: number, bounds: ResizeBounds): number {
  * @param value - Current size.
  * @param bounds - The allowed range.
  * @param step - How much one arrow press changes the size.
- * @param direction - `1` when moving the handle right makes the area bigger
- *   (a handle on the area's right edge), `-1` when it makes it smaller.
+ * @param direction - `1` when moving the handle towards the inline end makes
+ *   the area bigger (a handle on the area's end edge), `-1` when it makes it
+ *   smaller. `key` is logical: in RTL, pass it through `logicalKey` first.
  * @returns The new size, or `null` for keys the handle doesn't use.
  */
 export function sizeAfterKey(

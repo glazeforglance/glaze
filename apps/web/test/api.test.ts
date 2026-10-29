@@ -90,7 +90,10 @@ describe("putConfig", () => {
 		answer(500, { error: "io-error", message: "Disk full" });
 		expect(await putConfig("x", "v1")).toEqual({
 			ok: false,
-			error: { kind: "server", message: "Disk full" },
+			error: {
+				kind: "server",
+				message: "The file couldn't be read or written: Disk full",
+			},
 		});
 		vi.stubGlobal(
 			"fetch",

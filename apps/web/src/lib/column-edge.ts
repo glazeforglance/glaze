@@ -1,4 +1,6 @@
 import { type ColumnSize, columnSizeProblem } from "@glaze/core";
+import { i18n } from "../i18n.ts";
+import { problemText } from "./messages.ts";
 
 /** What dragging the edge between two page columns does. */
 export type ColumnEdgeResult =
@@ -7,6 +9,7 @@ export type ColumnEdgeResult =
 			readonly index: number;
 			readonly size: ColumnSize;
 	  }
+	/** `reason` is a sentence in the UI language. */
 	| { readonly kind: "blocked"; readonly reason: string };
 
 /**
@@ -40,14 +43,17 @@ export function columnEdgeChange(
 		if (index < 0 || index >= sizes.length || sizes[index] === size) continue;
 		const problem = columnSizeProblem(sizes, index, size);
 		if (problem === null) return { kind: "change", index, size };
-		reason ??= problem;
+		reason ??= problemText(problem);
 	}
 	return {
 		kind: "blocked",
 		reason:
 			reason ??
-			(direction === 1
-				? `Column ${edge + 1} is already full and column ${edge + 2} already small.`
-				: `Column ${edge + 1} is already small and column ${edge + 2} already full.`),
+			i18n.t(
+				direction === 1
+					? "canvas.columnEdge.alreadyFullSmall"
+					: "canvas.columnEdge.alreadySmallFull",
+				{ left: edge + 1, right: edge + 2 },
+			),
 	};
 }

@@ -1,4 +1,5 @@
 import type { PageNode, WidgetNode, YamlPath } from "@glaze/core";
+import { i18n } from "../i18n.ts";
 import {
 	besideAt,
 	type ListGeometry,
@@ -6,6 +7,11 @@ import {
 	slotAt,
 	stickyListAtPoint,
 } from "./dnd-geometry.ts";
+import {
+	type InlineSide,
+	logicalKey,
+	type TextDirection,
+} from "./direction.ts";
 
 /**
  * What kind of list a drop target is: the page's head widgets, a column, or
@@ -22,7 +28,7 @@ export interface WidgetList {
 	readonly path: YamlPath;
 	/** Widget ids in the list, in display order. */
 	readonly widgetIds: readonly string[];
-	/** Human name, used in screen reader announcements. */
+	/** Human name in the UI language, used in labels and screen reader announcements. */
 	readonly label: string;
 	/** The container widgets this list is inside, outermost first (empty for head and columns). */
 	readonly ownerIds: readonly string[];
@@ -37,8 +43,8 @@ export function isHeadList(list: WidgetList): boolean {
 	return list.kind === "head";
 }
 
-/** Which side of a widget a "beside" drop goes. */
-export type DropSide = "left" | "right";
+/** Which side of a widget a "beside" drop goes, in reading order (`left` = before). */
+export type DropSide = InlineSide;
 
 /**
  * Where a dragged widget would land. Without `side`: a slot in a list as it
@@ -63,7 +69,7 @@ export interface DragSubject {
  * other widgets. Components and `listsOfPage` both use this, so the ids match.
  * @param widget - Any widget.
  * @param ownerIds - Container widgets around `widget`, outermost first.
- * @param where - Where the widget is, for announcements, e.g. "column 2".
+ * @param where - Where the widget is, for announcements, e.g. "column 2" (translated).
  * @returns The list, or `null`.
  */
 export function containerList(
@@ -78,7 +84,9 @@ export function containerList(
 		kind: isSplit ? "split" : "group",
 		path: [...widget.path, "widgets"],
 		widgetIds: widget.children.map((child) => child.id),
-		label: `${isSplit ? "split-column" : "group"} in ${where}`,
+		label: isSplit
+			? i18n.t("dnd.list.splitIn", { where })
+			: i18n.t("dnd.list.groupIn", { where }),
 		ownerIds: [...ownerIds, widget.id],
 	};
 }
@@ -111,11 +119,11 @@ export function listsOfPage(page: PageNode): WidgetList[] {
 			kind: "head",
 			path: [...page.path, "head-widgets"],
 			widgetIds: page.headWidgets.map((widget) => widget.id),
-			label: "head widgets",
+			label: i18n.t("dnd.list.head"),
 			ownerIds: [],
 		},
 		...page.columns.flatMap((column, index): WidgetList[] => {
-			const label = `column ${index + 1}`;
+			const label = i18n.t("dnd.list.column", { number: index + 1 });
 			return [
 				{
 					id: column.id,
@@ -178,6 +186,7 @@ export function locateWidget(
  * @param point - The pointer, in viewport coordinates.
  * @param previous - The current target, or `null`.
  * @param subject - What is being dragged.
+ * @param direction - The UI direction (rows and beside sides mirror in RTL).
  * @returns The drop position, or `null` when the pointer is over no accepting list.
  */
 export function pointerTarget(
@@ -186,6 +195,7 @@ export function pointerTarget(
 	point: Point,
 	previous: DropTarget | null,
 	subject: DragSubject,
+	direction: TextDirection = "ltr",
 ): DropTarget | null {
 	const accepting = new Map(
 		lists
@@ -205,6 +215,7 @@ export function pointerTarget(
 			measured.items,
 			point,
 			same?.side ? { index: same.index, side: same.side } : null,
+			direction,
 		);
 		if (beside && list.widgetIds[beside.index] !== subject.widgetId) {
 			return { listId: list.id, index: beside.index, side: beside.side };
@@ -213,7 +224,7 @@ export function pointerTarget(
 	const kept = same && same.side === undefined ? same.index : null;
 	return {
 		listId: list.id,
-		index: slotAt(measured.items, measured.layout, point, kept),
+		index: slotAt(measured.items, measured.layout, point, kept, direction),
 	};
 }
 
@@ -278,20 +289,25 @@ export function isArrowKey(code: string): code is ArrowKey {
  *   Down from the head widgets goes to the top of the first column;
  * - a step that would only move between the two "no change" positions around
  *   the dragged widget itself skips one further.
+ * Left and Right follow the reading direction: in RTL, ArrowLeft goes to the
+ * next column and further along the head widgets.
  * Keyboard drags stay in head widgets and columns; widths and split-columns
  * have their own keyboard controls (the Style tab).
  * @param lists - The page's lists, head widgets first.
  * @param current - Current drop position, or `null` when nothing is targeted yet.
  * @param source - Where the dragged widget is, or `null` for a library item.
- * @param key - The arrow key that was pressed.
+ * @param pressed - The arrow key that was pressed.
+ * @param direction - The UI direction.
  * @returns The new drop position, or `null` to stay where it is.
  */
 export function nextKeyboardTarget(
 	lists: readonly WidgetList[],
 	current: DropTarget | null,
 	source: DropTarget | null,
-	key: ArrowKey,
+	pressed: ArrowKey,
+	direction: TextDirection = "ltr",
 ): DropTarget | null {
+	const key = logicalKey(pressed, direction);
 	const columns = lists.filter((list) => list.kind === "column");
 	const head = lists.find(isHeadList);
 	const list = current

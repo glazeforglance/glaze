@@ -12,6 +12,7 @@ import { ListKindContext, useListKind } from "./list-context.ts";
 import { SplitResizeHandle } from "./SplitResizeHandle.tsx";
 import { WidgetBlock } from "./WidgetBlock.tsx";
 import { WidgetList } from "./WidgetList.tsx";
+import { useTranslation } from "react-i18next";
 
 export interface NestedWidgetsProps {
 	readonly parent: WidgetNode;
@@ -40,6 +41,7 @@ function SplitColumnBody({
 	parent,
 	droppable,
 }: NestedWidgetsProps & { readonly droppable: boolean }) {
+	const { t } = useTranslation();
 	const selectedId = useEditor((state) => state.selectedWidgetId);
 	const columns = parent.maxColumns ?? 2;
 	const list = containerList(parent, [], "");
@@ -49,10 +51,13 @@ function SplitColumnBody({
 		<div className="border-t border-line p-2">
 			<p className="mb-1.5 flex flex-wrap items-center gap-x-2 px-0.5 font-mono text-[10px] text-faint">
 				<span className="text-muted">
-					{columns} columns · {fractionSymbol(columns)} each
+					{t("canvas.split.columns", {
+						count: columns,
+						fraction: fractionSymbol(columns),
+					})}
 				</span>
-				<span title="Glance places these widgets as masonry: each goes in the shortest column. Glaze shows them left to right, row by row.">
-					approximate layout
+				<span title={t("canvas.split.approximateTitle")}>
+					{t("canvas.split.approximate")}
 				</span>
 			</p>
 			{droppable && list ? (
@@ -94,6 +99,7 @@ function GroupTabs({
 	parent,
 	droppable,
 }: NestedWidgetsProps & { readonly droppable: boolean }) {
+	const { t } = useTranslation();
 	const selectedId = useEditor((state) => state.selectedWidgetId);
 	const { active, indicator } = useDragState();
 	const list = containerList(parent, [], "");
@@ -118,7 +124,9 @@ function GroupTabs({
 				>
 					<div
 						role="tablist"
-						aria-label={`Tabs of ${parent.title ?? "group"}`}
+						aria-label={t("canvas.group.tabsOf", {
+							name: parent.title ?? t("canvas.group.fallbackName"),
+						})}
 						className="flex flex-wrap gap-1"
 					>
 						{parent.children.map((child) => (
@@ -132,7 +140,7 @@ function GroupTabs({
 						))}
 						{parent.children.length === 0 && (
 							<span className="px-1 py-2 text-xs text-faint">
-								No tabs yet: drop a widget here.
+								{t("canvas.group.empty")}
 							</span>
 						)}
 					</div>
@@ -160,6 +168,7 @@ function GroupTab({
 	readonly open: boolean;
 	readonly onOpen: () => void;
 }) {
+	const { t } = useTranslation();
 	const { title, abbr, tone } = widgetDisplay(child);
 	const data: DragData = {
 		kind: "widget",
@@ -184,7 +193,8 @@ function GroupTab({
 			// After dnd-kit's attributes, which would make this a "button": it is a tab.
 			role="tab"
 			aria-selected={open}
-			aria-roledescription="draggable tab"
+			aria-roledescription={t("canvas.group.tabRole")}
+			dir="auto"
 			onClick={onOpen}
 			className={`min-h-8 max-w-40 cursor-pointer truncate rounded-[6px] px-2.5 text-xs font-semibold ${
 				open

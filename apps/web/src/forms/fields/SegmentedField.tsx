@@ -3,6 +3,8 @@ import { sameValue } from "../paths.ts";
 import { useWidgetField } from "../use-widget-form.ts";
 import { describedBy } from "./field-styles.ts";
 import { FieldShell } from "./FieldShell.tsx";
+import { currentDirection } from "../../i18n.ts";
+import { logicalKey } from "../../lib/direction.ts";
 
 /** One segment. */
 export interface Segment {
@@ -49,10 +51,11 @@ export function SegmentedField({
 	};
 
 	const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+		const key = logicalKey(event.key, currentDirection());
 		const step =
-			event.key === "ArrowRight" || event.key === "ArrowDown"
+			key === "ArrowRight" || key === "ArrowDown"
 				? 1
-				: event.key === "ArrowLeft" || event.key === "ArrowUp"
+				: key === "ArrowLeft" || key === "ArrowUp"
 					? -1
 					: 0;
 		if (step === 0) return;
@@ -65,6 +68,7 @@ export function SegmentedField({
 
 	return (
 		<FieldShell
+			name={name}
 			inputId={id}
 			label={label}
 			asGroup

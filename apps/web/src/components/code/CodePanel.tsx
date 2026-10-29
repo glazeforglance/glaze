@@ -21,6 +21,8 @@ import { CodeEditor } from "./CodeEditor.tsx";
 import { type FileTab, FileTabs } from "./FileTabs.tsx";
 import { SplitIcon } from "../ui/icons.tsx";
 import { IssueList } from "./IssueList.tsx";
+import { useTranslation } from "react-i18next";
+import { parseErrorText } from "../../lib/messages.ts";
 
 export interface CodePanelProps {
 	/** Whether the Code view is showing (the panel stays mounted while hidden). */
@@ -54,6 +56,7 @@ function applyFix(fix: RenameKeyFix): void {
  * @returns The panel.
  */
 export function CodePanel({ active, onShowPreview }: CodePanelProps) {
+	const { t } = useTranslation();
 	useValidation(active);
 	const draft = useDraftText() ?? "";
 	const doc = useEditor((state) => state.doc);
@@ -127,14 +130,14 @@ export function CodePanel({ active, onShowPreview }: CodePanelProps) {
 				actions: issue.fix
 					? [
 							{
-								name: `Fix: ${issue.fix.to}`,
+								name: t("code.fixName", { to: issue.fix.to }),
 								apply: () => issue.fix && applyFix(issue.fix),
 							},
 						]
 					: [],
 			}),
 		);
-	}, [validation]);
+	}, [validation, t]);
 
 	const onCursor = (offset: number, line: number) => {
 		setCursorLine(line);
@@ -178,7 +181,7 @@ export function CodePanel({ active, onShowPreview }: CodePanelProps) {
 
 	return (
 		<section
-			aria-label="Code"
+			aria-label={t("code.label")}
 			className="flex min-h-0 min-w-0 flex-1 flex-col bg-bg"
 		>
 			<div className="flex h-12 shrink-0 items-center gap-3 border-b border-line px-4">
@@ -188,14 +191,17 @@ export function CodePanel({ active, onShowPreview }: CodePanelProps) {
 					onSelect={setTab}
 					panelId={PANEL_ID}
 				/>
-				<span className="ml-auto shrink-0 font-mono text-xs text-muted">
-					line {cursorLine} · {LANGUAGE_LABEL[language]}
+				<span className="ms-auto shrink-0 font-mono text-xs text-muted">
+					{t("code.cursor", {
+						line: cursorLine,
+						language: LANGUAGE_LABEL[language],
+					})}
 				</span>
 				{onShowPreview && (
 					<button
 						type="button"
-						aria-label="Show preview"
-						title="Show preview"
+						aria-label={t("code.showPreview")}
+						title={t("code.showPreview")}
 						onClick={onShowPreview}
 						className="inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-sm border border-line text-muted hover:text-text"
 					>
@@ -208,14 +214,15 @@ export function CodePanel({ active, onShowPreview }: CodePanelProps) {
 					role="status"
 					className="shrink-0 border-b border-danger/40 bg-danger/10 px-4 py-2 text-sm"
 				>
-					<span className="font-semibold text-danger">YAML error: </span>
-					{codeError && codeError.line !== null && `line ${codeError.line}: `}
-					{codeError?.message}
+					<span className="font-semibold text-danger">
+						{t("code.yamlError")}{" "}
+					</span>
+					{codeError && parseErrorText(codeError)}
 				</p>
 			)}
 			{unavailable !== null && isConfig && (
 				<p className="shrink-0 border-b border-line px-4 py-2 text-xs text-faint">
-					Asset files can't be edited here: {unavailable}
+					{t("code.assetsUnavailable", { reason: unavailable })}
 				</p>
 			)}
 			{activeFile?.status === "error" ? (

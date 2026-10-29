@@ -7,6 +7,7 @@ import {
 	INPUT_CLASS,
 } from "./field-styles.ts";
 import { FieldShell } from "./FieldShell.tsx";
+import { i18n } from "../../i18n.ts";
 
 /** One choice in a select. */
 export interface SelectOption {
@@ -33,7 +34,7 @@ export function SelectField({
 	name,
 	label,
 	options,
-	defaultLabel = "Default",
+	defaultLabel = i18n.t("forms.default"),
 	hint,
 }: SelectFieldProps) {
 	const id = useId();
@@ -45,6 +46,7 @@ export function SelectField({
 
 	return (
 		<FieldShell
+			name={name}
 			inputId={id}
 			label={label}
 			status={widgetField.status}

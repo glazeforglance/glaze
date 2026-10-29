@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useHasUnsavedChanges } from "../../hooks/use-unsaved.ts";
+import { useTranslation } from "react-i18next";
 
 /**
  * "● Unsaved changes" while the document differs from the file on disk.
@@ -7,6 +8,7 @@ import { useHasUnsavedChanges } from "../../hooks/use-unsaved.ts";
  * @returns The indicator, or nothing when everything is published.
  */
 export function UnsavedIndicator() {
+	const { t } = useTranslation();
 	const dirty = useHasUnsavedChanges();
 
 	useEffect(() => {
@@ -20,7 +22,7 @@ export function UnsavedIndicator() {
 	return (
 		<span className="inline-flex items-center gap-1.5 text-sm text-muted">
 			<span aria-hidden="true" className="size-2 rounded-full bg-accent" />
-			Unsaved changes
+			{t("topBar.unsaved")}
 		</span>
 	);
 }

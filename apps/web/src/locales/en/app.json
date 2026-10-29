@@ -1,0 +1,627 @@
+{
+	"problems": {
+		"atLine": "Line {{line}}: {{text}}",
+		"emptySize": "empty",
+		"unresolved-alias": "Alias *{{alias}} has no matching anchor &{{alias}}",
+		"no-pages": "The config needs at least one page",
+		"no-columns": "A page needs at least one column",
+		"too-many-columns": "A page can have at most {{max}} columns",
+		"invalid-column-size": "Column size must be \"small\" or \"full\", not {{size}}",
+		"full-column-count": "A page needs 1 or 2 \"full\" columns, this one has {{count}}",
+		"nested-group": "A group can't contain a {{type}}",
+		"split-in-head": "Head widgets can't be split; put the split-column in a column instead",
+		"column-needs-full": "A page needs at least one full column, so this one has to stay full.",
+		"column-too-many-full": "A page can have at most two full columns; make another one small first.",
+		"slug-reserved": "\"{{slug}}\" is reserved by Glance; pick another URL path.",
+		"slug-taken": "Page {{page}} already uses the URL path \"{{slug}}\"; Glance would only show one of them.",
+		"host-not-text": "Host must be text.",
+		"host-is-url": "Host is the address Glance listens on, not a URL. Leave it empty to listen everywhere.",
+		"host-unclosed-bracket": "Host has a [ without a closing ].",
+		"host-bad-ipv6": "Host has brackets, but no valid IPv6 address inside them.",
+		"host-ipv6-needs-brackets": "Write an IPv6 address in brackets, e.g. [{{host}}]. Glance adds the port after it.",
+		"host-invalid": "Host must be an IP address or a host name. Leave it empty to listen everywhere.",
+		"port-invalid": "Port must be a whole number from 1 to 65535.",
+		"base-url-invalid": "Base URL must start with / (e.g. /glance) or be a full http(s) URL.",
+		"listen-in-container": "Glance runs in a container. This is the port inside the container. Your Docker port mapping still sends traffic to the old port, so Glance will be unreachable. Change the port mapping instead.",
+		"missing-option": "{{widget}} needs a value for “{{option}}”",
+		"missing-option-in-list": "{{widget}} needs a value for “{{option}}” in {{list}}, item {{item}}",
+		"unknown-option": "Unknown option \"{{key}}\"; Glance ignores it",
+		"unknown-option-suggestion": "Unknown option \"{{key}}\". Did you mean \"{{suggestion}}\"?",
+		"glance-validation-off": "Glance validation is off — set GLANCE_BIN",
+		"glance-output": "Glance: {{output}}",
+		"glance-output-machine": "Glance: {{output}} (can't be checked here)",
+		"glance-reads-file": "{{reference}} reads a file where Glance runs; it can't be checked here",
+		"assets-unchecked": "Glance's assets folder can't be checked here. Set GLAZE_ASSETS_PATH so Glaze can check it.",
+		"assets-path-missing": "GLAZE_ASSETS_PATH doesn't exist inside Glaze, so Glance's assets folder can't be checked.",
+		"glance-unrunnable": "GLANCE_BIN can't be run; Glance validation was skipped",
+		"glance-timeout": "Glance took too long to validate the config",
+		"glance-failed": "Glance validation failed to run: {{reason}}",
+		"too-many-columns-slim": "A slim page can have at most {{max}} columns"
+	},
+	"editErrors": {
+		"invalid-path": "That place doesn't exist in the config.",
+		"not-found": "That part of the config has changed. Try again.",
+		"index-out-of-range": "That position doesn't exist anymore. Try again.",
+		"unsupported-structure": "This part of the YAML is written in a way the editor can't change. Use the Code view.",
+		"widget-is-alias": "This widget is an alias (*name); edit the anchored widget instead.",
+		"option-not-found": "That option isn't set here.",
+		"option-inherited": "This value comes from a merge key (<<: *anchor); changing it here would change the anchor. Use the Code view.",
+		"option-is-alias": "This value is an alias (*name); changing it would change the anchored value. Use the Code view.",
+		"invalid-move": "A widget can't be moved there.",
+		"duplicate-key": "“{{key}}” is already set here.",
+		"layout-violation": "That would break one of Glance's layout rules.",
+		"invalid-result": "That change would break the YAML.",
+		"invalid-result-detail": "That change would break the YAML: {{detail}}",
+		"invalid-result-alias": "That change would break the YAML: alias *{{alias}} has no matching anchor &{{alias}}"
+	},
+	"dnd": {
+		"list": {
+			"head": "head widgets",
+			"column": "column {{number}}",
+			"splitIn": "split-column in {{where}}",
+			"groupIn": "group in {{where}}"
+		},
+		"dropToAdd": "Drop to add “{{name}}”",
+		"dropToMove": "Drop to move “{{name}}”",
+		"add": "add “{{name}}”",
+		"move": "move “{{name}}”",
+		"sideBySide": "side by side",
+		"instructions": "To pick up a widget, press Space or Enter. Use the arrow keys to move it, Space or Enter to drop it, and Escape to cancel.",
+		"announce": {
+			"nowhere": "no drop area",
+			"besideBefore": "{{list}}, side by side, before the widget at position {{position}}",
+			"besideAfter": "{{list}}, side by side, after the widget at position {{position}}",
+			"position": "{{list}}, position {{position}}",
+			"widget": "widget",
+			"pickedUp": "Picked up {{name}}.",
+			"willPlace": "{{name}} will be placed in {{where}}.",
+			"dropped": "{{name}} was dropped in {{where}}.",
+			"droppedOutside": "{{name}} was dropped outside a drop area.",
+			"cancelled": "Moving {{name}} was cancelled."
+		}
+	},
+	"api": {
+		"unreachable": "Can't reach the Glaze API. Is the server running?",
+		"unreachableKept": "Can't reach the Glaze API. Your changes are still here.",
+		"aborted": "Cancelled",
+		"badResponse": "The API sent an unexpected response",
+		"status": "The API answered {{status}}",
+		"fileConflict": "{{name}} changed on disk since it was loaded. Reload Glaze to get the new version.",
+		"fileError": "{{name}}: {{message}}",
+		"tooManyAttempts_one": "Too many failed attempts. Try again in {{count}} minute.",
+		"tooManyAttempts_other": "Too many failed attempts. Try again in {{count}} minutes.",
+		"unauthorized": "Log in to use Glaze",
+		"rate-limited": "Too many failed logins. Try again later.",
+		"bad-request": "Glaze sent a request the server doesn't understand. Reload the page and try again.",
+		"invalid-credentials": "Wrong username or password.",
+		"conflict": "The file changed on disk since it was loaded",
+		"invalid": "Glance can't use this config",
+		"unconfirmed": "This change needs a confirmation",
+		"not-found": "The file wasn't found",
+		"io-error": "The file couldn't be read or written: {{reason}}",
+		"invalid-name": "Invalid file name",
+		"not-referenced": "The config doesn't use this file",
+		"no-assets-path": "The config has no server.assets-path",
+		"outside-config-folder": "server.assets-path is outside the config's folder. In Docker, mount Glance's assets folder into Glaze as well and set GLAZE_ASSETS_PATH to it (see the README).",
+		"not-text": "The file isn't UTF-8 text",
+		"too-large": "The file is larger than 1 MB",
+		"too-short": "Glance needs a password of at least {{min}} characters",
+		"too-long": "A password can be at most {{max}} bytes (bcrypt ignores the rest)",
+		"invalidYaml": "The YAML has errors"
+	},
+	"widget": {
+		"include": "Include",
+		"unknownType": "Unknown"
+	},
+	"page": {
+		"newName": "New page",
+		"newNameNumbered": "New page {{number}}",
+		"untitled": "Untitled page"
+	},
+	"views": {
+		"design": "Design",
+		"code": "Code",
+		"preview": "Preview",
+		"settings": "Settings",
+		"label": "View",
+		"shortcut": "{{view}} (Ctrl+{{key}})"
+	},
+	"library": {
+		"groups": {
+			"basics": "Basics",
+			"server": "Server",
+			"media": "Media & news",
+			"advanced": "Advanced"
+		},
+		"panelName": "widget library",
+		"label": "Widget library",
+		"noMatch": "No widgets match “<query>{{query}}</query>”.",
+		"add": "Add {{name}}",
+		"searchLabel": "Search widgets",
+		"searchPlaceholder": "Search widgets…"
+	},
+	"canvas": {
+		"columnEdge": {
+			"alreadyFullSmall": "Column {{left}} is already full and column {{right}} already small.",
+			"alreadySmallFull": "Column {{left}} is already small and column {{right}} already full.",
+			"plan": "Column {{number}} → {{size}}",
+			"label": "Column sizes around the edge between column {{left}} and {{right}}",
+			"title": "Drag (or use the arrow keys) to switch the columns between small and full"
+		},
+		"subtitle": {
+			"noType": "no type",
+			"tabs_one": "{{type}} · {{count}} tab",
+			"tabs_other": "{{type}} · {{count}} tabs",
+			"widgets_one": "{{type}} · {{count}} widget",
+			"widgets_other": "{{type}} · {{count}} widgets",
+			"alias": "{{type}} · alias"
+		},
+		"addWidget": {
+			"label": "Add a widget to {{list}}",
+			"trigger": "Widget"
+		},
+		"noPages": "This config has no pages yet.",
+		"pageLabel": "Page {{name}}",
+		"includedPage": "This page comes from <file>{{file}}</file> and can't be edited here.",
+		"codeError": {
+			"title": "YAML has errors — Design shows the last valid version.",
+			"open": "Open Code",
+			"blocked": "The YAML in the Code view has errors. Fix them there before editing here."
+		},
+		"column": {
+			"label": "{{column}}, {{size}}",
+			"noSize": "no size"
+		},
+		"columnSize": {
+			"label": "Size of {{column}}: {{size}}",
+			"remove": "Remove column…",
+			"removeTitle": "Remove {{column}}?",
+			"removeConfirm": "Remove column",
+			"removeBody_one": "Its {{count}} widget is removed too. Nothing is written to disk until you publish.",
+			"removeBody_other": "Its {{count}} widgets are removed too. Nothing is written to disk until you publish."
+		},
+		"notChanged": "Not changed:",
+		"head": {
+			"label": "Head widgets",
+			"empty": "drop a widget here to show it above all columns"
+		},
+		"split": {
+			"columns_one": "{{count}} column · {{fraction}} each",
+			"columns_other": "{{count}} columns · {{fraction}} each",
+			"approximateTitle": "Glance places these widgets as masonry: each goes in the shortest column. Glaze shows them in reading order, row by row.",
+			"approximate": "approximate layout",
+			"sharedWidth": "All {{count}} widgets in this split-column get this width (Glance draws equal columns).",
+			"equalColumns": "Glance draws equal columns, so the rest of the row stays empty.",
+			"widthOf": "Width of {{name}}",
+			"valueText_one": "{{fraction}} of the split-column, {{count}} column, shared by all its widgets",
+			"valueText_other": "{{fraction}} of the split-column, {{count}} columns, shared by all its widgets",
+			"handleTitle": "Drag to resize: ½, ⅓ or ¼ (all widgets in this split-column)",
+			"dissolved": "The split-column had one widget left, so it was turned back into a normal widget."
+		},
+		"group": {
+			"tabsOf": "Tabs of {{name}}",
+			"fallbackName": "group",
+			"empty": "No tabs yet: drop a widget here.",
+			"tabRole": "draggable tab"
+		},
+		"pageSettings": "Page settings",
+		"columnCount_one": "{{count}} column",
+		"columnCount_other": "{{count}} columns",
+		"addColumn": "Add column",
+		"widget": {
+			"duplicateLabel": "Duplicate {{name}}",
+			"duplicate": "Duplicate",
+			"deleteLabel": "Delete {{name}}",
+			"delete": "Delete (Del)",
+			"move": "Move {{name}}"
+		}
+	},
+	"settings": {
+		"auth": {
+			"usernameTooShort_one": "Glance needs a user name of at least {{count}} character.",
+			"usernameTooShort_other": "Glance needs a user name of at least {{count}} characters.",
+			"usernameTaken": "There already is a user “{{name}}”.",
+			"usernameInCode": "Names with dots or only digits can be added in the Code view.",
+			"newKeySet": "A new secret key is set. Publishing logs everyone out of Glance.",
+			"secretKey": "Secret key",
+			"secretKeyIntro": "Signs Glance's login sessions. Glance needs one as soon as there are users; changing it logs everyone out.",
+			"keyNeeded": "Glance refuses users without a secret key. Generate one below.",
+			"keySet": "Set:",
+			"keyHint": "Or {{env}} to keep it out of glance.yml.",
+			"generate": "Generate a new key",
+			"replaceTitle": "Replace the secret key?",
+			"replaceBody": "Once you publish, everyone who is logged in to Glance has to log in again.",
+			"users": "Users",
+			"usersIntro": "Glance shows every page to every user; it has no per-page access.",
+			"noUsers": "No users: anyone who can reach Glance sees the dashboard.",
+			"keyGenerated": "Glance needs a secret key for users, so one was generated.",
+			"newNameFor": "New name for {{name}}",
+			"rename": "Rename",
+			"saveName": "Save name",
+			"remove": "Remove",
+			"hashFromEnv": "Password hash from <hash>{{hash}}</hash>.",
+			"hashSet": "Password set (bcrypt hash <hash>{{hash}}</hash>).",
+			"plainPassword": "The password is stored as plain text; set it again to store a hash instead.",
+			"noPassword": "No password: Glance refuses this user until it has one.",
+			"newPasswordFor": "New password for {{name}}",
+			"setPassword": "Set password",
+			"passwordPlaceholder_one": "At least {{count}} character",
+			"passwordPlaceholder_other": "At least {{count}} characters",
+			"hashing": "Hashing…",
+			"addUserTitle": "Add a user",
+			"userName": "User name",
+			"passwordFor": "Password for {{name}}",
+			"passwordForNew": "Password for the new user",
+			"addUser": "Add user"
+		},
+		"server": {
+			"noGlanceUrl": "GLANCE_URL isn't set, so Glaze shows no live preview; these options don't affect Glaze.",
+			"portDiffers": "Glaze opens Glance at {{url}}, but Glance would listen on port {{port}}: update GLANCE_URL when you publish this.",
+			"baseUrlMoves": "With a base URL of {{base}}, Glance's pages move under that path; GLANCE_URL ({{url}}) may need it too."
+		},
+		"sectionsLabel": "Settings sections",
+		"codeError": "The YAML in the Code view has errors. Fix them there before changing settings.",
+		"sections": {
+			"server": {
+				"name": "Server",
+				"text": "Where Glance listens inside its own container or machine. To reach Glance on another address or port, change your Docker port mapping or reverse proxy, not these."
+			},
+			"auth": {
+				"name": "Login",
+				"text": "Glance's own login: users and the secret key."
+			},
+			"document": {
+				"name": "Document head",
+				"text": "Extra HTML in every page's <head>."
+			},
+			"branding": {
+				"name": "Branding",
+				"text": "Logo, footer, favicon and app name."
+			},
+			"theme": {
+				"name": "Theme",
+				"text": "Colors, contrast and theme presets."
+			}
+		},
+		"document": {
+			"warning": "Scripts here run on every page of your dashboard, for everyone who opens it. Only add code you trust.",
+			"label": "Extra <head> HTML",
+			"hint": "E.g. a <link> to a font, a <meta> tag, or a script such as Glaze's Edit page button."
+		}
+	},
+	"common": {
+		"cancel": "Cancel",
+		"dismiss": "Dismiss",
+		"undo": "Undo",
+		"close": "Close",
+		"tryAgain": "Try again",
+		"loading": "Loading…"
+	},
+	"topBar": {
+		"authOff": "Auth off (dev)",
+		"authOffTitle": "Glaze v{{version}}: GLAZE_AUTH=off, anyone who can reach Glaze can edit the config. Development only.",
+		"undo": "Undo",
+		"comingSoon": "Coming soon",
+		"unsaved": "Unsaved changes"
+	},
+	"glanceDown": {
+		"title": "Glance didn't come back after this change",
+		"body": "A wrong listen address or port can stop Glance from starting, or make it listen where your Docker port mapping doesn't reach.",
+		"dropsEdits": "Undoing also drops your unpublished edits.",
+		"undo": "Undo last publish",
+		"undoing": "Undoing…",
+		"changedSince": "glance.yml changed since this publish, so it wasn't undone. Fix it in the Code view."
+	},
+	"pages": {
+		"nameLabel": "Page name",
+		"thisPage": "this page",
+		"actionsFor": "Actions for page {{name}}",
+		"rename": "Rename",
+		"moveEarlier": "Move left",
+		"moveLater": "Move right",
+		"deleteMenu": "Delete page…",
+		"deleteTitle": "Delete “<name>{{name}}</name>”?",
+		"delete": "Delete page",
+		"deleteBody": "The page and all its columns and widgets are removed from the config. Nothing is written to disk until you publish.",
+		"tabsLabel": "Pages",
+		"includeNumber": "Include {{number}}",
+		"pageNumber": "Page {{number}}",
+		"add": "Page",
+		"nameRequired": "A page needs a name."
+	},
+	"publish": {
+		"published": "Published",
+		"buttonTitle": "Publish (Ctrl+S)",
+		"publishing": "Publishing…",
+		"nothingToPublish": "No changes to publish",
+		"button": "Publish",
+		"failed": "Publish failed",
+		"nothingWritten": "Nothing was written. {{message}}",
+		"conflict": {
+			"title": "The file changed on disk",
+			"reload": "Reload",
+			"missing": "The file is missing",
+			"overwrite": "Overwrite",
+			"body": "Someone edited <file>glance.yml</file> since you opened it.",
+			"choice": "<strong>Reload</strong> loads their version and throws away your unpublished changes. <strong>Overwrite</strong> replaces their version with yours."
+		},
+		"review": {
+			"title": "Publish changes",
+			"checking": "Checking the config…",
+			"fixFirst": "Fix the errors first, or use Publish anyway",
+			"confirmFirst": "Confirm the warning first",
+			"anyway": "Publish anyway",
+			"filesLabel": "Files that change",
+			"nothing": "Nothing has changed.",
+			"files_one": "{{count}} file will be written:",
+			"files_other": "{{count}} files will be written:",
+			"validation": "Validation",
+			"checkFailed": "Couldn't check the config: {{message}}. The server checks it again when you publish.",
+			"errors_one": "{{count}} error",
+			"errors_other": "{{count}} errors",
+			"warnings_one": "{{count}} warning",
+			"warnings_other": "{{count}} warnings",
+			"ready": "ready to publish.",
+			"yamlBroken": "The YAML can't be read, so it can't be published, not even anyway.",
+			"openCode": "Open the Code view",
+			"understand": "I understand Glance may become unreachable. Publish this change anyway."
+		}
+	},
+	"userMenu": {
+		"language": "Language",
+		"signedInAs": "Signed in as {{user}}",
+		"signedIn": "Signed in as",
+		"logOut": "Log out",
+		"logOutTitle": "Log out with unpublished changes?",
+		"logOutBody": "Your changes haven't been published yet. If you log out now, they're lost."
+	},
+	"widths": {
+		"label_one": "{{fraction}} · {{count}} column",
+		"label_other": "{{fraction}} · {{count}} columns"
+	},
+	"panel": {
+		"show": "Show the {{panel}}",
+		"hide": "Hide the {{panel}}",
+		"resize": "Resize the {{panel}}"
+	},
+	"resize": {
+		"title": "Drag to resize · double-click to reset"
+	},
+	"code": {
+		"resizeSplit": "Resize code and preview",
+		"editorLabel": "{{file}} source",
+		"fixName": "Fix: {{to}}",
+		"label": "Code",
+		"cursor": "line {{line}} · {{language}}",
+		"showPreview": "Show preview",
+		"yamlError": "YAML error:",
+		"assetsUnavailable": "Asset files can't be edited here: {{reason}}",
+		"files": "Files",
+		"unsavedFile": "(unsaved)",
+		"problems": "Problems",
+		"checking": "Checking…",
+		"noProblems": "No problems found.",
+		"severity": {
+			"error": "error:",
+			"warning": "warning:",
+			"info": "note:"
+		},
+		"line": "Line {{line}}:",
+		"fixLabel": "Fix: rename {{from}} to {{to}}",
+		"fix": "Fix",
+		"howToSetUp": "How to set it up",
+		"validationUnavailable": "Validation is unavailable: {{message}}",
+		"notLoaded": "Not loaded"
+	},
+	"inspector": {
+		"tabs": {
+			"settings": "Settings",
+			"style": "Style",
+			"yaml": "YAML"
+		},
+		"label": "Inspector",
+		"panelName": "inspector",
+		"empty": "Select a widget to see its settings, or click the page title for the page's settings.",
+		"page": {
+			"widthHint": "Slim pages have at most 2 columns; default and wide pages at most 3.",
+			"included": "This page comes from <file>{{file}}</file>; edit that file instead.",
+			"slugHint": "Glance uses /{{slug}} when this is empty.",
+			"writeSlug": "Write “{{slug}}” into the config"
+		},
+		"yaml": {
+			"unavailable": "This widget's YAML can't be shown.",
+			"label": "Widget YAML",
+			"readOnly": "Read-only here.",
+			"edit": "Edit it in the Code view"
+		}
+	},
+	"preview": {
+		"connect": {
+			"title": "Connect the live preview",
+			"body": "Tell Glaze where your browser can reach Glance by setting <code>GLANCE_URL</code>, for example in <code>.env</code>:",
+			"restart": "Then restart the Glaze server.",
+			"login": "The preview shows the published config. If Glance has a login, you sign in once inside the preview."
+		},
+		"label": "Live preview",
+		"waiting": "Waiting for Glance to reload…",
+		"reloaded": "Glance reloaded · {{time}}",
+		"device": "Device",
+		"desktop": "Desktop",
+		"phone": "Phone (390 px)",
+		"reload": "Reload preview",
+		"hide": "Hide preview",
+		"frameTitle": "Glance preview: {{page}}",
+		"firstPage": "first page",
+		"lastPublished": "Preview shows the last published version.",
+		"unsavedNotIn": "Unsaved changes aren't in it yet; Publish to see them."
+	},
+	"app": {
+		"loadingConfig": "Loading glance.yml…",
+		"openFailed": "Couldn't open the config",
+		"starting": "Starting Glaze…",
+		"unreachable": "Can't reach Glaze"
+	},
+	"login": {
+		"title": "Log in to Glaze",
+		"username": "Username",
+		"password": "Password",
+		"busy": "Logging in…",
+		"submit": "Log in",
+		"again": "Log in again",
+		"sessionEnded": "Your session ended. Log in again to continue; your unpublished changes are still here."
+	},
+	"forms": {
+		"inheritedTitle": "Comes from a YAML merge key (<<: *anchor)",
+		"inherited": "inherited",
+		"override": "Override",
+		"secretTip": "Tip: write {{env}} here so the key stays out of glance.yml.",
+		"hideValue": "Hide {{label}}",
+		"showValue": "Show {{label}}",
+		"hide": "Hide",
+		"show": "Show",
+		"default": "Default",
+		"defaultIs": "Default ({{value}})",
+		"valueIsDefault": "{{value}} (default)",
+		"glanceDefault": "Glance default",
+		"glanceDefaultValue": "Glance default ({{value}})",
+		"glanceDefaultIs": "Glance's default: {{value}}.",
+		"custom": "Custom…",
+		"customValue": "{{label}} (custom)",
+		"moreOptions": "More options",
+		"commaSeparated": "Separate values with commas.",
+		"envTitle": "Glance reads this from {{reference}}",
+		"included": "This widget comes from another file: <file>{{file}}</file>. Glaze can't edit included files yet.",
+		"alias": "This widget is a YAML alias (<code>*name</code>): it shows another widget's settings. Edit that widget instead, or change this item in the YAML.",
+		"duration": {
+			"placeholder": "e.g. 90s, 2h",
+			"every": {
+				"seconds_one": "Every second",
+				"seconds_other": "Every {{count}} seconds",
+				"minutes_one": "Every minute",
+				"minutes_other": "Every {{count}} minutes",
+				"hours_one": "Every hour",
+				"hours_other": "Every {{count}} hours",
+				"days_one": "Every day",
+				"days_other": "Every {{count}} days"
+			},
+			"seconds_one": "{{count}} second",
+			"seconds_other": "{{count}} seconds",
+			"minutes_one": "{{count}} minute",
+			"minutes_other": "{{count}} minutes",
+			"hours_one": "{{count}} hour",
+			"hours_other": "{{count}} hours",
+			"days_one": "{{count}} day",
+			"days_other": "{{count}} days"
+		},
+		"icon": {
+			"source": "{{label}}: source",
+			"imageUrl": "Image URL",
+			"example": "e.g. {{example}}",
+			"invert": "Invert on light themes"
+		},
+		"color": {
+			"pick": "{{label}}: pick a color",
+			"placeholder": "hue saturation lightness",
+			"hex": "{{label}} as hex"
+		},
+		"list": {
+			"moveUp": "Move {{name}} up",
+			"moveDown": "Move {{name}} down",
+			"remove": "Remove {{name}}",
+			"add": "Add {{item}}",
+			"itemNumber": "{{item}} {{number}}"
+		},
+		"map": {
+			"newKeyFor": "New {{label}} for {{key}}",
+			"editInYaml": "Edit this one in the YAML tab",
+			"renameKey": "Rename {{key}}",
+			"rename": "Rename",
+			"remove": "Remove {{key}}",
+			"name": "Name",
+			"add": "Add",
+			"enterName": "Enter a name first.",
+			"taken": "\"{{key}}\" is already in the list.",
+			"inYaml": "Names with dots or only digits can be added in the YAML tab."
+		},
+		"any": {
+			"text": "Text",
+			"number": "Number",
+			"boolean": "Yes/no",
+			"list": "List",
+			"map": "Map",
+			"typeOf": "{{label}}: type",
+			"removeItem": "Remove {{label}} {{number}}",
+			"newKeyIn": "New key in {{label}}",
+			"newKey": "New key",
+			"addItem": "Add item"
+		},
+		"base": {
+			"tabName": "Tab name",
+			"cssPlaceholder": "e.g. my-card"
+		},
+		"other": {
+			"title": "Other options",
+			"unknownFor": "Glance doesn't know these for {{widget}}. They stay as they are; change them in the <yaml>YAML tab</yaml>.",
+			"unknownType": "Glance doesn't know this widget type. They stay as they are; change them in the <yaml>YAML tab</yaml>."
+		},
+		"width": {
+			"inGroup": "Widgets in a group are tabs and share the group's width.",
+			"inHead": "Head widgets can't be split; they stay one row above the columns.",
+			"splitLabel": "Columns side by side",
+			"label": "Width",
+			"full": "Full",
+			"fullLabel": "Full width",
+			"fractionLabel_one": "{{fraction}} width, {{count}} column",
+			"fractionLabel_other": "{{fraction}} width, {{count}} columns",
+			"shared_one": "{{count}} widget in this split-column shares this width: Glance draws equal columns.",
+			"shared_other": "All {{count}} widgets in this split-column share this width: Glance draws equal columns.",
+			"alone": "Alone in its split-column: the rest of the row stays empty until you drop a widget beside it.",
+			"noWidth": "Glance has no width per widget; ½, ⅓ and ¼ put it in a split-column.",
+			"unwrap": "Put these widgets below each other again",
+			"nested": "This split-column sits in another split-column, which sets its outer width."
+		},
+		"template": {
+			"title": "Template cheat sheet",
+			"jsonString": "a value from the response (also .Int, .Float, .Bool)",
+			"jsonArray": "a list to loop over with range",
+			"jsonExists": "whether a value is there",
+			"subrequest": "the response of a subrequest",
+			"options": "a value from options",
+			"relativeTime": "“2h ago”, kept up to date",
+			"numbers": "1,234 and 1.2k",
+			"arithmetic": "arithmetic",
+			"text": "text helpers",
+			"classes": "Glance's own CSS classes"
+		},
+		"containers": {
+			"name": "Container name",
+			"displayName": "Display name",
+			"url": "URL",
+			"description": "Description",
+			"icon": "Icon",
+			"hide": "Hide this container",
+			"sameTab": "Open in the same tab",
+			"parent": "Parent",
+			"parentHint": "The glance.id of a container to show this one under.",
+			"id": "Id"
+		},
+		"errors": {
+			"text": "{{label}}: use text",
+			"wholeNumber": "{{label}}: enter a whole number",
+			"min": "{{label}}: use {{min}} or more",
+			"number": "{{label}}: enter a number",
+			"variant": "{{label}}: this form isn't supported",
+			"boolean": "{{label}}: use true or false",
+			"list": "{{label}}: use a list",
+			"map": "{{label}}: use names with values",
+			"required": "{{label}} is required",
+			"duration": "Use a number and a unit: 30s, 5m, 1h or 1d",
+			"url": "Start the address with http:// or https://",
+			"wholeNumberPlain": "Enter a whole number",
+			"minPlain": "Use {{min}} or more",
+			"oneOf": "Use one of: {{values}}",
+			"color": "Use hue saturation lightness, e.g. 240 13 95",
+			"booleanPlain": "Use true or false"
+		}
+	}
+}

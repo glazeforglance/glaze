@@ -2,12 +2,16 @@ import type { ReactNode } from "react";
 import { type PanelConfig, usePanel } from "../../hooks/use-panel.ts";
 import { PanelIcon } from "../ui/icons.tsx";
 import { ResizeHandle } from "../ui/ResizeHandle.tsx";
+import { useTranslation } from "react-i18next";
 
 export interface SidePanelProps extends PanelConfig {
 	/** Storage name and DOM id, e.g. `library`. */
 	readonly id: string;
-	/** Which side of the canvas it is on; the handle goes on the inner edge. */
-	readonly side: "left" | "right";
+	/**
+	 * Which side of the canvas it is on, in reading order (`start` is the left
+	 * in LTR and the right in RTL); the handle goes on the inner edge.
+	 */
+	readonly side: "start" | "end";
 	/** Short name for buttons and screen readers, e.g. "widget library". */
 	readonly label: string;
 	readonly children: ReactNode;
@@ -34,6 +38,7 @@ export function SidePanel({
 	children,
 	...config
 }: SidePanelProps) {
+	const { t } = useTranslation();
 	const panel = usePanel(id, config);
 	const contentId = `${id}-panel`;
 
@@ -41,15 +46,15 @@ export function SidePanel({
 		return (
 			<div
 				className={`flex w-9 shrink-0 flex-col items-center bg-bg py-3 ${
-					side === "left" ? "border-r" : "border-l"
+					side === "start" ? "border-e" : "border-s"
 				} border-line`}
 			>
 				<button
 					type="button"
-					aria-label={`Show the ${label}`}
+					aria-label={t("panel.show", { panel: label })}
 					aria-expanded={false}
 					aria-controls={contentId}
-					title={`Show the ${label}`}
+					title={t("panel.show", { panel: label })}
 					onClick={() => panel.setCollapsed(false)}
 					className={TOGGLE_CLASS}
 				>
@@ -71,14 +76,14 @@ export function SidePanel({
 			{children}
 			<button
 				type="button"
-				aria-label={`Hide the ${label}`}
+				aria-label={t("panel.hide", { panel: label })}
 				aria-expanded={true}
 				aria-controls={contentId}
-				title={`Hide the ${label}`}
+				title={t("panel.hide", { panel: label })}
 				onClick={() => panel.setCollapsed(true)}
 				// On the panel's edge, half over the canvas, so it never covers the panel's content.
 				className={`${TOGGLE_CLASS} absolute top-2 z-30 border border-line bg-bg ${
-					side === "left" ? "-right-3.5" : "-left-3.5"
+					side === "start" ? "-end-3.5" : "-start-3.5"
 				}`}
 			>
 				<PanelIcon side={side} />
@@ -88,15 +93,15 @@ export function SidePanel({
 				min={panel.min}
 				max={panel.max}
 				step={KEY_STEP_PX}
-				direction={side === "left" ? 1 : -1}
+				direction={side === "start" ? 1 : -1}
 				fromPointer={(start, deltaX) =>
-					side === "left" ? start + deltaX : start - deltaX
+					side === "start" ? start + deltaX : start - deltaX
 				}
 				onChange={panel.setWidth}
 				onReset={panel.resetWidth}
-				label={`Resize the ${label}`}
+				label={t("panel.resize", { panel: label })}
 				controls={contentId}
-				className={`absolute inset-y-0 ${side === "left" ? "right-0" : "left-0"}`}
+				className={`absolute inset-y-0 ${side === "start" ? "end-0" : "start-0"}`}
 			/>
 		</div>
 	);

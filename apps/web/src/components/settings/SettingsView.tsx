@@ -1,8 +1,4 @@
-import {
-	CONTAINER_LISTEN_WARNING,
-	type ServerOptionKey,
-	serverOptionProblem,
-} from "@glaze/core";
+import { type ServerOptionKey, serverOptionProblem } from "@glaze/core";
 import { CONFIG_FIELDS, type FieldSchema } from "@glaze/schemas";
 import { useState } from "react";
 import { useWatch } from "react-hook-form";
@@ -23,35 +19,26 @@ import {
 } from "../../lib/glance-settings.ts";
 import { useEditor } from "../../store/editor-store.ts";
 import { AuthSection } from "./AuthSection.tsx";
+import { useTranslation } from "react-i18next";
+import { localizedFields } from "../../i18n.ts";
+import { problemText } from "../../lib/messages.ts";
 
 type SectionId = "server" | "auth" | "document" | "branding" | "theme";
 
-const SECTIONS: readonly { id: SectionId; label: string; text: string }[] = [
-	{
-		id: "server",
-		label: "Server",
-		text: "Where Glance listens inside its own container or machine. To reach Glance on another address or port, change your Docker port mapping or reverse proxy, not these.",
-	},
-	{
-		id: "auth",
-		label: "Login",
-		text: "Glance's own login: users and the secret key.",
-	},
-	{
-		id: "document",
-		label: "Document head",
-		text: "Extra HTML in every page's <head>.",
-	},
-	{
-		id: "branding",
-		label: "Branding",
-		text: "Logo, footer, favicon and app name.",
-	},
-	{ id: "theme", label: "Theme", text: "Colors, contrast and theme presets." },
+/** The sections in order; their name and intro are `settings.sections.<id>`. */
+const SECTIONS: readonly SectionId[] = [
+	"server",
+	"auth",
+	"document",
+	"branding",
+	"theme",
 ];
 
 function sectionFields(key: string): readonly FieldSchema[] {
-	return CONFIG_FIELDS.find((field) => field.key === key)?.fields ?? [];
+	return (
+		localizedFields(CONFIG_FIELDS, "config").find((field) => field.key === key)
+			?.fields ?? []
+	);
 }
 
 /**
@@ -61,40 +48,50 @@ function sectionFields(key: string): readonly FieldSchema[] {
  * @returns The view.
  */
 export function SettingsView() {
+	const { t } = useTranslation();
 	const [section, setSection] = useState<SectionId>("server");
 	const codeError = useEditor((state) => state.codeText !== null);
-	const current = SECTIONS.find((candidate) => candidate.id === section);
 
 	return (
 		<div className="flex min-h-0 min-w-0 flex-1">
 			<nav
-				aria-label="Settings sections"
-				className="flex w-56 shrink-0 flex-col gap-1 border-r border-line bg-bg p-3"
+				aria-label={t("settings.sectionsLabel")}
+				className="flex w-56 shrink-0 flex-col gap-1 border-e border-line bg-bg p-3"
 			>
-				{SECTIONS.map((option) => (
+				{SECTIONS.map((id) => (
 					<button
-						key={option.id}
+						key={id}
 						type="button"
-						aria-current={option.id === section ? "page" : undefined}
-						onClick={() => setSection(option.id)}
-						className={`min-h-10 cursor-pointer rounded-sm px-3 text-left text-sm ${
-							option.id === section
+						aria-current={id === section ? "page" : undefined}
+						onClick={() => setSection(id)}
+						className={`min-h-10 cursor-pointer rounded-sm px-3 text-start text-sm ${
+							id === section
 								? "bg-card font-semibold text-text"
 								: "text-muted hover:bg-card hover:text-text"
 						}`}
 					>
-						{option.label}
+						{t(`settings.sections.${id}.name`)}
 					</button>
 				))}
 			</nav>
-			<main aria-label="Settings" className="min-w-0 flex-1 overflow-auto">
+			<main
+				aria-label={t("views.settings")}
+				className="min-w-0 flex-1 overflow-auto"
+			>
 				<div className="mx-auto max-w-2xl px-6 py-8">
-					<h1 className="text-2xl font-bold">{current?.label}</h1>
-					<p className="mt-1 mb-6 text-sm text-muted">{current?.text}</p>
+					<h1 className="text-2xl font-bold">
+						{t(`settings.sections.${section}.name`)}
+					</h1>
+					<p className="mt-1 mb-6 text-sm text-muted">
+						{t(`settings.sections.${section}.text`)}
+					</p>
 					{codeError ? (
-						<FieldWarning text="The YAML in the Code view has errors. Fix them there before changing settings." />
+						<FieldWarning text={t("settings.codeError")} />
 					) : (
-						<MapForm basePath={[]} fields={CONFIG_FIELDS}>
+						<MapForm
+							basePath={[]}
+							fields={localizedFields(CONFIG_FIELDS, "config")}
+						>
 							{section === "server" && <ServerSection />}
 							{section === "auth" && <AuthSection />}
 							{section === "document" && <DocumentSection />}
@@ -148,16 +145,22 @@ function ServerSection() {
 			{fields.map((field) => {
 				const key = field.key as ServerOptionKey;
 				// Read from the document, not the form: that is what gets published.
-				const problem =
+				const found =
 					CHECKED_KEYS.has(key) && doc !== null
 						? serverOptionProblem(key, doc.yaml.getIn(["server", key]))
 						: null;
+				const problem = found ? problemText(found) : null;
 				return (
 					<div key={field.key}>
 						<SchemaField field={field} name={`server.${field.key}`} />
 						{problem !== null && <ServerProblem text={problem} />}
 						{changed[0] === key && (
-							<ServerProblem text={CONTAINER_LISTEN_WARNING} />
+							<ServerProblem
+								text={problemText({
+									code: "listen-in-container",
+									message: "",
+								})}
+							/>
 						)}
 					</div>
 				);
@@ -179,14 +182,15 @@ function ServerProblem({ text }: { readonly text: string }) {
 }
 
 function DocumentSection() {
+	const { t } = useTranslation();
 	return (
 		<>
-			<FieldWarning text="Scripts here run on every page of your dashboard, for everyone who opens it. Only add code you trust." />
+			<FieldWarning text={t("settings.document.warning")} />
 			<CodeField
 				name="document.head"
-				label="Extra <head> HTML"
+				label={t("settings.document.label")}
 				language="html"
-				hint="E.g. a <link> to a font, a <meta> tag, or a script such as Glaze's Edit page button."
+				hint={t("settings.document.hint")}
 			/>
 		</>
 	);

@@ -20,6 +20,8 @@ import { useWidgetField } from "./use-widget-form.ts";
 import { ContainerLabelsField } from "./widgets/ContainerLabelsField.tsx";
 import { TemplateField } from "./widgets/TemplateField.tsx";
 import { convertVariant, itemName, newValue, variantIndex } from "./values.ts";
+import { i18n } from "../i18n.ts";
+import { OptionKey } from "./fields/OptionKey.tsx";
 
 /** Enums with at most this many choices are shown as buttons, longer ones as a dropdown. */
 const MAX_SEGMENTS = 4;
@@ -37,20 +39,12 @@ function hintOf(field: FieldSchema): string | undefined {
 		field.kind !== "boolean" &&
 		field.kind !== "enum"
 	) {
-		parts.push(`Glance's default: ${String(field.default)}.`);
+		parts.push(
+			i18n.t("forms.glanceDefaultIs", { value: String(field.default) }),
+		);
 	}
 	const text = parts.filter((part) => part !== undefined).join(" ");
 	return text === "" ? undefined : text;
-}
-
-/** One word for the add button, e.g. "Sites" → "site". */
-function singular(label: string): string {
-	const word = label.toLowerCase();
-	return word.endsWith("ies")
-		? `${word.slice(0, -3)}y`
-		: word.endsWith("s") && !word.endsWith("ss")
-			? word.slice(0, -1)
-			: word;
 }
 
 /**
@@ -171,8 +165,8 @@ function renderControl(field: FieldSchema, name: string): ReactNode {
 					scale={field.key === "timeout" ? "short" : "refresh"}
 					defaultLabel={
 						field.default !== undefined
-							? `${String(field.default)} (default)`
-							: "Glance default"
+							? i18n.t("forms.valueIsDefault", { value: String(field.default) })
+							: i18n.t("forms.glanceDefault")
 					}
 				/>
 			);
@@ -218,8 +212,12 @@ function EnumField({ field, name }: SchemaFieldProps) {
 	const fallback = field.default;
 	const defaultLabel =
 		fallback !== undefined
-			? `Default (${options.find((option) => option.value === fallback)?.label ?? String(fallback)})`
-			: "Default";
+			? i18n.t("forms.defaultIs", {
+					value:
+						options.find((option) => option.value === fallback)?.label ??
+						String(fallback),
+				})
+			: i18n.t("forms.default");
 	if (field.allowCustom) {
 		return (
 			<PresetField
@@ -245,7 +243,9 @@ function EnumField({ field, name }: SchemaFieldProps) {
 				hint={field.help}
 				glanceDefault={typeof fallback === "string" ? fallback : ""}
 				segments={[
-					...(withDefault ? [{ value: "", label: "Default" }] : []),
+					...(withDefault
+						? [{ value: "", label: i18n.t("forms.default") }]
+						: []),
 					...options.map((option) => ({
 						value: option.value,
 						label: option.label ?? option.value,
@@ -297,8 +297,8 @@ export function FieldList({
 			{more.length > 0 && (
 				<details className="group mb-4 rounded-md border border-line">
 					<summary className="flex min-h-10 cursor-pointer list-none items-center px-3 text-sm text-muted hover:text-text">
-						More options
-						<span className="ml-auto font-mono text-[11px] text-faint">
+						{i18n.t("forms.moreOptions")}
+						<span className="ms-auto font-mono text-[11px] text-faint">
 							{more.length}
 						</span>
 					</summary>
@@ -324,7 +324,7 @@ function ObjectFieldset({ field, name }: SchemaFieldProps) {
 				id={id}
 				className="px-1 font-mono text-[11px] font-semibold tracking-wider text-muted uppercase"
 			>
-				{field.label}
+				{field.label} <OptionKey name={name} />
 			</legend>
 			{field.help && <p className="mb-3 text-xs text-faint">{field.help}</p>}
 			<FieldList fields={field.fields ?? []} prefix={name} />
@@ -341,7 +341,7 @@ function SchemaList({ field, name }: SchemaFieldProps) {
 			<TextField
 				name={name}
 				label={field.label}
-				hint={field.help ?? "Separate values with commas."}
+				hint={field.help ?? i18n.t("forms.commaSeparated")}
 				parse={toNumberList}
 				format={fromNumberList}
 				mono
@@ -349,17 +349,22 @@ function SchemaList({ field, name }: SchemaFieldProps) {
 		);
 	}
 	const isObject = item.kind === "object";
-	const fallback = singular(field.label);
-	const word = fallback.charAt(0).toUpperCase() + fallback.slice(1);
+	// Always set for list items (see `listItemLabel` in @glaze/schemas), and translated.
+	const word = item.label || field.label;
 	return (
 		<ListField
 			name={name}
 			label={field.label}
 			hint={field.help}
-			addLabel={`Add ${fallback}`}
+			addLabel={i18n.t("forms.list.add", { item: word })}
 			collapsible={isObject}
 			newItem={() => newValue(item)}
-			itemTitle={(value, index) => itemName(value, `${word} ${index + 1}`)}
+			itemTitle={(value, index) =>
+				itemName(
+					value,
+					i18n.t("forms.list.itemNumber", { item: word, number: index + 1 }),
+				)
+			}
 			itemSubtitle={(value) =>
 				isObject && typeof value === "object" && value !== null
 					? (Object.values(value).find(
@@ -386,13 +391,13 @@ function SchemaList({ field, name }: SchemaFieldProps) {
 function SchemaMap({ field, name }: SchemaFieldProps) {
 	const item = field.item;
 	if (!item) return null;
-	const keyLabel = field.keyLabel ?? "Name";
+	const keyLabel = field.keyLabel ?? i18n.t("forms.map.name");
 	return (
 		<MapField
 			name={name}
 			label={field.label}
 			keyLabel={keyLabel}
-			addLabel="Add"
+			addLabel={i18n.t("forms.map.add")}
 			hint={field.help}
 			// A new entry needs a value; YAML writes an empty map as {}.
 			newEntry={() => newValue(item) ?? ""}
@@ -405,7 +410,7 @@ function SchemaMap({ field, name }: SchemaFieldProps) {
 						field={{
 							...item,
 							label: item.label || key,
-							keyLabel: item.keyLabel ?? "Name",
+							keyLabel: item.keyLabel ?? i18n.t("forms.map.name"),
 						}}
 						name={entryName}
 					/>
@@ -431,10 +436,11 @@ function UnionField({ field, name }: SchemaFieldProps) {
 				>
 					{field.label}
 				</span>
+				<OptionKey name={name} />
 				<span
 					role="radiogroup"
 					aria-labelledby={`${id}-label`}
-					className="ml-auto flex gap-1"
+					className="ms-auto flex gap-1"
 				>
 					{variants.map((option, index) => (
 						<button

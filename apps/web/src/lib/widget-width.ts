@@ -1,3 +1,4 @@
+import { i18n } from "../i18n.ts";
 /*
  * Widget width as Glaze offers it: full, or 1/n of a split-column. Glance
  * draws a split-column as `max-columns` equal-width columns, so every widget
@@ -30,7 +31,10 @@ export function fractionSymbol(columns: number): string {
  * @returns The label.
  */
 export function widthLabel(columns: number): string {
-	return `${fractionSymbol(columns)} · ${columns} columns`;
+	return i18n.t("widths.label", {
+		fraction: fractionSymbol(columns),
+		count: columns,
+	});
 }
 
 /**

@@ -1,6 +1,7 @@
 import type { PageNode } from "@glaze/core";
 import { useEffect, useRef, useState } from "react";
 import { useEditor } from "../../store/editor-store.ts";
+import { useTranslation } from "react-i18next";
 
 export interface PageNameInputProps {
 	readonly page: PageNode;
@@ -13,6 +14,7 @@ export interface PageNameInputProps {
  * @returns The labelled text field.
  */
 export function PageNameInput({ page }: PageNameInputProps) {
+	const { t } = useTranslation();
 	const [value, setValue] = useState(page.name ?? "");
 	const renamePage = useEditor((state) => state.renamePage);
 	const cancelRename = useEditor((state) => state.cancelRename);
@@ -33,7 +35,8 @@ export function PageNameInput({ page }: PageNameInputProps) {
 	return (
 		<input
 			ref={inputRef}
-			aria-label="Page name"
+			aria-label={t("pages.nameLabel")}
+			dir="auto"
 			value={value}
 			onChange={(event) => setValue(event.target.value)}
 			onBlur={save}

@@ -51,3 +51,14 @@ export function valueAt(data: unknown, path: YamlPath): unknown {
 export function sameValue(a: unknown, b: unknown): boolean {
 	return JSON.stringify(a) === JSON.stringify(b);
 }
+
+/**
+ * The Glance option a form name points at: its last key, e.g. `url` for
+ * `sites.2.url`. List items (`sites.2`) have none of their own.
+ * @param name - A form field name.
+ * @returns The key, or `null`.
+ */
+export function optionKeyOf(name: string | undefined): string | null {
+	const last = name?.split(".").at(-1);
+	return last === undefined || last === "" || /^\d+$/.test(last) ? null : last;
+}

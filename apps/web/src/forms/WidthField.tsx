@@ -3,9 +3,13 @@ import { parentWidget } from "../lib/model.ts";
 import { fractionSymbol, type WidgetWidth } from "../lib/widget-width.ts";
 import { selectCurrentPage, useEditor } from "../store/editor-store.ts";
 import { useWidgetForm } from "./use-widget-form.ts";
+import { useTranslation } from "react-i18next";
+import { currentDirection } from "../i18n.ts";
+import { logicalKey } from "../lib/direction.ts";
 
 const CHOICES: readonly { value: WidgetWidth; label: string }[] = [
-	{ value: "full", label: "Full" },
+	// "Full" is translated where it is shown; the fractions are symbols.
+	{ value: "full", label: "" },
 	{ value: 2, label: "½" },
 	{ value: 3, label: "⅓" },
 	{ value: 4, label: "¼" },
@@ -19,6 +23,7 @@ const CHOICES: readonly { value: WidgetWidth; label: string }[] = [
  * @returns The field.
  */
 export function WidthField() {
+	const { t } = useTranslation();
 	const { widget, readOnly } = useWidgetForm();
 	const page = useEditor(selectCurrentPage);
 	const setWidgetWidth = useEditor((state) => state.setWidgetWidth);
@@ -42,9 +47,9 @@ export function WidthField() {
 			: "full";
 	const blocked =
 		parent?.type === "group"
-			? "Widgets in a group are tabs and share the group's width."
+			? t("forms.width.inGroup")
 			: inHead
-				? "Head widgets can't be split; they stay one row above the columns."
+				? t("forms.width.inHead")
 				: null;
 	const shared =
 		isSplit || parent?.type === "split-column"
@@ -63,8 +68,8 @@ export function WidthField() {
 
 	const selectedIndex = choices.findIndex((choice) => choice.value === current);
 	const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-		const step =
-			event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
+		const key = logicalKey(event.key, currentDirection());
+		const step = key === "ArrowRight" ? 1 : key === "ArrowLeft" ? -1 : 0;
 		if (step === 0) return;
 		event.preventDefault();
 		const next = Math.min(
@@ -84,10 +89,10 @@ export function WidthField() {
 					id={`${id}-label`}
 					className="font-mono text-[11px] font-semibold tracking-wider text-muted uppercase"
 				>
-					{isSplit ? "Columns side by side" : "Width"}
+					{isSplit ? t("forms.width.splitLabel") : t("forms.width.label")}
 				</span>
 				{current === null && (
-					<span className="ml-auto font-mono text-[11px] text-faint">
+					<span className="ms-auto font-mono text-[11px] text-faint">
 						{fractionSymbol(
 							(isSplit ? widget.maxColumns : parent?.maxColumns) ?? 2,
 						)}
@@ -118,8 +123,11 @@ export function WidthField() {
 							aria-checked={selected}
 							aria-label={
 								choice.value === "full"
-									? "Full width"
-									: `${choice.label} width, ${choice.value} columns`
+									? t("forms.width.fullLabel")
+									: t("forms.width.fractionLabel", {
+											fraction: choice.label,
+											count: choice.value,
+										})
 							}
 							tabIndex={tabbable ? 0 : -1}
 							disabled={readOnly || blocked !== null}
@@ -130,7 +138,7 @@ export function WidthField() {
 									: "border-line bg-card text-muted hover:border-line-strong hover:text-text"
 							}`}
 						>
-							{choice.label}
+							{choice.value === "full" ? t("forms.width.full") : choice.label}
 						</button>
 					);
 				})}
@@ -138,10 +146,10 @@ export function WidthField() {
 			<p id={`${id}-hint`} className="mt-1 text-xs text-faint">
 				{blocked ??
 					(shared > 1
-						? `All ${shared} widgets in this split-column share this width: Glance draws equal columns.`
+						? t("forms.width.shared", { count: shared })
 						: current !== "full" && current !== null
-							? "Alone in its split-column: the rest of the row stays empty until you drop a widget beside it."
-							: "Glance has no width per widget; ½, ⅓ and ¼ put it in a split-column.")}
+							? t("forms.width.alone")
+							: t("forms.width.noWidth"))}
 			</p>
 			{isSplit && (
 				<button
@@ -150,14 +158,11 @@ export function WidthField() {
 					onClick={() => unwrapSplit(widget.id)}
 					className="mt-2 cursor-pointer text-xs text-accent underline-offset-2 hover:underline disabled:cursor-not-allowed disabled:opacity-60"
 				>
-					Put these widgets below each other again
+					{t("forms.width.unwrap")}
 				</button>
 			)}
 			{nestedSplit && (
-				<p className="mt-1 text-xs text-faint">
-					This split-column sits in another split-column, which sets its outer
-					width.
-				</p>
+				<p className="mt-1 text-xs text-faint">{t("forms.width.nested")}</p>
 			)}
 		</div>
 	);

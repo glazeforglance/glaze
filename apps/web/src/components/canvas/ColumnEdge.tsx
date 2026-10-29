@@ -5,13 +5,16 @@ import {
 	columnEdgeChange,
 } from "../../lib/column-edge.ts";
 import { useEditor } from "../../store/editor-store.ts";
+import { useTranslation } from "react-i18next";
+import { currentDirection } from "../../i18n.ts";
+import { inlineDelta, logicalKey } from "../../lib/direction.ts";
 
 export interface ColumnEdgeProps {
 	/** Ids of the page's columns, in order. */
 	readonly columnIds: readonly string[];
 	/** Their sizes, in the same order. */
 	readonly sizes: readonly (string | null)[];
-	/** Index of the column left of this edge. */
+	/** Index of the column before this edge (left of it in LTR). */
 	readonly edge: number;
 }
 
@@ -19,15 +22,16 @@ export interface ColumnEdgeProps {
 const THRESHOLD_PX = 24;
 
 /**
- * The gap between two page columns, as a handle: dragging it right makes
- * the left column `full` (or the right one `small`), dragging it left does
- * the opposite. Glance only knows these two sizes, and a page needs 1 or 2
+ * The gap between two page columns, as a handle: dragging it towards the
+ * end of the line (right in LTR, left in RTL) makes the column before it
+ * `full` (or the one after it `small`), dragging back does the opposite. Glance only knows these two sizes, and a page needs 1 or 2
  * full columns, so while dragging a label says what will happen, or why
  * nothing can. Arrow keys do the same when the handle has focus.
  * @param props - The page's columns and which edge this is.
  * @returns The handle.
  */
 export function ColumnEdge({ columnIds, sizes, edge }: ColumnEdgeProps) {
+	const { t } = useTranslation();
 	const setColumnSize = useEditor((state) => state.setColumnSize);
 	const showNotice = useEditor((state) => state.showNotice);
 	const [plan, setPlan] = useState<ColumnEdgeResult | null>(null);
@@ -50,9 +54,10 @@ export function ColumnEdge({ columnIds, sizes, edge }: ColumnEdgeProps) {
 			// Unknown pointer (e.g. a synthetic event): track without capture.
 		}
 		const startX = event.clientX;
+		const direction = currentDirection();
 		let result: ColumnEdgeResult | null = null;
 		const move = (moveEvent: globalThis.PointerEvent) => {
-			const dx = moveEvent.clientX - startX;
+			const dx = inlineDelta(moveEvent.clientX - startX, direction);
 			result =
 				Math.abs(dx) < THRESHOLD_PX
 					? null
@@ -72,9 +77,10 @@ export function ColumnEdge({ columnIds, sizes, edge }: ColumnEdgeProps) {
 	};
 
 	const onKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
-		if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+		const key = logicalKey(event.key, currentDirection());
+		if (key !== "ArrowLeft" && key !== "ArrowRight") return;
 		event.preventDefault();
-		apply(columnEdgeChange(sizes, edge, event.key === "ArrowRight" ? 1 : -1));
+		apply(columnEdgeChange(sizes, edge, key === "ArrowRight" ? 1 : -1));
 	};
 
 	const label =
@@ -82,15 +88,21 @@ export function ColumnEdge({ columnIds, sizes, edge }: ColumnEdgeProps) {
 			? null
 			: plan.kind === "blocked"
 				? plan.reason
-				: `Column ${plan.index + 1} → ${plan.size}`;
+				: t("canvas.columnEdge.plan", {
+						number: plan.index + 1,
+						size: plan.size,
+					});
 
 	return (
 		<div className="relative flex w-4 shrink-0 self-stretch justify-center">
 			<button
 				type="button"
-				aria-label={`Column sizes around the edge between column ${edge + 1} and ${edge + 2}`}
+				aria-label={t("canvas.columnEdge.label", {
+					left: edge + 1,
+					right: edge + 2,
+				})}
 				aria-keyshortcuts="ArrowLeft ArrowRight"
-				title="Drag (or use ←/→) to switch the columns between small and full"
+				title={t("canvas.columnEdge.title")}
 				onPointerDown={onPointerDown}
 				onKeyDown={onKeyDown}
 				className="group flex w-full cursor-col-resize touch-none justify-center focus-visible:outline-none"

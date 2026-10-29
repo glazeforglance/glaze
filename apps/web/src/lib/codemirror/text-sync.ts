@@ -1,4 +1,5 @@
 import type { ValidationIssue } from "@glaze/core";
+import { problemText } from "../messages.ts";
 
 /** One replacement that turns one text into another. */
 export interface TextChange {
@@ -84,7 +85,7 @@ export function placeIssues(
 			from,
 			to: Math.max(from, to),
 			severity: issue.severity,
-			message: issue.message,
+			message: problemText(issue),
 			issue,
 		});
 	}

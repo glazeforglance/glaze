@@ -8,6 +8,8 @@ import { isFileDirty, useFiles } from "../../store/files-store.ts";
 import { IssueNote } from "../code/IssueNote.tsx";
 import { Button } from "../ui/Button.tsx";
 import { Dialog } from "../ui/Dialog.tsx";
+import { useTranslation } from "react-i18next";
+import { problemText } from "../../lib/messages.ts";
 
 export interface PublishReviewDialogProps {
 	readonly open: boolean;
@@ -23,10 +25,6 @@ type Check =
 	| { readonly status: "checking" }
 	| { readonly status: "done"; readonly issues: readonly ValidationIssue[] }
 	| { readonly status: "failed"; readonly message: string };
-
-function plural(count: number, word: string): string {
-	return `${count} ${word}${count === 1 ? "" : "s"}`;
-}
 
 const SEVERITY_DOT: Record<ValidationIssue["severity"], string> = {
 	error: "bg-danger",
@@ -47,6 +45,7 @@ export function PublishReviewDialog({
 	onCancel,
 	onPublish,
 }: PublishReviewDialogProps) {
+	const { t } = useTranslation();
 	const draft = useDraftText();
 	const setView = useEditor((state) => state.setView);
 	// Select the list itself: a selector that builds a new array would re-render forever.
@@ -107,31 +106,33 @@ export function PublishReviewDialog({
 
 	const blocked =
 		check.status === "checking"
-			? "Checking the config…"
+			? t("publish.review.checking")
 			: errors.length > 0
-				? "Fix the errors first, or use Publish anyway"
+				? t("publish.review.fixFirst")
 				: !confirmed
-					? "Confirm the warning first"
+					? t("publish.review.confirmFirst")
 					: undefined;
 
 	return (
 		<Dialog
 			open={open}
 			size="wide"
-			title="Publish changes"
+			title={t("publish.review.title")}
 			onClose={onCancel}
 			actions={
 				<>
 					<Button autoFocus onClick={onCancel}>
-						Cancel
+						{t("common.cancel")}
 					</Button>
 					{errors.length > 0 && !yamlBroken && (
 						<Button
 							variant="danger"
-							unavailable={confirmed ? undefined : "Confirm the warning first"}
+							unavailable={
+								confirmed ? undefined : t("publish.review.confirmFirst")
+							}
 							onClick={() => onPublish(true, confirmed)}
 						>
-							Publish anyway
+							{t("publish.review.anyway")}
 						</Button>
 					)}
 					<Button
@@ -139,22 +140,23 @@ export function PublishReviewDialog({
 						unavailable={blocked}
 						onClick={() => onPublish(false, confirmed)}
 					>
-						Publish
+						{t("publish.button")}
 					</Button>
 				</>
 			}
 		>
-			<section aria-label="Files that change">
+			<section aria-label={t("publish.review.filesLabel")}>
 				<p>
 					{files.length === 0
-						? "Nothing has changed."
-						: `${plural(files.length, "file")} will be written:`}
+						? t("publish.review.nothing")
+						: t("publish.review.files", { count: files.length })}
 				</p>
 				{files.length > 0 && (
 					<ul className="mt-2 flex flex-wrap gap-1.5">
 						{files.map((name) => (
 							<li
 								key={name}
+								dir="ltr"
 								className="rounded-[6px] border border-line-strong px-2 py-0.5 font-mono text-xs text-text"
 							>
 								{name}
@@ -164,12 +166,15 @@ export function PublishReviewDialog({
 				)}
 			</section>
 
-			<section aria-label="Validation" className="mt-4" aria-live="polite">
-				{check.status === "checking" && <p>Checking the config…</p>}
+			<section
+				aria-label={t("publish.review.validation")}
+				className="mt-4"
+				aria-live="polite"
+			>
+				{check.status === "checking" && <p>{t("publish.review.checking")}</p>}
 				{check.status === "failed" && (
 					<p className="text-danger">
-						Couldn't check the config: {check.message}. The server checks it
-						again when you publish.
+						{t("publish.review.checkFailed", { message: check.message })}
 					</p>
 				)}
 				{check.status === "done" && configChanged && (
@@ -177,20 +182,20 @@ export function PublishReviewDialog({
 						<span
 							className={errors.length > 0 ? "font-semibold text-danger" : ""}
 						>
-							{plural(errors.length, "error")}
+							{t("publish.review.errors", { count: errors.length })}
 						</span>
 						{" · "}
 						<span
 							className={warnings.length > 0 ? "font-semibold text-accent" : ""}
 						>
-							{plural(warnings.length, "warning")}
+							{t("publish.review.warnings", { count: warnings.length })}
 						</span>
-						{errors.length === 0 && " — ready to publish."}
+						{errors.length === 0 && ` — ${t("publish.review.ready")}`}
 					</p>
 				)}
 				{yamlBroken && (
 					<p className="mt-2 text-text">
-						The YAML can't be read, so it can't be published, not even anyway.{" "}
+						{t("publish.review.yamlBroken")}{" "}
 						<button
 							type="button"
 							onClick={() => {
@@ -199,12 +204,12 @@ export function PublishReviewDialog({
 							}}
 							className="cursor-pointer font-semibold underline"
 						>
-							Open the Code view
+							{t("publish.review.openCode")}
 						</button>
 					</p>
 				)}
 				{listed.length > 0 && (
-					<ul className="mt-3 max-h-56 space-y-1.5 overflow-y-auto pr-1">
+					<ul className="mt-3 max-h-56 space-y-1.5 overflow-y-auto pe-1">
 						{listed.map((issue, index) => (
 							<li
 								// Issues have no id; the list is replaced as a whole.
@@ -216,11 +221,15 @@ export function PublishReviewDialog({
 									className={`mt-1.5 size-2 shrink-0 rounded-full ${SEVERITY_DOT[issue.severity]}`}
 								/>
 								<span>
-									<span className="sr-only">{issue.severity}: </span>
+									<span className="sr-only">
+										{t(`code.severity.${issue.severity}`)}{" "}
+									</span>
 									{issue.line !== undefined && (
-										<span className="font-semibold">Line {issue.line}: </span>
+										<span className="font-semibold">
+											{t("code.line", { line: issue.line })}{" "}
+										</span>
 									)}
-									<span className="text-muted">{issue.message}</span>
+									<span className="text-muted">{problemText(issue)}</span>
 								</span>
 							</li>
 						))}
@@ -233,7 +242,7 @@ export function PublishReviewDialog({
 					>
 						{toConfirm.map((issue) => (
 							<p key={issue.message} className="font-semibold text-text">
-								{issue.message}
+								{problemText(issue)}
 							</p>
 						))}
 						<label className="mt-2 flex cursor-pointer items-start gap-2 text-text">
@@ -245,8 +254,7 @@ export function PublishReviewDialog({
 								}
 								className="mt-1"
 							/>
-							I understand Glance may become unreachable. Publish this change
-							anyway.
+							{t("publish.review.understand")}
 						</label>
 					</div>
 				)}

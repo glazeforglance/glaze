@@ -1,10 +1,11 @@
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "./Button.tsx";
 import { Dialog } from "./Dialog.tsx";
 
 export interface ConfirmDialogProps {
 	readonly open: boolean;
-	readonly title: string;
+	readonly title: ReactNode;
 	readonly children: ReactNode;
 	/** Text of the destructive button, e.g. "Delete page". */
 	readonly confirmLabel: string;
@@ -26,6 +27,7 @@ export function ConfirmDialog({
 	onConfirm,
 	onCancel,
 }: ConfirmDialogProps) {
+	const { t } = useTranslation();
 	return (
 		<Dialog
 			open={open}
@@ -34,7 +36,7 @@ export function ConfirmDialog({
 			actions={
 				<>
 					<Button autoFocus onClick={onCancel}>
-						Cancel
+						{t("common.cancel")}
 					</Button>
 					<Button variant="danger" onClick={onConfirm}>
 						{confirmLabel}

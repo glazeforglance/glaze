@@ -1,5 +1,6 @@
 import { findEnvReferences } from "@glaze/core";
 import { z } from "zod";
+import { i18n } from "../i18n.ts";
 
 /**
  * Tells whether a value is exactly one Glance variable, e.g. `${GITHUB_TOKEN}`.
@@ -59,7 +60,7 @@ function forwardIssues(
 /** Glance's `durationField`: a whole number and one of s, m, h, d (`^(\d+)(s|m|h|d)$`). */
 export const duration = z
 	.string()
-	.regex(/^\d+(s|m|h|d)$/, "Use a number and a unit: 30s, 5m, 1h or 1d");
+	.regex(/^\d+(s|m|h|d)$/, { error: () => i18n.t("forms.errors.duration") });
 
 /** Options every Glance widget has (`widgetBase` in widget.go). Unknown keys pass through. */
 export const baseWidgetSchema = z.looseObject({
@@ -73,26 +74,27 @@ export const baseWidgetSchema = z.looseObject({
 
 /**
  * A text that must be filled in.
- * @param message - Shown when it's empty, e.g. "A site needs a URL".
+ * @param message - Shown when it's empty, e.g. "A site needs a URL" (already translated).
  * @returns The schema.
  */
 export function required(message: string) {
-	return z.string({ error: message }).trim().min(1, message);
+	return z.string({ error: message }).trim().min(1, { error: message });
 }
 
 /**
  * A web address: `http(s)://…`, or anything with a `${VAR}` in it (Glance
  * fills those in before it reads the URL).
- * @param message - Shown for anything else.
+ * @param message - Shown for anything else; by default "Start the address with http://…".
  * @returns The schema.
  */
-export function webUrl(message = "Start the address with http:// or https://") {
+export function webUrl(message?: string) {
+	const error = () => message ?? i18n.t("forms.errors.url");
 	return z
-		.string({ error: message })
+		.string({ error })
 		.refine(
 			(value) =>
 				/^https?:\/\/\S+$/.test(value) || findEnvReferences(value).length > 0,
-			message,
+			{ error },
 		);
 }
 
@@ -102,10 +104,15 @@ export function webUrl(message = "Start the address with http:// or https://") {
  * @returns The schema.
  */
 export function wholeNumber(min?: number) {
-	const base = z
-		.number({ error: "Enter a whole number" })
-		.int("Enter a whole number");
-	return orEnv(min === undefined ? base : base.min(min, `Use ${min} or more`));
+	const error = () => i18n.t("forms.errors.wholeNumberPlain");
+	const base = z.number({ error }).int({ error });
+	return orEnv(
+		min === undefined
+			? base
+			: base.min(min, {
+					error: () => i18n.t("forms.errors.minPlain", { min }),
+				}),
+	);
 }
 
 /**
@@ -114,7 +121,9 @@ export function wholeNumber(min?: number) {
  * @returns The schema, with a message that lists them.
  */
 export function oneOf(values: readonly [string, ...string[]]) {
-	return z.enum(values, { error: `Use one of: ${values.join(", ")}` });
+	return z.enum(values, {
+		error: () => i18n.t("forms.errors.oneOf", { values: values.join(", ") }),
+	});
 }
 
 /**
@@ -129,10 +138,11 @@ export function list(item: z.ZodType) {
 /** Glance's `hslColorField`: `240 13 95` or `hsl(240, 13%, 95%)`, as in config-fields.go. */
 export const hslColor = z
 	.string()
-	.regex(
-		/^(?:hsla?\()?([\d.]+)(?: |,)+([\d.]+)%?(?: |,)+([\d.]+)%?\)?$/,
-		"Use hue saturation lightness, e.g. 240 13 95",
-	);
+	.regex(/^(?:hsla?\()?([\d.]+)(?: |,)+([\d.]+)%?(?: |,)+([\d.]+)%?\)?$/, {
+		error: () => i18n.t("forms.errors.color"),
+	});
 
 /** A yes/no option. */
-export const flag = z.boolean({ error: "Use true or false" }).optional();
+export const flag = z
+	.boolean({ error: () => i18n.t("forms.errors.booleanPlain") })
+	.optional();

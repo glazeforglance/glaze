@@ -5,6 +5,7 @@ import {
 } from "@glaze/schemas";
 import { FieldList } from "./SchemaField.tsx";
 import { useWidgetForm } from "./use-widget-form.ts";
+import { Trans, useTranslation } from "react-i18next";
 
 export interface SchemaFormProps {
 	readonly schema: WidgetSchema;
@@ -68,6 +69,7 @@ export function OtherOptions({
 	readonly schema: WidgetSchema | null;
 	readonly onShowYaml: () => void;
 }) {
+	const { t } = useTranslation();
 	const { options } = useWidgetForm();
 	const known = new Set([
 		...BASE_FIELDS.map((field) => field.key),
@@ -79,28 +81,34 @@ export function OtherOptions({
 	if (other.length === 0) return null;
 	return (
 		<section
-			aria-label="Other options"
+			aria-label={t("forms.other.title")}
 			className="mt-2 mb-4 rounded-md border border-line p-3"
 		>
-			<h3 className="text-sm font-semibold">Other options</h3>
+			<h3 className="text-sm font-semibold">{t("forms.other.title")}</h3>
 			<p className="mt-1 mb-2 text-xs text-faint">
-				Glance{" "}
-				{schema
-					? `doesn't know these for ${schema.label}`
-					: "doesn't know this widget type"}
-				. They stay as they are; change them in the{" "}
-				<button
-					type="button"
-					onClick={onShowYaml}
-					className="cursor-pointer text-accent underline-offset-2 hover:underline"
-				>
-					YAML tab
-				</button>
-				.
+				<Trans
+					i18nKey={
+						schema ? "forms.other.unknownFor" : "forms.other.unknownType"
+					}
+					values={schema ? { widget: schema.label } : {}}
+					components={{
+						yaml: (
+							<button
+								type="button"
+								onClick={onShowYaml}
+								className="cursor-pointer text-accent underline-offset-2 hover:underline"
+							/>
+						),
+					}}
+				/>
 			</p>
 			<ul className="flex flex-col gap-1">
 				{other.map((option) => (
-					<li key={option.key} className="flex gap-2 font-mono text-xs">
+					<li
+						key={option.key}
+						dir="ltr"
+						className="flex gap-2 font-mono text-xs"
+					>
 						<span className="text-muted">{option.key}:</span>
 						<span className="truncate text-faint">
 							{JSON.stringify(option.value)}

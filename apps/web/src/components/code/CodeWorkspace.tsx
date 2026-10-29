@@ -2,6 +2,7 @@ import { useState } from "react";
 import { PreviewPane } from "../preview/PreviewPane.tsx";
 import { CodePanel } from "./CodePanel.tsx";
 import { ResizeHandle } from "../ui/ResizeHandle.tsx";
+import { useTranslation } from "react-i18next";
 
 const STORAGE_KEY = "glaze:code-split";
 const CODE_PANE_ID = "code-pane";
@@ -40,12 +41,13 @@ function writeSplit(split: SplitSettings): void {
 }
 
 /**
- * The Code view: the editor on the left and, optionally, the live preview on
- * the right with a draggable split. Kept mounted while hidden (see `CodePanel`).
+ * The Code view: the editor at the start (left in LTR) and, optionally, the
+ * live preview at the end with a draggable split. Kept mounted while hidden (see `CodePanel`).
  * @param props - `active`: whether the Code view is showing.
  * @returns The workspace.
  */
 export function CodeWorkspace({ active }: { readonly active: boolean }) {
+	const { t } = useTranslation();
 	const [split, setSplit] = useState(readSplit);
 	const [resizing, setResizing] = useState(false);
 
@@ -89,7 +91,7 @@ export function CodeWorkspace({ active }: { readonly active: boolean }) {
 						onChange={(ratio) => update({ ratio })}
 						onReset={() => update({ ratio: DEFAULT_SPLIT.ratio })}
 						onDragChange={setResizing}
-						label="Resize code and preview"
+						label={t("code.resizeSplit")}
 						controls={CODE_PANE_ID}
 						className="relative"
 					/>

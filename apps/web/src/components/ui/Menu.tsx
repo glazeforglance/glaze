@@ -17,6 +17,12 @@ export interface MenuItem {
 	/** Makes the item a choice (`menuitemradio`); `true` shows a check mark. */
 	readonly checked?: boolean;
 	readonly disabled?: boolean;
+	/** The item's language, e.g. for a language name shown in that language. */
+	readonly lang?: string;
+	/** A small heading above this item, starting a group. */
+	readonly groupLabel?: string;
+	/** Draws a line above the item, to set it apart from the ones before. */
+	readonly separated?: boolean;
 }
 
 export interface MenuProps {
@@ -25,8 +31,8 @@ export interface MenuProps {
 	readonly trigger: ReactNode;
 	readonly items: readonly MenuItem[];
 	readonly triggerClassName?: string;
-	/** Which edge of the trigger the menu lines up with. */
-	readonly align?: "left" | "right";
+	/** Which edge of the trigger the menu lines up with, in reading order. */
+	readonly align?: "start" | "end";
 	/** Non-interactive text above the items, e.g. who is signed in. */
 	readonly header?: ReactNode;
 }
@@ -42,7 +48,7 @@ export function Menu({
 	trigger,
 	items,
 	triggerClassName = "",
-	align = "left",
+	align = "start",
 	header,
 }: MenuProps) {
 	const [open, setOpen] = useState(false);
@@ -117,7 +123,7 @@ export function Menu({
 					aria-label={label}
 					onKeyDown={onKeyDown}
 					className={`absolute top-full z-30 mt-1 max-h-80 min-w-44 overflow-y-auto rounded-md border border-line-strong bg-card p-1 shadow-xl shadow-black/50 ${
-						align === "right" ? "right-0" : "left-0"
+						align === "end" ? "end-0" : "start-0"
 					}`}
 				>
 					{header !== undefined && (
@@ -129,17 +135,32 @@ export function Menu({
 						</li>
 					)}
 					{items.map((item) => (
-						<li key={item.label} role="none">
+						<li
+							key={item.label}
+							role="none"
+							className={
+								item.separated ? "mt-1 border-t border-line pt-1" : undefined
+							}
+						>
+							{item.groupLabel !== undefined && (
+								<span
+									aria-hidden="true"
+									className="block px-2.5 pt-1 pb-0.5 text-[11px] text-faint"
+								>
+									{item.groupLabel}
+								</span>
+							)}
 							<button
 								type="button"
 								role={item.checked === undefined ? "menuitem" : "menuitemradio"}
 								aria-checked={item.checked}
+								lang={item.lang}
 								disabled={item.disabled}
 								onClick={() => {
 									close(true);
 									item.onSelect();
 								}}
-								className={`flex min-h-9 w-full cursor-pointer items-center gap-2 rounded-sm px-2.5 text-left text-sm disabled:cursor-not-allowed disabled:opacity-40 ${
+								className={`flex min-h-9 w-full cursor-pointer items-center gap-2 rounded-sm px-2.5 text-start text-sm disabled:cursor-not-allowed disabled:opacity-40 ${
 									item.danger
 										? "text-danger hover:bg-danger/10"
 										: "text-text hover:bg-card-hover"

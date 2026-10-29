@@ -2,6 +2,7 @@ import type { WidgetNode } from "@glaze/core";
 import type { WidgetList as WidgetListModel } from "../../lib/drop-target.ts";
 import { AddWidgetMenu } from "./AddWidgetMenu.tsx";
 import { WidgetList } from "./WidgetList.tsx";
+import { useTranslation } from "react-i18next";
 
 export interface HeadWidgetsProps {
 	readonly widgets: readonly WidgetNode[];
@@ -17,18 +18,16 @@ export interface HeadWidgetsProps {
  * @returns The strip.
  */
 export function HeadWidgets({ widgets, list }: HeadWidgetsProps) {
+	const { t } = useTranslation();
 	return (
 		<section
-			aria-label="Head widgets"
+			aria-label={t("canvas.head.label")}
 			className="mb-4 rounded-lg border border-dashed border-line-strong bg-bg/60 p-3"
 		>
 			<h2 className="mb-2 font-mono text-xs text-muted">
-				head widgets
+				{t("dnd.list.head")}
 				{widgets.length === 0 && (
-					<span className="text-faint">
-						{" "}
-						· drop a widget here to show it above all columns
-					</span>
+					<span className="text-faint"> · {t("canvas.head.empty")}</span>
 				)}
 			</h2>
 			<WidgetList

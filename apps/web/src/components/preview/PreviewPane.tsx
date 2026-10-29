@@ -5,6 +5,9 @@ import { previewUrl, waitForGlance } from "../../lib/preview.ts";
 import { selectCurrentPage, useEditor } from "../../store/editor-store.ts";
 import { DesktopIcon, PhoneIcon, ReloadIcon, SplitIcon } from "../ui/icons.tsx";
 import { PreviewEmptyState } from "./PreviewEmptyState.tsx";
+import { useTranslation } from "react-i18next";
+import { useLanguage } from "../../i18n.ts";
+import { formatTime } from "../../lib/format.ts";
 
 type Device = "desktop" | "phone";
 
@@ -12,11 +15,6 @@ type ReloadStatus =
 	| { readonly phase: "idle" }
 	| { readonly phase: "waiting" }
 	| { readonly phase: "reloaded"; readonly at: Date };
-
-const TIME = new Intl.DateTimeFormat(undefined, {
-	hour: "2-digit",
-	minute: "2-digit",
-});
 
 const iconButton =
 	"inline-flex size-9 cursor-pointer items-center justify-center rounded-sm border text-muted hover:text-text";
@@ -36,6 +34,8 @@ export interface PreviewPaneProps {
  * @returns The preview section.
  */
 export function PreviewPane({ onHide, resizing = false }: PreviewPaneProps) {
+	const { t } = useTranslation();
+	const { locale } = useLanguage();
 	const settings = useSettings();
 	const page = useEditor(selectCurrentPage);
 	const pageIndex = useEditor((state) =>
@@ -70,16 +70,16 @@ export function PreviewPane({ onHide, resizing = false }: PreviewPaneProps) {
 
 	return (
 		<section
-			aria-label="Live preview"
+			aria-label={t("preview.label")}
 			className="flex min-h-0 min-w-0 flex-1 flex-col bg-bg"
 		>
 			<div className="flex h-12 shrink-0 items-center gap-3 border-b border-line px-4">
 				<h2 className="font-mono text-xs font-semibold tracking-wider text-muted uppercase">
-					Live preview
+					{t("preview.label")}
 				</h2>
 				<p role="status" className="min-w-0 truncate font-mono text-xs">
 					{status.phase === "waiting" && (
-						<span className="text-muted">Waiting for Glance to reload…</span>
+						<span className="text-muted">{t("preview.waiting")}</span>
 					)}
 					{status.phase === "reloaded" && (
 						<span className="inline-flex items-center gap-1.5 text-success">
@@ -87,16 +87,20 @@ export function PreviewPane({ onHide, resizing = false }: PreviewPaneProps) {
 								aria-hidden="true"
 								className="size-1.5 rounded-full bg-success"
 							/>
-							Glance reloaded · {TIME.format(status.at)}
+							{t("preview.reloaded", { time: formatTime(status.at, locale) })}
 						</span>
 					)}
 				</p>
-				<div className="ml-auto flex items-center gap-1.5">
-					<div role="group" aria-label="Device" className="flex gap-1.5">
+				<div className="ms-auto flex items-center gap-1.5">
+					<div
+						role="group"
+						aria-label={t("preview.device")}
+						className="flex gap-1.5"
+					>
 						{(
 							[
-								["desktop", "Desktop", DesktopIcon],
-								["phone", "Phone (390 px)", PhoneIcon],
+								["desktop", t("preview.desktop"), DesktopIcon],
+								["phone", t("preview.phone"), PhoneIcon],
 							] as const
 						).map(([id, label, Icon]) => (
 							<button
@@ -118,8 +122,8 @@ export function PreviewPane({ onHide, resizing = false }: PreviewPaneProps) {
 					</div>
 					<button
 						type="button"
-						aria-label="Reload preview"
-						title="Reload preview"
+						aria-label={t("preview.reload")}
+						title={t("preview.reload")}
 						disabled={src === null}
 						onClick={() => setFrameKey((key) => key + 1)}
 						className={`${iconButton} border-line disabled:cursor-not-allowed disabled:opacity-50`}
@@ -129,8 +133,8 @@ export function PreviewPane({ onHide, resizing = false }: PreviewPaneProps) {
 					{onHide && (
 						<button
 							type="button"
-							aria-label="Hide preview"
-							title="Hide preview"
+							aria-label={t("preview.hide")}
+							title={t("preview.hide")}
 							onClick={onHide}
 							className={`${iconButton} border-line`}
 						>
@@ -152,7 +156,9 @@ export function PreviewPane({ onHide, resizing = false }: PreviewPaneProps) {
 						<iframe
 							key={frameKey}
 							src={src}
-							title={`Glance preview: ${page?.name ?? "first page"}`}
+							title={t("preview.frameTitle", {
+								page: page?.name ?? t("preview.firstPage"),
+							})}
 							// Glance runs on another origin. No allow-top-navigation,
 							// so links inside the preview can't navigate Glaze away.
 							sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
@@ -164,14 +170,14 @@ export function PreviewPane({ onHide, resizing = false }: PreviewPaneProps) {
 			</div>
 
 			<p className="shrink-0 px-4 pb-3 text-xs text-muted">
-				Preview shows the last published version.
+				{t("preview.lastPublished")}
 				{unsaved && (
-					<span className="ml-1.5 inline-flex items-center gap-1.5">
+					<span className="ms-1.5 inline-flex items-center gap-1.5">
 						<span
 							aria-hidden="true"
 							className="size-1.5 rounded-full bg-accent"
 						/>
-						Unsaved changes aren't in it yet; Publish to see them.
+						{t("preview.unsavedNotIn")}
 					</span>
 				)}
 			</p>

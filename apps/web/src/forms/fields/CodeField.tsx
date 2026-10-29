@@ -60,6 +60,8 @@ export function CodeField({ name, label, language, hint }: CodeFieldProps) {
 					glazeEditorTheme,
 					syntaxHighlighting(glazeHighlightStyle),
 					EditorView.lineWrapping,
+					// Code is always left to right, whatever the UI language.
+					EditorView.editorAttributes.of({ dir: "ltr" }),
 					EditorView.cspNonce.of(cspNonce()),
 					EditorView.contentAttributes.of({
 						"aria-labelledby": `${id}-label`,
@@ -99,6 +101,7 @@ export function CodeField({ name, label, language, hint }: CodeFieldProps) {
 
 	return (
 		<FieldShell
+			name={name}
 			inputId={id}
 			label={label}
 			asGroup

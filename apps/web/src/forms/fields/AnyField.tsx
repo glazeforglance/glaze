@@ -5,13 +5,15 @@ import { useWidgetField } from "../use-widget-form.ts";
 import { convertShape, shapeOf, type ValueShape } from "../values.ts";
 import { borderClass, INPUT_CLASS } from "./field-styles.ts";
 import { FieldShell } from "./FieldShell.tsx";
+import { i18n } from "../../i18n.ts";
 
-const SHAPES: readonly { value: ValueShape; label: string }[] = [
-	{ value: "text", label: "Text" },
-	{ value: "number", label: "Number" },
-	{ value: "boolean", label: "Yes/no" },
-	{ value: "list", label: "List" },
-	{ value: "map", label: "Map" },
+/** The shapes a value can take; labels are `forms.any.<shape>`. */
+const SHAPES: readonly Exclude<ValueShape, "empty">[] = [
+	"text",
+	"number",
+	"boolean",
+	"list",
+	"map",
 ];
 
 const SMALL_BUTTON =
@@ -52,6 +54,7 @@ export function AnyField({ name, label, hint }: AnyFieldProps) {
 
 	return (
 		<FieldShell
+			name={name}
 			inputId={id}
 			label={label}
 			asGroup
@@ -103,7 +106,7 @@ function ValueEditor({
 		<div className="flex flex-col gap-2">
 			<div className="flex gap-2">
 				<select
-					aria-label={`${label}: type`}
+					aria-label={i18n.t("forms.any.typeOf", { label })}
 					value={shape === "empty" ? "text" : shape}
 					disabled={disabled}
 					onChange={(event) =>
@@ -112,8 +115,8 @@ function ValueEditor({
 					className={`${INPUT_CLASS} ${borderClass(false)} w-28 shrink-0 cursor-pointer`}
 				>
 					{SHAPES.map((option) => (
-						<option key={option.value} value={option.value}>
-							{option.label}
+						<option key={option} value={option}>
+							{i18n.t(`forms.any.${option}`)}
 						</option>
 					))}
 				</select>
@@ -191,7 +194,7 @@ function ListEditor({
 	const replace = (index: number, item: unknown) =>
 		items.map((current, i) => (i === index ? item : current));
 	return (
-		<div className="ml-3 flex flex-col gap-2 border-l border-line pl-3">
+		<div className="ms-3 flex flex-col gap-2 border-s border-line ps-3">
 			{items.map((item, index) => (
 				// Items have no ids; the index is their identity, as in the YAML.
 				<div key={index} className="flex items-start gap-1">
@@ -206,7 +209,10 @@ function ListEditor({
 					</div>
 					<button
 						type="button"
-						aria-label={`Remove ${label} ${index + 1}`}
+						aria-label={i18n.t("forms.any.removeItem", {
+							label,
+							number: index + 1,
+						})}
 						disabled={disabled}
 						onClick={() => onWrite(items.filter((_, i) => i !== index))}
 						className={`${SMALL_BUTTON} hover:text-danger`}
@@ -221,7 +227,7 @@ function ListEditor({
 				onClick={() => onWrite([...items, ""])}
 				className="inline-flex min-h-8 w-fit cursor-pointer items-center gap-1.5 rounded-[6px] px-2 text-xs text-accent hover:bg-accent/10 disabled:cursor-not-allowed"
 			>
-				<PlusIcon className="size-3" /> Add item
+				<PlusIcon className="size-3" /> {i18n.t("forms.any.addItem")}
 			</button>
 		</div>
 	);
@@ -250,7 +256,7 @@ function MapEditor({
 		setNewKey("");
 	};
 	return (
-		<div className="ml-3 flex flex-col gap-2 border-l border-line pl-3">
+		<div className="ms-3 flex flex-col gap-2 border-s border-line ps-3">
 			{pairs.map(([key, item]) => (
 				<div key={key} className="flex items-start gap-1">
 					<div className="min-w-0 flex-1">
@@ -265,7 +271,7 @@ function MapEditor({
 					</div>
 					<button
 						type="button"
-						aria-label={`Remove ${key}`}
+						aria-label={i18n.t("forms.map.remove", { key })}
 						disabled={disabled}
 						onClick={() =>
 							onWrite(
@@ -280,8 +286,9 @@ function MapEditor({
 			))}
 			<div className="flex gap-2">
 				<input
-					aria-label={`New key in ${label}`}
-					placeholder="New key"
+					aria-label={i18n.t("forms.any.newKeyIn", { label })}
+					placeholder={i18n.t("forms.any.newKey")}
+					dir="auto"
 					value={newKey}
 					disabled={disabled}
 					onChange={(event) => setNewKey(event.target.value)}
@@ -299,7 +306,7 @@ function MapEditor({
 					onClick={add}
 					className="inline-flex min-h-10 shrink-0 cursor-pointer items-center gap-1.5 rounded-sm border border-dashed border-line-strong px-3 text-xs text-muted hover:text-text disabled:cursor-not-allowed disabled:opacity-50"
 				>
-					<PlusIcon className="size-3" /> Add
+					<PlusIcon className="size-3" /> {i18n.t("forms.map.add")}
 				</button>
 			</div>
 		</div>

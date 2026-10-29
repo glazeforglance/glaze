@@ -17,8 +17,14 @@ export function InspectorHeader({ widget }: InspectorHeaderProps) {
 		<header className="mb-4 flex items-center gap-3">
 			<Badge text={abbr} tone={tone} />
 			<div className="min-w-0">
-				<h2 className="truncate text-lg font-bold">{title}</h2>
-				<p className="truncate font-mono text-xs text-muted">
+				<h2 dir="auto" className="truncate text-lg font-bold">
+					{title}
+				</h2>
+				{/* YAML, so never translated and always LTR. */}
+				<p
+					dir="ltr"
+					className="truncate text-start font-mono text-xs text-muted"
+				>
 					{widget.include !== null
 						? `$include: ${widget.include}`
 						: `type: ${widget.type ?? "?"}`}

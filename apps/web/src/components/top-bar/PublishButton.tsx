@@ -9,6 +9,7 @@ import { Button } from "../ui/Button.tsx";
 import { CheckIcon } from "../ui/icons.tsx";
 import { PublishDialog } from "./PublishDialog.tsx";
 import { PublishReviewDialog } from "./PublishReviewDialog.tsx";
+import { useTranslation } from "react-i18next";
 
 /**
  * Publishes the config and edited asset files, so Glance picks them up.
@@ -17,6 +18,7 @@ import { PublishReviewDialog } from "./PublishReviewDialog.tsx";
  * @returns The button, a short "Published" confirmation and the dialogs.
  */
 export function PublishButton() {
+	const { t } = useTranslation();
 	const dirty = useHasUnsavedChanges();
 	const publishRequest = useEditor((state) => state.publishRequest);
 	const { status, review, publish, overwrite, reload, dismiss } = usePublish();
@@ -35,7 +37,7 @@ export function PublishButton() {
 			<span role="status" className="text-sm text-success">
 				{status.phase === "published" && !dirty && (
 					<span className="inline-flex items-center gap-1">
-						<CheckIcon /> Published
+						<CheckIcon /> {t("publish.published")}
 					</span>
 				)}
 			</span>
@@ -43,13 +45,17 @@ export function PublishButton() {
 				variant="primary"
 				className="px-4"
 				aria-keyshortcuts="Control+S Meta+S"
-				title="Publish (Ctrl+S)"
+				title={t("publish.buttonTitle")}
 				unavailable={
-					busy ? "Publishing…" : dirty ? undefined : "No changes to publish"
+					busy
+						? t("publish.publishing")
+						: dirty
+							? undefined
+							: t("publish.nothingToPublish")
 				}
 				onClick={review}
 			>
-				{busy ? "Publishing…" : "Publish"}
+				{busy ? t("publish.publishing") : t("publish.button")}
 			</Button>
 			<PublishReviewDialog
 				open={status.phase === "reviewing"}

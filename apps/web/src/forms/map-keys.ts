@@ -1,3 +1,4 @@
+import { i18n } from "../i18n.ts";
 /**
  * Tells whether a map key can be edited through the form. Field names use
  * dots for nesting and digit-only parts for list indexes, so keys like
@@ -13,17 +14,19 @@ export function isFormSafeKey(key: string): boolean {
  * Checks a new key for a map option before it's written.
  * @param key - The key the user typed, e.g. a container name.
  * @param existing - Keys the map already has.
- * @returns A message for the user, or `null` when the key is fine.
+ * @returns A message for the user (in the UI language), or `null` when the key is fine.
  */
 export function checkNewMapKey(
 	key: string,
 	existing: readonly string[],
 ): string | null {
 	const trimmed = key.trim();
-	if (trimmed === "") return "Enter a name first.";
-	if (existing.includes(trimmed)) return `"${trimmed}" is already in the list.`;
+	if (trimmed === "") return i18n.t("forms.map.enterName");
+	if (existing.includes(trimmed)) {
+		return i18n.t("forms.map.taken", { key: trimmed });
+	}
 	if (!isFormSafeKey(trimmed)) {
-		return "Names with dots or only digits can be added in the YAML tab.";
+		return i18n.t("forms.map.inYaml");
 	}
 	return null;
 }

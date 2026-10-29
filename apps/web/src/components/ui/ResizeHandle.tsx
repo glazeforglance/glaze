@@ -4,6 +4,9 @@ import {
 	type ResizeBounds,
 	sizeAfterKey,
 } from "../../lib/resize.ts";
+import { useTranslation } from "react-i18next";
+import { currentDirection } from "../../i18n.ts";
+import { inlineDelta, logicalKey } from "../../lib/direction.ts";
 
 export interface ResizeHandleProps extends ResizeBounds {
 	/** Current size, in the same unit as `min` and `max`. */
@@ -15,11 +18,15 @@ export interface ResizeHandleProps extends ResizeBounds {
 	readonly onDragChange?: (dragging: boolean) => void;
 	/** How much an arrow key changes the size. */
 	readonly step: number;
-	/** `1` when dragging right makes the area bigger, `-1` when it makes it smaller. */
+	/**
+	 * `1` when dragging towards the inline end (right in LTR, left in RTL)
+	 * makes the area bigger, `-1` when it makes it smaller.
+	 */
 	readonly direction: 1 | -1;
 	/**
 	 * Turns a pointer movement into a size, e.g. `start + dx` for pixels or
-	 * `start + dx / container.width` for a ratio.
+	 * `start + dx / container.width` for a ratio. `deltaX` is along the line
+	 * of text: positive towards the inline end, in both directions.
 	 */
 	readonly fromPointer: (
 		start: number,
@@ -38,7 +45,8 @@ export interface ResizeHandleProps extends ResizeBounds {
 /**
  * A vertical bar that resizes the area next to it. Drag it with the pointer,
  * or focus it and use the arrow keys, Home and End (WAI-ARIA window splitter
- * pattern). Double-click resets the size.
+ * pattern). Double-click resets the size. Pointer and arrow keys follow the
+ * UI direction, so the handle drags the right way in RTL too.
  * @param props - Size, limits, how pointer movement maps to a size, and handlers.
  * @returns The separator element.
  */
@@ -57,6 +65,7 @@ export function ResizeHandle({
 	controls,
 	className = "",
 }: ResizeHandleProps) {
+	const { t } = useTranslation();
 	const bounds = { min, max };
 
 	const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
@@ -75,9 +84,13 @@ export function ResizeHandle({
 		const rect = container.getBoundingClientRect();
 		const startX = event.clientX;
 		const start = value;
+		const ui = currentDirection();
 		const move = (moveEvent: globalThis.PointerEvent) =>
 			onChange(
-				clampSize(fromPointer(start, moveEvent.clientX - startX, rect), bounds),
+				clampSize(
+					fromPointer(start, inlineDelta(moveEvent.clientX - startX, ui), rect),
+					bounds,
+				),
 			);
 		const stop = () => {
 			target.removeEventListener("pointermove", move);
@@ -91,7 +104,8 @@ export function ResizeHandle({
 	};
 
 	const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-		const next = sizeAfterKey(event.key, value, bounds, step, direction);
+		const key = logicalKey(event.key, currentDirection());
+		const next = sizeAfterKey(key, value, bounds, step, direction);
 		if (next === null) return;
 		event.preventDefault();
 		onChange(next);
@@ -110,12 +124,12 @@ export function ResizeHandle({
 			onPointerDown={onPointerDown}
 			onKeyDown={onKeyDown}
 			onDoubleClick={onReset}
-			title={onReset ? "Drag to resize · double-click to reset" : undefined}
+			title={onReset ? t("resize.title") : undefined}
 			className={`group z-20 w-px shrink-0 cursor-col-resize touch-none bg-line focus-visible:outline-none ${className}`}
 		>
 			{/* A wider invisible hit area, and a visible bar on hover or focus. */}
-			<span className="absolute inset-y-0 -left-1.5 w-3" />
-			<span className="absolute inset-y-0 -left-px w-[3px] bg-accent opacity-0 transition-opacity group-hover:opacity-60 group-focus-visible:opacity-100" />
+			<span className="absolute inset-y-0 -start-1.5 w-3" />
+			<span className="absolute inset-y-0 -start-px w-[3px] bg-accent opacity-0 transition-opacity group-hover:opacity-60 group-focus-visible:opacity-100" />
 		</div>
 	);
 }

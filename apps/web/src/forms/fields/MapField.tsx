@@ -9,6 +9,7 @@ import { checkNewMapKey, isFormSafeKey } from "../map-keys.ts";
 import { useWidgetMap } from "../use-widget-form.ts";
 import { borderClass, INPUT_CLASS } from "./field-styles.ts";
 import { FieldShell } from "./FieldShell.tsx";
+import { useTranslation } from "react-i18next";
 
 export interface MapFieldProps {
 	/** Field name of the map, e.g. `containers`. */
@@ -45,6 +46,7 @@ export function MapField({
 	hint,
 	children,
 }: MapFieldProps) {
+	const { t } = useTranslation();
 	const id = useId();
 	const map = useWidgetMap(name);
 	const [open, setOpen] = useState<string | null>(null);
@@ -93,6 +95,7 @@ export function MapField({
 
 	return (
 		<FieldShell
+			name={name}
 			inputId={id}
 			label={label}
 			asGroup
@@ -109,10 +112,14 @@ export function MapField({
 					const bodyId = `${id}-${key}`;
 					return (
 						<li key={key} className="rounded-md border border-line bg-card">
-							<div className="flex min-h-11 items-center gap-1 py-1 pr-1 pl-3">
+							<div className="flex min-h-11 items-center gap-1 py-1 pe-1 ps-3">
 								{renaming?.from === key ? (
 									<input
-										aria-label={`New ${keyLabel.toLowerCase()} for ${key}`}
+										aria-label={t("forms.map.newKeyFor", {
+											label: keyLabel,
+											key,
+										})}
+										dir="auto"
 										value={renaming.to}
 										// Focus moves into the input that replaces the button just pressed.
 										autoFocus
@@ -142,22 +149,20 @@ export function MapField({
 										aria-expanded={isOpen}
 										aria-controls={bodyId}
 										disabled={!editable}
-										title={
-											editable ? undefined : "Edit this one in the YAML tab"
-										}
+										title={editable ? undefined : t("forms.map.editInYaml")}
 										onClick={() => setOpen(isOpen ? null : key)}
-										className="flex min-h-9 min-w-0 flex-1 cursor-pointer items-center gap-2 text-left disabled:cursor-default"
+										className="flex min-h-9 min-w-0 flex-1 cursor-pointer items-center gap-2 text-start disabled:cursor-default"
 									>
 										<ChevronDownIcon
 											className={`size-3 shrink-0 text-muted transition-transform ${isOpen ? "" : "-rotate-90"}`}
 										/>
-										<span className="truncate font-mono text-sm">{key}</span>
+										<bdi className="truncate font-mono text-sm">{key}</bdi>
 									</button>
 								)}
 								<button
 									type="button"
-									aria-label={`Rename ${key}`}
-									title="Rename"
+									aria-label={t("forms.map.renameKey", { key })}
+									title={t("forms.map.rename")}
 									disabled={map.disabled || !editable}
 									onClick={() =>
 										setRenaming({ from: key, to: key, error: null })
@@ -168,7 +173,7 @@ export function MapField({
 								</button>
 								<button
 									type="button"
-									aria-label={`Remove ${key}`}
+									aria-label={t("forms.map.remove", { key })}
 									disabled={map.disabled}
 									onClick={() => map.remove(key)}
 									className={`${ICON_BUTTON} hover:text-danger`}
@@ -194,6 +199,7 @@ export function MapField({
 			<div className="mt-2 flex gap-2">
 				<input
 					aria-label={keyLabel}
+					dir="auto"
 					value={draft}
 					placeholder={keyPlaceholder}
 					disabled={map.disabled}

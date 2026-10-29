@@ -5,6 +5,7 @@ import {
 	type ListenOptionKey,
 	parseConfig,
 } from "@glaze/core";
+import { i18n } from "../i18n.ts";
 
 /*
  * Pure rules for the Settings view: Glance's login (secret key, users,
@@ -51,7 +52,7 @@ export function maskSecret(value: string): string {
  * Checks a user name for Glance's `auth.users` before it's written.
  * @param name - The name the user typed.
  * @param existing - Names that are already taken.
- * @returns A message, or `null` when the name is fine.
+ * @returns A sentence in the UI language, or `null` when the name is fine.
  */
 export function usernameProblem(
 	name: string,
@@ -59,12 +60,14 @@ export function usernameProblem(
 ): string | null {
 	const trimmed = name.trim();
 	if (trimmed.length < MIN_USERNAME_LENGTH) {
-		return `Glance needs a user name of at least ${MIN_USERNAME_LENGTH} characters.`;
+		return i18n.t("settings.auth.usernameTooShort", {
+			count: MIN_USERNAME_LENGTH,
+		});
 	}
 	if (existing.includes(trimmed))
-		return `There already is a user "${trimmed}".`;
+		return i18n.t("settings.auth.usernameTaken", { name: trimmed });
 	if (trimmed.includes(".") || /^\d+$/.test(trimmed)) {
-		return "Names with dots or only digits can be added in the Code view.";
+		return i18n.t("settings.auth.usernameInCode");
 	}
 	return null;
 }
@@ -86,7 +89,7 @@ const DEFAULT_PORT = 8080;
  * @param server - The `server` section's values.
  * @param portMapped - Glance sits behind a port mapping: then GLANCE_URL
  *   shouldn't follow the port, so that note is left out.
- * @returns Sentences to show; empty when nothing stands out.
+ * @returns Sentences to show (in the UI language); empty when nothing stands out.
  */
 export function glanceReachNotes(
 	glanceUrl: string | null,
@@ -94,9 +97,7 @@ export function glanceReachNotes(
 	portMapped = false,
 ): string[] {
 	if (glanceUrl === null) {
-		return [
-			"GLANCE_URL isn't set, so Glaze shows no live preview; these options don't affect Glaze.",
-		];
+		return [i18n.t("settings.server.noGlanceUrl")];
 	}
 	let url: URL;
 	try {
@@ -112,9 +113,7 @@ export function glanceReachNotes(
 	const urlPort = Number(url.port || (url.protocol === "https:" ? 443 : 80));
 	const local = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
 	if (local && urlPort !== port && !portMapped) {
-		notes.push(
-			`Glaze opens Glance at ${glanceUrl}, but Glance would listen on port ${port}: update GLANCE_URL when you publish this.`,
-		);
+		notes.push(i18n.t("settings.server.portDiffers", { url: glanceUrl, port }));
 	}
 	const base =
 		typeof server["base-url"] === "string"
@@ -123,7 +122,7 @@ export function glanceReachNotes(
 	const path = url.pathname.replace(/\/+$/, "");
 	if (base !== "" && !path.endsWith(base)) {
 		notes.push(
-			`With a base URL of ${base}, Glance's pages move under that path; GLANCE_URL (${glanceUrl}) may need it too.`,
+			i18n.t("settings.server.baseUrlMoves", { base, url: glanceUrl }),
 		);
 	}
 	return notes;

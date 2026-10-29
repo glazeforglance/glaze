@@ -8,12 +8,14 @@ import { EditNotice } from "./EditNotice.tsx";
 import { HeadWidgets } from "./HeadWidgets.tsx";
 import { PageHeader } from "./PageHeader.tsx";
 import { UndoNoticeBar } from "./UndoNoticeBar.tsx";
+import { Trans, useTranslation } from "react-i18next";
 
 /**
  * The center area: the open page with its head widgets and columns.
  * @returns The main element.
  */
 export function Canvas() {
+	const { t } = useTranslation();
 	const page = useEditor(selectCurrentPage);
 	const selectWidget = useEditor((state) => state.selectWidget);
 	const selectedWidgetId = useEditor((state) => state.selectedWidgetId);
@@ -22,7 +24,7 @@ export function Canvas() {
 	if (!page) {
 		return (
 			<main className="dotted-grid flex flex-1 items-center justify-center text-muted">
-				This config has no pages yet.
+				{t("canvas.noPages")}
 			</main>
 		);
 	}
@@ -31,7 +33,7 @@ export function Canvas() {
 
 	return (
 		<main
-			aria-label={`Page ${page.name ?? ""}`}
+			aria-label={t("canvas.pageLabel", { name: page.name ?? "" })}
 			className="dotted-grid min-w-0 flex-1 overflow-auto px-6 py-6"
 			// Clicking empty canvas clears the selection, like most design tools.
 			onClick={(event) => {
@@ -52,8 +54,11 @@ export function Canvas() {
 			<UndoNoticeBar />
 			{page.include !== null ? (
 				<p className="text-sm text-muted">
-					This page comes from <code className="font-mono">{page.include}</code>{" "}
-					and can't be edited here.
+					<Trans
+						i18nKey="canvas.includedPage"
+						values={{ file: page.include }}
+						components={{ file: <code dir="ltr" className="font-mono" /> }}
+					/>
 				</p>
 			) : (
 				<>

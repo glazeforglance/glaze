@@ -2,10 +2,14 @@ import type { EnvReference } from "@glaze/core";
 import type { ReactNode } from "react";
 import type { FieldStatus } from "../use-widget-form.ts";
 import { EnvChip } from "./EnvChip.tsx";
+import { OptionKey } from "./OptionKey.tsx";
+import { useTranslation } from "react-i18next";
 
 export interface FieldShellProps {
 	/** Id of the input, so the label points at it. */
 	readonly inputId: string;
+	/** Form field name, e.g. `sites.2.url`; its last key is shown next to the label. */
+	readonly name?: string;
 	readonly label: string;
 	/** Labels a group of controls (segmented, list) instead of one input. */
 	readonly asGroup?: boolean;
@@ -28,6 +32,7 @@ export interface FieldShellProps {
  */
 export function FieldShell({
 	inputId,
+	name,
 	label,
 	asGroup = false,
 	status,
@@ -39,6 +44,7 @@ export function FieldShell({
 	onOverride,
 	children,
 }: FieldShellProps) {
+	const { t } = useTranslation();
 	const labelClass =
 		"font-mono text-[11px] font-semibold uppercase tracking-wider text-muted";
 	return (
@@ -53,18 +59,19 @@ export function FieldShell({
 						{label}
 					</label>
 				)}
+				<OptionKey name={name} />
 				{env.map((reference) => (
 					<EnvChip key={reference.raw} reference={reference} />
 				))}
 				{status === "inherited" && (
 					<span
-						title="Comes from a YAML merge key (<<: *anchor)"
+						title={t("forms.inheritedTitle")}
 						className="rounded-[6px] bg-violet/12 px-1.5 py-0.5 font-mono text-[10px] text-violet"
 					>
-						inherited
+						{t("forms.inherited")}
 					</span>
 				)}
-				<span className="ml-auto flex items-center gap-2 font-mono text-[11px] text-faint">
+				<span className="ms-auto flex items-center gap-2 font-mono text-[11px] text-faint">
 					{aside}
 					{status === "inherited" && !readOnly && (
 						<button
@@ -72,7 +79,7 @@ export function FieldShell({
 							onClick={onOverride}
 							className="cursor-pointer rounded-[6px] px-1.5 py-0.5 text-accent hover:bg-accent/10"
 						>
-							Override
+							{t("forms.override")}
 						</button>
 					)}
 				</span>

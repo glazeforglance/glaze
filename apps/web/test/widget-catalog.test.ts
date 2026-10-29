@@ -5,7 +5,7 @@ import {
 	catalogEntry,
 	newWidgetOf,
 	searchCatalog,
-	WIDGET_CATALOG,
+	widgetCatalog,
 } from "../src/lib/widget-catalog.ts";
 
 describe("catalogEntry", () => {
@@ -48,7 +48,7 @@ describe("searchCatalog", () => {
 			"Advanced",
 		]);
 		expect(groups.flatMap(({ entries }) => entries)).toHaveLength(
-			WIDGET_CATALOG.length,
+			widgetCatalog().length,
 		);
 	});
 
@@ -65,12 +65,14 @@ describe("searchCatalog", () => {
 	});
 
 	it("has unique widget types", () => {
-		const types = WIDGET_CATALOG.map((entry) => entry.type);
+		const types = widgetCatalog().map((entry) => entry.type);
 		expect(new Set(types).size).toBe(types.length);
 	});
 
 	it("lists every widget type Glance has", () => {
-		const types = WIDGET_CATALOG.map((entry) => entry.type).sort();
+		const types = widgetCatalog()
+			.map((entry) => entry.type)
+			.sort();
 		expect(types).toEqual([...WIDGET_TYPES].sort());
 	});
 });

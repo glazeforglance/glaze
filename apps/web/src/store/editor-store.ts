@@ -53,6 +53,8 @@ import {
 	parentWidget,
 } from "../lib/model.ts";
 import type { WidgetWidth } from "../lib/widget-width.ts";
+import { i18n } from "../i18n.ts";
+import { editErrorText, parseErrorText } from "../lib/messages.ts";
 
 /** The main views of the editor. */
 export type EditorView = "design" | "code" | "preview" | "settings";
@@ -340,14 +342,13 @@ export function createEditorStore(): StoreApi<EditorStore> {
 			if (!doc) return false;
 			if (codeText !== null) {
 				set({
-					notice:
-						"The YAML in the Code view has errors. Fix them there before editing here.",
+					notice: i18n.t("canvas.codeError.blocked"),
 				});
 				return false;
 			}
 			const result = edit(doc);
 			if (!result.ok) {
-				set({ notice: result.error.message });
+				set({ notice: editErrorText(result.error) });
 				return false;
 			}
 			// No-op edits (e.g. a move to the same index) return the same document.
@@ -378,8 +379,7 @@ export function createEditorStore(): StoreApi<EditorStore> {
 			if (applied) {
 				set({
 					undoNotice: {
-						message:
-							"The split-column had one widget left, so it was turned back into a normal widget.",
+						message: i18n.t("canvas.split.dissolved"),
 						restore: before,
 					},
 				});
@@ -429,11 +429,7 @@ export function createEditorStore(): StoreApi<EditorStore> {
 			load: (text, version) => {
 				const parsed = parseConfig(text);
 				if (!parsed.ok) {
-					const { message, line } = parsed.error;
-					set({
-						status: "error",
-						error: line === null ? message : `Line ${line}: ${message}`,
-					});
+					set({ status: "error", error: parseErrorText(parsed.error) });
 					return;
 				}
 				const previous = get();
@@ -612,7 +608,7 @@ export function createEditorStore(): StoreApi<EditorStore> {
 				const trimmed = name.trim();
 				if (!page) return;
 				if (trimmed === "") {
-					set({ notice: "A page needs a name." });
+					set({ notice: i18n.t("pages.nameRequired") });
 					return;
 				}
 				if (trimmed === page.name) {

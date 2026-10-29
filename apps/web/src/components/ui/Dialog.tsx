@@ -2,7 +2,7 @@ import { type ReactNode, useEffect, useId, useRef } from "react";
 
 export interface DialogProps {
 	readonly open: boolean;
-	readonly title: string;
+	readonly title: ReactNode;
 	readonly children: ReactNode;
 	/** Buttons at the bottom, e.g. Cancel and a confirm button. */
 	readonly actions: ReactNode;

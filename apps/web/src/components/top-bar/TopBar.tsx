@@ -22,7 +22,7 @@ export function TopBar() {
 				<AuthOffBadge />
 			</div>
 			<PageTabs />
-			<div className="ml-auto flex items-center gap-2.5">
+			<div className="ms-auto flex items-center gap-2.5">
 				<ViewSwitch />
 				<UndoButton />
 				<UnsavedIndicator />

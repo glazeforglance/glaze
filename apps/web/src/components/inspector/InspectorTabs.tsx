@@ -1,11 +1,15 @@
 import type { KeyboardEvent } from "react";
+import { useTranslation } from "react-i18next";
+import { currentDirection } from "../../i18n.ts";
+import { logicalKey } from "../../lib/direction.ts";
 
 export type InspectorTab = "settings" | "style" | "yaml";
 
-const TABS: readonly { id: InspectorTab; label: string }[] = [
-	{ id: "settings", label: "Settings" },
-	{ id: "style", label: "Style" },
-	{ id: "yaml", label: "YAML" },
+/** The tabs in order; labels are `inspector.tabs.<id>`. */
+const TABS: readonly { id: InspectorTab }[] = [
+	{ id: "settings" },
+	{ id: "style" },
+	{ id: "yaml" },
 ];
 
 export interface InspectorTabsProps {
@@ -19,9 +23,11 @@ export interface InspectorTabsProps {
  * @returns The tab list.
  */
 export function InspectorTabs({ value, onChange }: InspectorTabsProps) {
+	const { t } = useTranslation();
 	const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-		if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
-		const step = event.key === "ArrowRight" ? 1 : -1;
+		const key = logicalKey(event.key, currentDirection());
+		if (key !== "ArrowRight" && key !== "ArrowLeft") return;
+		const step = key === "ArrowRight" ? 1 : -1;
 		const index = TABS.findIndex((tab) => tab.id === value);
 		const next = TABS[(index + step + TABS.length) % TABS.length];
 		if (!next) return;
@@ -32,7 +38,7 @@ export function InspectorTabs({ value, onChange }: InspectorTabsProps) {
 	return (
 		<div
 			role="tablist"
-			aria-label="Inspector"
+			aria-label={t("inspector.label")}
 			onKeyDown={onKeyDown}
 			className="flex gap-5 border-b border-line"
 		>
@@ -54,7 +60,7 @@ export function InspectorTabs({ value, onChange }: InspectorTabsProps) {
 								: "border-transparent text-muted hover:text-text"
 						}`}
 					>
-						{tab.label}
+						{t(`inspector.tabs.${tab.id}`)}
 					</button>
 				);
 			})}

@@ -14,13 +14,14 @@ import {
 	INPUT_CLASS,
 } from "./field-styles.ts";
 import { FieldShell } from "./FieldShell.tsx";
+import { useTranslation } from "react-i18next";
 
 const SOURCES: readonly { value: IconSource; label: string; hint: string }[] = [
-	{ value: "si", label: "Simple Icons", hint: "e.g. jellyfin" },
-	{ value: "di", label: "Dashboard Icons", hint: "e.g. immich, or immich.png" },
-	{ value: "sh", label: "selfh.st", hint: "e.g. glance" },
-	{ value: "mdi", label: "Material Design", hint: "e.g. server" },
-	{ value: "url", label: "Image URL", hint: "https://… or /assets/…" },
+	{ value: "si", label: "Simple Icons", hint: "jellyfin" },
+	{ value: "di", label: "Dashboard Icons", hint: "immich, immich.png" },
+	{ value: "sh", label: "selfh.st", hint: "glance" },
+	{ value: "mdi", label: "Material Design", hint: "server" },
+	{ value: "url", label: "", hint: "https://…, /assets/…" },
 ];
 
 export interface IconFieldProps {
@@ -37,6 +38,7 @@ export interface IconFieldProps {
  * @returns The field element.
  */
 export function IconField({ name, label, hint }: IconFieldProps) {
+	const { t } = useTranslation();
 	const id = useId();
 	const widgetField = useWidgetField(name);
 	const { field, error, disabled } = widgetField;
@@ -56,6 +58,7 @@ export function IconField({ name, label, hint }: IconFieldProps) {
 
 	return (
 		<FieldShell
+			name={name}
 			inputId={id}
 			label={label}
 			status={widgetField.status}
@@ -67,7 +70,7 @@ export function IconField({ name, label, hint }: IconFieldProps) {
 		>
 			<div className="flex gap-2">
 				<select
-					aria-label={`${label}: source`}
+					aria-label={t("forms.icon.source", { label })}
 					value={parts.source}
 					disabled={disabled || env}
 					onChange={(event) => {
@@ -79,7 +82,8 @@ export function IconField({ name, label, hint }: IconFieldProps) {
 				>
 					{SOURCES.map((option) => (
 						<option key={option.value} value={option.value}>
-							{option.label}
+							{/* Icon set names are brands; only "Image URL" is ours. */}
+							{option.label || t("forms.icon.imageUrl")}
 						</option>
 					))}
 				</select>
@@ -88,7 +92,12 @@ export function IconField({ name, label, hint }: IconFieldProps) {
 					ref={(element) => field.ref(element)}
 					name={name}
 					value={env ? text : parts.name}
-					placeholder={current?.hint}
+					placeholder={
+						current
+							? t("forms.icon.example", { example: current.hint })
+							: undefined
+					}
+					dir="ltr"
 					disabled={disabled}
 					autoComplete="off"
 					spellCheck={false}
@@ -124,7 +133,7 @@ export function IconField({ name, label, hint }: IconFieldProps) {
 					}
 					className="size-4 cursor-pointer accent-[var(--color-accent)]"
 				/>
-				Invert on light themes
+				{t("forms.icon.invert")}
 			</label>
 		</FieldShell>
 	);

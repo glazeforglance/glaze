@@ -1,4 +1,6 @@
 import type { ValidationIssue } from "@glaze/core";
+import { useTranslation } from "react-i18next";
+import { problemText } from "../../lib/messages.ts";
 
 /**
  * An info issue as a short line of text, with a link to the docs when the
@@ -13,9 +15,10 @@ export function IssueNote({
 	readonly issue: ValidationIssue;
 	readonly className: string;
 }) {
+	const { t } = useTranslation();
 	return (
 		<p className={className}>
-			{issue.message}
+			{problemText(issue)}
 			{issue.docsUrl !== undefined && (
 				<>
 					{" "}
@@ -25,7 +28,7 @@ export function IssueNote({
 						rel="noreferrer"
 						className="underline hover:text-text"
 					>
-						How to set it up
+						{t("code.howToSetUp")}
 					</a>
 				</>
 			)}

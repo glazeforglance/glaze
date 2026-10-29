@@ -1,6 +1,8 @@
 import type { PublishError } from "../../lib/api.ts";
 import { Button } from "../ui/Button.tsx";
 import { Dialog } from "../ui/Dialog.tsx";
+import { Trans, useTranslation } from "react-i18next";
+import { problemText } from "../../lib/messages.ts";
 
 export interface PublishDialogProps {
 	/** The failure to explain, or `null` when the dialog is closed. */
@@ -24,9 +26,10 @@ export function PublishDialog({
 	onReload,
 	onClose,
 }: PublishDialogProps) {
+	const { t } = useTranslation();
 	const close = (
 		<Button autoFocus onClick={onClose}>
-			{error?.kind === "conflict" ? "Cancel" : "Close"}
+			{error?.kind === "conflict" ? t("common.cancel") : t("common.close")}
 		</Button>
 	);
 
@@ -35,35 +38,37 @@ export function PublishDialog({
 		return (
 			<Dialog
 				open
-				title="The file changed on disk"
+				title={t("publish.conflict.title")}
 				onClose={onClose}
 				actions={
 					<>
 						{close}
 						<Button variant="danger" onClick={onReload}>
-							Reload
+							{t("publish.conflict.reload")}
 						</Button>
 						<Button
 							variant="primary"
 							unavailable={
-								diskVersion === null ? "The file is missing" : undefined
+								diskVersion === null ? t("publish.conflict.missing") : undefined
 							}
 							onClick={() => diskVersion !== null && onOverwrite(diskVersion)}
 						>
-							Overwrite
+							{t("publish.conflict.overwrite")}
 						</Button>
 					</>
 				}
 			>
 				<p>
-					Someone edited <code className="font-mono">glance.yml</code> since you
-					opened it.
+					<Trans
+						i18nKey="publish.conflict.body"
+						components={{ file: <code dir="ltr" className="font-mono" /> }}
+					/>
 				</p>
 				<p className="mt-2">
-					<strong className="text-text">Reload</strong> loads their version and
-					throws away your unpublished changes.{" "}
-					<strong className="text-text">Overwrite</strong> replaces their
-					version with yours.
+					<Trans
+						i18nKey="publish.conflict.choice"
+						components={{ strong: <strong className="text-text" /> }}
+					/>
 				</p>
 			</Dialog>
 		);
@@ -72,25 +77,23 @@ export function PublishDialog({
 	return (
 		<Dialog
 			open={error !== null}
-			title={
-				error?.kind === "invalid"
-					? "Glance can't use this config"
-					: "Publish failed"
-			}
+			title={error?.kind === "invalid" ? t("api.invalid") : t("publish.failed")}
 			onClose={onClose}
 			actions={close}
 		>
 			{error?.kind === "invalid" ? (
 				<>
-					<p>Nothing was written. {error.message}</p>
+					<p>{t("publish.nothingWritten", { message: error.message })}</p>
 					{error.issues.length > 0 && (
-						<ul className="mt-3 list-disc space-y-1 pl-5 text-text">
+						<ul className="mt-3 list-disc space-y-1 ps-5 text-text">
 							{error.issues
 								.filter((issue) => issue.severity === "error")
 								.map((issue) => (
 									<li key={`${issue.line}-${issue.message}`}>
-										{issue.line !== undefined ? `Line ${issue.line}: ` : ""}
-										{issue.message}
+										{issue.line !== undefined
+											? `${t("code.line", { line: issue.line })} `
+											: ""}
+										{problemText(issue)}
 									</li>
 								))}
 						</ul>

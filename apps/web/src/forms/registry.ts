@@ -2,6 +2,7 @@ import { WIDGET_TYPES, type WidgetSchema, widgetSchema } from "@glaze/schemas";
 import type { z } from "zod";
 import { zodForWidget } from "./schema-zod.ts";
 import type { BaseFieldKey } from "./use-widget-form.ts";
+import { i18n, localizedWidget } from "../i18n.ts";
 
 /** The form of one widget type: generated from its schema. */
 export interface WidgetFormDefinition {
@@ -36,17 +37,20 @@ const CACHE = new Map<string, WidgetFormDefinition>();
  * @returns The form, or `null` for a type Glance doesn't know.
  */
 export function formFor(type: string | null): WidgetFormDefinition | null {
-	const widget = widgetSchema(type);
-	if (!widget || type === null) return null;
-	const cached = CACHE.get(type);
+	const raw = widgetSchema(type);
+	if (!raw || type === null) return null;
+	// Labels and help are in the UI language, so the cache is per language.
+	const key = `${i18n.language}:${type}`;
+	const cached = CACHE.get(key);
 	if (cached) return cached;
+	const widget = localizedWidget(raw);
 	const hidden = HIDDEN_BASE[widget.type];
 	const definition: WidgetFormDefinition = {
 		widget,
 		schema: zodForWidget(widget),
 		...(hidden ? { hiddenBaseFields: hidden } : {}),
 	};
-	CACHE.set(type, definition);
+	CACHE.set(key, definition);
 	return definition;
 }
 

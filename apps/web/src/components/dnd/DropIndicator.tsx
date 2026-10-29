@@ -1,4 +1,5 @@
 import type { ActiveDrag, DragIndicator } from "./drag-state.ts";
+import { useTranslation } from "react-i18next";
 
 export interface DropIndicatorProps {
 	readonly drag: ActiveDrag;
@@ -15,7 +16,9 @@ export interface DropIndicatorProps {
  * @returns The indicator.
  */
 export function DropIndicator({ drag, indicator }: DropIndicatorProps) {
-	const verb = drag.kind === "library" ? "add" : "move";
+	const { t } = useTranslation();
+	const adding = drag.kind === "library";
+	const name = drag.label;
 	const { kind, x, y, width, height } = indicator;
 
 	if (kind === "box") {
@@ -25,13 +28,15 @@ export function DropIndicator({ drag, indicator }: DropIndicatorProps) {
 				style={{ left: x, top: y, width, height }}
 				className="pointer-events-none absolute z-10 flex items-center justify-center rounded-md border-2 border-dashed border-accent bg-accent/10 px-3 text-center text-sm text-accent"
 			>
-				Drop to {verb} “{drag.label}”
+				{adding ? t("dnd.dropToAdd", { name }) : t("dnd.dropToMove", { name })}
 			</div>
 		);
 	}
 	if (kind === "beside") {
 		// A thick bar on the target's edge, with the label on the inside.
-		const left = indicator.side === "left";
+		// `side` is in reading order, so the logical start/end classes put the
+		// label inside the target in both directions.
+		const before = indicator.side === "left";
 		return (
 			<div
 				aria-hidden="true"
@@ -40,10 +45,10 @@ export function DropIndicator({ drag, indicator }: DropIndicatorProps) {
 			>
 				<span
 					className={`absolute top-1.5 rounded-[6px] bg-accent px-1.5 py-0.5 font-mono text-[10px] font-semibold whitespace-nowrap text-accent-ink ${
-						left ? "left-2" : "right-2"
+						before ? "start-2" : "end-2"
 					}`}
 				>
-					side by side
+					{t("dnd.sideBySide")}
 				</span>
 			</div>
 		);
@@ -60,8 +65,8 @@ export function DropIndicator({ drag, indicator }: DropIndicatorProps) {
 			className="pointer-events-none absolute z-10 rounded-full bg-accent shadow-[0_0_0_3px_rgb(245_181_74/0.18)]"
 		>
 			{horizontal && (
-				<span className="absolute top-1/2 left-2 -translate-y-1/2 truncate rounded-[6px] bg-accent px-1.5 py-0.5 font-mono text-[10px] font-semibold whitespace-nowrap text-accent-ink">
-					{verb} “{drag.label}”
+				<span className="absolute top-1/2 start-2 -translate-y-1/2 truncate rounded-[6px] bg-accent px-1.5 py-0.5 font-mono text-[10px] font-semibold whitespace-nowrap text-accent-ink">
+					{adding ? t("dnd.add", { name }) : t("dnd.move", { name })}
 				</span>
 			)}
 		</div>

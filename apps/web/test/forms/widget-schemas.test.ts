@@ -139,7 +139,8 @@ const CASES: readonly SchemaCase[] = [
 			type: "releases",
 			repositories: [{ "include-prereleases": "yes" }],
 		},
-		message: "Repositories: this form isn't supported",
+		// List items are named by their own (singular) label.
+		message: "Repository: this form isn't supported",
 		path: ["repositories", 0],
 	},
 	{

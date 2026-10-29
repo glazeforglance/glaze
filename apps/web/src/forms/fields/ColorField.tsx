@@ -8,6 +8,7 @@ import {
 	INPUT_CLASS,
 } from "./field-styles.ts";
 import { FieldShell } from "./FieldShell.tsx";
+import { useTranslation } from "react-i18next";
 
 export interface ColorFieldProps {
 	readonly name: string;
@@ -28,6 +29,7 @@ export function ColorField({
 	placeholder,
 	hint,
 }: ColorFieldProps) {
+	const { t } = useTranslation();
 	const id = useId();
 	const widgetField = useWidgetField(name);
 	const { field, error, disabled } = widgetField;
@@ -44,6 +46,7 @@ export function ColorField({
 
 	return (
 		<FieldShell
+			name={name}
 			inputId={id}
 			label={label}
 			status={widgetField.status}
@@ -56,7 +59,7 @@ export function ColorField({
 			<div className="flex gap-2">
 				<input
 					type="color"
-					aria-label={`${label}: pick a color`}
+					aria-label={t("forms.color.pick", { label })}
 					value={hex || "#000000"}
 					disabled={disabled}
 					onChange={(event) => {
@@ -72,7 +75,8 @@ export function ColorField({
 					ref={(element) => field.ref(element)}
 					name={name}
 					value={text}
-					placeholder={placeholder ?? "hue saturation lightness"}
+					placeholder={placeholder ?? t("forms.color.placeholder")}
+					dir="ltr"
 					disabled={disabled}
 					autoComplete="off"
 					spellCheck={false}
@@ -92,7 +96,8 @@ export function ColorField({
 					className={`${INPUT_CLASS} ${borderClass(error !== undefined)} min-w-0 font-mono text-[13px]`}
 				/>
 				<input
-					aria-label={`${label} as hex`}
+					aria-label={t("forms.color.hex", { label })}
+					dir="ltr"
 					value={hexDraft ?? hex}
 					placeholder="#rrggbb"
 					disabled={disabled}

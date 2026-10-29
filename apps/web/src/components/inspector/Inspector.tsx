@@ -8,13 +8,15 @@ import { InspectorHeader } from "./InspectorHeader.tsx";
 import { PageSettings } from "./PageSettings.tsx";
 import { type InspectorTab, InspectorTabs } from "./InspectorTabs.tsx";
 import { YamlView } from "./YamlView.tsx";
+import { useTranslation } from "react-i18next";
 
 /**
- * The right sidebar: details of the selected widget. Resizable (280–560 px)
+ * The sidebar at the inline end (right in LTR): details of the selected widget. Resizable (280–560 px)
  * and collapsible.
  * @returns The sidebar element.
  */
 export function Inspector() {
+	const { t } = useTranslation();
 	const page = useEditor(selectCurrentPage);
 	const selectedWidgetId = useEditor((state) => state.selectedWidgetId);
 	const pageSettingsOpen = useEditor((state) => state.pageSettingsOpen);
@@ -30,8 +32,8 @@ export function Inspector() {
 	return (
 		<SidePanel
 			id="inspector"
-			side="right"
-			label="inspector"
+			side="end"
+			label={t("inspector.panelName")}
 			defaultWidth={330}
 			min={280}
 			max={560}
@@ -39,15 +41,14 @@ export function Inspector() {
 			<aside
 				ref={scrollRef}
 				onScroll={onScroll}
-				aria-label="Inspector"
-				className="flex min-w-0 flex-1 flex-col overflow-y-auto border-l border-line bg-bg px-5 py-5"
+				aria-label={t("inspector.label")}
+				className="flex min-w-0 flex-1 flex-col overflow-y-auto border-s border-line bg-bg px-5 py-5"
 			>
 				{widget === null && pageSettingsOpen && page ? (
 					<PageSettings page={page} />
 				) : widget === null ? (
 					<p className="mt-10 text-center text-sm text-muted">
-						Select a widget to see its settings, or click the page title for the
-						page's settings.
+						{t("inspector.empty")}
 					</p>
 				) : (
 					<>

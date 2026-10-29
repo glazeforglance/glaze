@@ -4,6 +4,7 @@ import { useWidgetField } from "../use-widget-form.ts";
 import { borderClass, describedBy, INPUT_CLASS } from "./field-styles.ts";
 import { FieldShell } from "./FieldShell.tsx";
 import { useTextInput } from "./use-text-input.ts";
+import { useTranslation } from "react-i18next";
 
 export interface TextFieldProps {
 	/** Field name, e.g. `title` or `sites.2.url`. */
@@ -25,9 +26,6 @@ export interface TextFieldProps {
 	readonly inputMode?: "text" | "numeric" | "decimal" | "url";
 }
 
-const SECRET_TIP =
-	"Tip: write ${YOUR_VAR} here so the key stays out of glance.yml.";
-
 /**
  * A one-line text input. Writes on blur or Enter (not on every keystroke), so
  * a change is one small edit; Escape drops an unsaved change.
@@ -45,6 +43,7 @@ export function TextField({
 	format,
 	inputMode = "text",
 }: TextFieldProps) {
+	const { t } = useTranslation();
 	const id = useId();
 	const widgetField = useWidgetField(name);
 	const { field, error, disabled } = widgetField;
@@ -55,12 +54,18 @@ export function TextField({
 
 	return (
 		<FieldShell
+			name={name}
 			inputId={id}
 			label={label}
 			status={widgetField.status}
 			env={widgetField.env}
 			error={error}
-			hint={hint ?? (secret && !isEnv ? SECRET_TIP : undefined)}
+			hint={
+				hint ??
+				(secret && !isEnv
+					? t("forms.secretTip", { env: "${YOUR_VAR}" })
+					: undefined)
+			}
 			readOnly={widgetField.readOnly}
 			onOverride={widgetField.override}
 		>
@@ -76,21 +81,27 @@ export function TextField({
 					disabled={disabled}
 					autoComplete="off"
 					spellCheck={false}
+					// Addresses, keys and ${VAR}s read left to right; free text follows its content.
+					dir={mono || isEnv || inputMode === "url" ? "ltr" : "auto"}
 					aria-invalid={error ? true : undefined}
 					aria-describedby={describedBy(id, error)}
 					className={`${INPUT_CLASS} ${borderClass(error !== undefined)} ${
 						mono || isEnv ? "font-mono text-[13px]" : ""
-					} ${secret && !isEnv ? "pr-16" : ""}`}
+					} ${secret && !isEnv ? "pe-16" : ""}`}
 				/>
 				{secret && !isEnv && (
 					<button
 						type="button"
 						onClick={() => setRevealed((value) => !value)}
 						aria-pressed={revealed}
-						aria-label={revealed ? `Hide ${label}` : `Show ${label}`}
-						className="absolute top-1/2 right-1.5 min-h-7 -translate-y-1/2 cursor-pointer rounded-[6px] px-2 font-mono text-[11px] text-muted hover:bg-card-hover hover:text-text"
+						aria-label={
+							revealed
+								? t("forms.hideValue", { label })
+								: t("forms.showValue", { label })
+						}
+						className="absolute top-1/2 end-1.5 min-h-7 -translate-y-1/2 cursor-pointer rounded-[6px] px-2 font-mono text-[11px] text-muted hover:bg-card-hover hover:text-text"
 					>
-						{revealed ? "Hide" : "Show"}
+						{revealed ? t("forms.hide") : t("forms.show")}
 					</button>
 				)}
 			</div>

@@ -36,6 +36,7 @@ export function TextAreaField({
 
 	return (
 		<FieldShell
+			name={name}
 			inputId={id}
 			label={label}
 			status={widgetField.status}

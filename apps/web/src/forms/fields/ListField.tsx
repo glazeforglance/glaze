@@ -8,6 +8,7 @@ import { Button } from "../../components/ui/Button.tsx";
 import { focusAfterRemove, moveIndexes, removeIndex } from "../list-state.ts";
 import { useWidgetList } from "../use-widget-form.ts";
 import { FieldShell } from "./FieldShell.tsx";
+import { useTranslation } from "react-i18next";
 
 export interface ListFieldProps {
 	/** Field name of the list, e.g. `sites` or `groups.0.links`. */
@@ -61,6 +62,7 @@ export function ListField({
 	hint,
 	children,
 }: ListFieldProps) {
+	const { t } = useTranslation();
 	const id = useId();
 	const list = useWidgetList(name);
 	const [open, setOpen] = useState<ReadonlySet<number>>(() => new Set());
@@ -130,6 +132,7 @@ export function ListField({
 
 	return (
 		<FieldShell
+			name={name}
 			inputId={id}
 			label={label}
 			asGroup
@@ -152,14 +155,14 @@ export function ListField({
 								data-list-index={index}
 								className="rounded-md border border-line bg-card"
 							>
-								<div className="flex min-h-11 items-center gap-1 py-1 pr-1 pl-3">
+								<div className="flex min-h-11 items-center gap-1 py-1 pe-1 ps-3">
 									{collapsible ? (
 										<button
 											type="button"
 											aria-expanded={isOpen(index)}
 											aria-controls={bodyId}
 											onClick={() => toggle(index)}
-											className="flex min-h-9 min-w-0 flex-1 cursor-pointer items-center gap-2 text-left"
+											className="flex min-h-9 min-w-0 flex-1 cursor-pointer items-center gap-2 text-start"
 										>
 											<ChevronDownIcon
 												className={`size-3 shrink-0 text-muted transition-transform ${isOpen(index) ? "" : "-rotate-90"}`}
@@ -173,7 +176,7 @@ export function ListField({
 									)}
 									<button
 										type="button"
-										aria-label={`Move ${title} up`}
+										aria-label={t("forms.list.moveUp", { name: title })}
 										data-list-action="up"
 										disabled={list.disabled || index === 0}
 										onClick={() => move(index, index - 1, "up")}
@@ -183,7 +186,7 @@ export function ListField({
 									</button>
 									<button
 										type="button"
-										aria-label={`Move ${title} down`}
+										aria-label={t("forms.list.moveDown", { name: title })}
 										data-list-action="down"
 										disabled={list.disabled || index === last}
 										onClick={() => move(index, index + 1, "down")}
@@ -193,7 +196,7 @@ export function ListField({
 									</button>
 									<button
 										type="button"
-										aria-label={`Remove ${title}`}
+										aria-label={t("forms.list.remove", { name: title })}
 										data-list-action="remove"
 										disabled={list.disabled}
 										onClick={() => remove(index)}

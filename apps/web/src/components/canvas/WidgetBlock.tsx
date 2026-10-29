@@ -9,6 +9,7 @@ import { Badge } from "../ui/Badge.tsx";
 import { GripIcon } from "../ui/icons.tsx";
 import { NestedWidgets } from "./NestedWidgets.tsx";
 import { WidgetActions } from "./WidgetActions.tsx";
+import { useTranslation } from "react-i18next";
 
 /** Event listeners and ARIA attributes dnd-kit puts on the drag handle (the grip button). */
 export interface GripProps {
@@ -44,6 +45,7 @@ export function WidgetBlock({
 	gripRef,
 	dimmed = false,
 }: WidgetBlockProps) {
+	const { t } = useTranslation();
 	const selected = useEditor((state) => state.selectedWidgetId === widget.id);
 	const selectWidget = useEditor((state) => state.selectWidget);
 	const { title, abbr, tone } = widgetDisplay(widget);
@@ -66,8 +68,8 @@ export function WidgetBlock({
 					ref={gripRef}
 					{...grip.attributes}
 					{...grip.listeners}
-					aria-label={`Move ${title}`}
-					className="flex w-7 shrink-0 cursor-grab items-start justify-center self-stretch rounded-l-md pt-5 text-faint hover:text-text active:cursor-grabbing"
+					aria-label={t("canvas.widget.move", { name: title })}
+					className="flex w-7 shrink-0 cursor-grab items-start justify-center self-stretch rounded-s-md pt-5 text-faint hover:text-text active:cursor-grabbing"
 				>
 					<GripIcon className="size-3.5" />
 				</button>
@@ -78,11 +80,11 @@ export function WidgetBlock({
 					type="button"
 					aria-pressed={selected}
 					onClick={() => selectWidget(widget.id)}
-					className={`flex w-full cursor-pointer items-center gap-2.5 rounded-md text-left ${
+					className={`flex w-full cursor-pointer items-center gap-2.5 rounded-md text-start ${
 						nested
-							? "min-h-11 py-1.5 pl-2.5"
-							: `min-h-14 py-2 ${grip ? "pl-1" : "pl-3"}`
-					} ${selected && !nested ? "pr-20" : "pr-3"}`}
+							? "min-h-11 py-1.5 ps-2.5"
+							: `min-h-14 py-2 ${grip ? "ps-1" : "ps-3"}`
+					} ${selected && !nested ? "pe-20" : "pe-3"}`}
 				>
 					{!compact && (
 						<Badge text={abbr} tone={tone} size={nested ? "sm" : "md"} />
@@ -91,11 +93,15 @@ export function WidgetBlock({
 						<span
 							// Nested blocks are narrow: the title may take two lines instead.
 							className={`font-semibold ${nested ? "line-clamp-2 text-[13px] break-words" : "block truncate text-sm"}`}
+							dir="auto"
 						>
 							{title}
 						</span>
 						{!nested && (
-							<span className="block truncate font-mono text-[11px] text-muted">
+							<span
+								dir="ltr"
+								className="block truncate text-start font-mono text-[11px] text-muted"
+							>
 								{widgetSubtitle(widget)}
 							</span>
 						)}

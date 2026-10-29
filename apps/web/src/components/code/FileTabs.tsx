@@ -1,4 +1,7 @@
 import type { KeyboardEvent } from "react";
+import { useTranslation } from "react-i18next";
+import { currentDirection } from "../../i18n.ts";
+import { logicalKey } from "../../lib/direction.ts";
 
 /** One file tab. */
 export interface FileTab {
@@ -22,10 +25,13 @@ export interface FileTabsProps {
  * @returns The tab list.
  */
 export function FileTabs({ tabs, active, onSelect, panelId }: FileTabsProps) {
+	const { t } = useTranslation();
 	const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-		if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+		// Tabs run in reading order, so the arrows follow the UI direction.
+		const key = logicalKey(event.key, currentDirection());
+		if (key !== "ArrowRight" && key !== "ArrowLeft") return;
 		const index = tabs.findIndex((tab) => tab.id === active);
-		const step = event.key === "ArrowRight" ? 1 : -1;
+		const step = key === "ArrowRight" ? 1 : -1;
 		const next = tabs[(index + step + tabs.length) % tabs.length];
 		if (!next) return;
 		event.preventDefault();
@@ -36,7 +42,7 @@ export function FileTabs({ tabs, active, onSelect, panelId }: FileTabsProps) {
 	return (
 		<div
 			role="tablist"
-			aria-label="Files"
+			aria-label={t("code.files")}
 			className="flex min-w-0 items-center gap-1 overflow-x-auto"
 			onKeyDown={onKeyDown}
 		>
@@ -58,14 +64,14 @@ export function FileTabs({ tabs, active, onSelect, panelId }: FileTabsProps) {
 								: "border border-transparent text-muted hover:text-text"
 						}`}
 					>
-						{tab.label}
+						<bdi dir="ltr">{tab.label}</bdi>
 						{tab.dirty && (
 							<>
 								<span
 									aria-hidden="true"
 									className="size-1.5 rounded-full bg-accent"
 								/>
-								<span className="sr-only">(unsaved)</span>
+								<span className="sr-only">{t("code.unsavedFile")}</span>
 							</>
 						)}
 					</button>

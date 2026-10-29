@@ -7,6 +7,7 @@ import {
 	useEditor,
 } from "../store/editor-store.ts";
 import { useSettings } from "./use-settings.ts";
+import { i18n } from "../i18n.ts";
 
 /** Where undoing the last publish is at. */
 export type UndoStatus =
@@ -75,7 +76,7 @@ export function useGlanceComeback(): GlanceComeback {
 					phase: "failed",
 					message:
 						result.error.kind === "conflict"
-							? "glance.yml changed since this publish, so it wasn't undone. Fix it in the Code view."
+							? i18n.t("glanceDown.changedSince")
 							: result.error.message,
 				});
 				return;

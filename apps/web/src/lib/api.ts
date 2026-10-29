@@ -1,12 +1,15 @@
 import {
 	err,
+	type IssueCode,
 	type IssueSeverity,
 	type IssueSource,
+	type MessageParams,
 	ok,
 	type Result,
 	type ValidationIssue,
 	type YamlPath,
 } from "@glaze/core";
+import { i18n } from "../i18n.ts";
 
 /** The config as `GET /api/config` returns it. */
 export interface ConfigResponse {
@@ -18,10 +21,37 @@ export interface ConfigResponse {
 export interface ApiError {
 	/** HTTP status, or `null` when the server couldn't be reached. */
 	readonly status: number | null;
+	/** In the UI language. */
 	readonly message: string;
 }
 
-const UNREACHABLE = "Can't reach the Glaze API. Is the server running?";
+/** Error codes the server sends (`error` in the body) that have a sentence under `api`. */
+const API_CODES = [
+	"unauthorized",
+	"rate-limited",
+	"bad-request",
+	"invalid-credentials",
+	"conflict",
+	"invalid",
+	"unconfirmed",
+	"not-found",
+	"io-error",
+	"invalid-name",
+	"not-referenced",
+	"no-assets-path",
+	"outside-config-folder",
+	"not-text",
+	"too-large",
+	"too-short",
+	"too-long",
+] as const;
+type ApiCode = (typeof API_CODES)[number];
+
+function isApiCode(code: unknown): code is ApiCode {
+	return API_CODES.some((known) => known === code);
+}
+
+const unreachable = () => i18n.t("api.unreachable");
 
 function field(body: unknown, key: string): unknown {
 	return typeof body === "object" && body !== null && key in body
@@ -29,9 +59,36 @@ function field(body: unknown, key: string): unknown {
 		: undefined;
 }
 
-function messageOf(body: unknown, fallback: string): string {
+function paramsOf(value: unknown): MessageParams | undefined {
+	if (typeof value !== "object" || value === null || Array.isArray(value)) {
+		return undefined;
+	}
+	const entries = Object.entries(value).filter(
+		(entry): entry is [string, string | number] =>
+			typeof entry[1] === "string" || typeof entry[1] === "number",
+	);
+	return Object.fromEntries(entries);
+}
+
+/**
+ * The sentence for an error answer, built from its code (for file errors:
+ * its `reason`) in the UI language. A code this version doesn't know shows
+ * the server's English message; no body at all shows the status.
+ */
+function messageOf(body: unknown, status: number): string {
+	const error = field(body, "error");
+	const code = error === "invalid-file" ? field(body, "reason") : error;
 	const message = field(body, "message");
-	return message === undefined ? fallback : String(message);
+	if (isApiCode(code)) {
+		const params = paramsOf(field(body, "params")) ?? {};
+		return i18n.t(`api.${code}`, {
+			...params,
+			reason: params.reason ?? String(message ?? ""),
+		});
+	}
+	return message === undefined
+		? i18n.t("api.status", { status })
+		: String(message);
 }
 
 /** Waits until the user has logged in again; set by the auth store. */
@@ -76,13 +133,16 @@ async function requestJson(
 		// An abort is the caller's own doing; report it as such so it can be ignored.
 		const aborted =
 			error instanceof DOMException && error.name === "AbortError";
-		return err({ status: null, message: aborted ? "Aborted" : UNREACHABLE });
+		return err({
+			status: null,
+			message: aborted ? i18n.t("api.aborted") : unreachable(),
+		});
 	}
 	const body: unknown = await response.json().catch(() => null);
 	if (!response.ok) {
 		return err({
 			status: response.status,
-			message: messageOf(body, `The API answered ${response.status}`),
+			message: messageOf(body, response.status),
 		});
 	}
 	return ok(body);
@@ -97,10 +157,10 @@ function jsonInit(method: string, body: unknown, signal?: AbortSignal) {
 	};
 }
 
-const BAD_RESPONSE: ApiError = {
+const badResponse = (): ApiError => ({
 	status: null,
-	message: "The API sent an unexpected response",
-};
+	message: i18n.t("api.badResponse"),
+});
 
 /**
  * Loads `glance.yml` from the Glaze API.
@@ -115,7 +175,7 @@ export async function fetchConfig(
 	const text = field(result.value, "text");
 	const version = field(result.value, "version");
 	if (typeof text !== "string" || typeof version !== "string") {
-		return err(BAD_RESPONSE);
+		return err(badResponse());
 	}
 	return ok({ text, version });
 }
@@ -134,6 +194,8 @@ function toIssue(value: unknown): ValidationIssue | null {
 	const severity = field(value, "severity");
 	const source = field(value, "source");
 	const message = field(value, "message");
+	const code = field(value, "code");
+	const params = paramsOf(field(value, "params"));
 	if (
 		!SEVERITIES.includes(severity as IssueSeverity) ||
 		!SOURCES.includes(source as IssueSource) ||
@@ -152,6 +214,9 @@ function toIssue(value: unknown): ValidationIssue | null {
 	return {
 		severity: severity as IssueSeverity,
 		source: source as IssueSource,
+		// An unknown code is harmless: problemText falls back to `message`.
+		...(typeof code === "string" ? { code: code as IssueCode } : {}),
+		...(params ? { params } : {}),
 		message,
 		...(typeof line === "number" ? { line } : {}),
 		...(typeof column === "number" ? { column } : {}),
@@ -253,7 +318,7 @@ export async function putConfig(
 	} catch {
 		return err({
 			kind: "network",
-			message: "Can't reach the Glaze API. Your changes are still here.",
+			message: i18n.t("api.unreachableKept"),
 		});
 	}
 	const body: unknown = await response.json().catch(() => null);
@@ -270,13 +335,16 @@ export async function putConfig(
 	if (response.status === 422) {
 		return err({
 			kind: "invalid",
-			message: messageOf(body, "The config is not valid"),
+			// The same code for both: broken YAML gets its own sentence.
+			message: issuesOf(body).some((issue) => issue.source === "yaml")
+				? i18n.t("api.invalidYaml")
+				: i18n.t("api.invalid"),
 			issues: issuesOf(body),
 		});
 	}
 	return err({
 		kind: "server",
-		message: messageOf(body, `The API answered ${response.status}`),
+		message: messageOf(body, response.status),
 	});
 }
 
@@ -289,6 +357,7 @@ export interface AssetEntry {
 /** The list of asset files, plus why some can't be edited (if so). */
 export interface AssetList {
 	readonly files: readonly AssetEntry[];
+	/** Why referenced files can't be edited (in the UI language), or `null`. */
 	readonly unavailable: string | null;
 }
 
@@ -301,7 +370,8 @@ export async function fetchFiles(): Promise<Result<AssetList, ApiError>> {
 	if (!result.ok) return result;
 	const files = field(result.value, "files");
 	const unavailable = field(result.value, "unavailable");
-	if (!Array.isArray(files)) return err(BAD_RESPONSE);
+	const reason = field(result.value, "unavailableReason");
+	if (!Array.isArray(files)) return err(badResponse());
 	return ok({
 		files: files.flatMap((file: unknown) => {
 			const name = field(file, "name");
@@ -311,7 +381,12 @@ export async function fetchFiles(): Promise<Result<AssetList, ApiError>> {
 				? [{ name, language }]
 				: [];
 		}),
-		unavailable: typeof unavailable === "string" ? unavailable : null,
+		unavailable:
+			typeof unavailable !== "string"
+				? null
+				: isApiCode(reason)
+					? i18n.t(`api.${reason}`, { reason: unavailable })
+					: unavailable,
 	});
 }
 
@@ -342,7 +417,7 @@ export async function fetchFile(
 		typeof text !== "string" ||
 		(typeof version !== "string" && version !== null)
 	) {
-		return err(BAD_RESPONSE);
+		return err(badResponse());
 	}
 	return ok({ text, version });
 }
@@ -367,17 +442,17 @@ export async function putFile(
 		const version = field(result.value, "version");
 		return typeof version === "string"
 			? ok({ version })
-			: err({ kind: "server", message: BAD_RESPONSE.message });
+			: err({ kind: "server", message: badResponse().message });
 	}
 	if (result.error.status === 409) {
 		return err({
 			kind: "server",
-			message: `${name} changed on disk since it was loaded. Reload Glaze to get the new version.`,
+			message: i18n.t("api.fileConflict", { name }),
 		});
 	}
 	return err({
 		kind: result.error.status === null ? "network" : "server",
-		message: `${name}: ${result.error.message}`,
+		message: i18n.t("api.fileError", { name, message: result.error.message }),
 	});
 }
 
@@ -422,7 +497,7 @@ export async function hashGlancePassword(
 	);
 	if (!result.ok) return result;
 	const hash = field(result.value, "hash");
-	return typeof hash === "string" ? ok(hash) : err(BAD_RESPONSE);
+	return typeof hash === "string" ? ok(hash) : err(badResponse());
 }
 
 /** The login state, as `GET /api/auth/session` reports it. */
@@ -456,12 +531,12 @@ export async function fetchSession(): Promise<Result<Session, ApiError>> {
 		if (!response.ok) {
 			return err({
 				status: response.status,
-				message: messageOf(body, `The API answered ${response.status}`),
+				message: messageOf(body, response.status),
 			});
 		}
 		return ok(sessionOf(body));
 	} catch {
-		return err({ status: null, message: UNREACHABLE });
+		return err({ status: null, message: unreachable() });
 	}
 }
 
@@ -490,12 +565,12 @@ export async function login(
 			jsonInit("POST", { username, password }),
 		);
 	} catch {
-		return err({ kind: "network", message: UNREACHABLE });
+		return err({ kind: "network", message: unreachable() });
 	}
 	const body: unknown = await response.json().catch(() => null);
 	if (response.ok) return ok(sessionOf(body));
 	if (response.status === 401) {
-		return err({ kind: "invalid", message: "Wrong username or password." });
+		return err({ kind: "invalid", message: i18n.t("api.invalid-credentials") });
 	}
 	if (response.status === 429) {
 		const seconds = Number(response.headers.get("Retry-After"));
@@ -504,12 +579,12 @@ export async function login(
 		return err({
 			kind: "rate-limited",
 			retryAfter,
-			message: `Too many failed attempts. Try again in ${minutes} minute${minutes === 1 ? "" : "s"}.`,
+			message: i18n.t("api.tooManyAttempts", { count: minutes }),
 		});
 	}
 	return err({
 		kind: "server",
-		message: messageOf(body, `The API answered ${response.status}`),
+		message: messageOf(body, response.status),
 	});
 }
 
@@ -524,9 +599,9 @@ export async function logout(): Promise<Result<void, ApiError>> {
 			? ok(undefined)
 			: err({
 					status: response.status,
-					message: `The API answered ${response.status}`,
+					message: i18n.t("api.status", { status: response.status }),
 				});
 	} catch {
-		return err({ status: null, message: UNREACHABLE });
+		return err({ status: null, message: unreachable() });
 	}
 }
