@@ -10,6 +10,7 @@ Drag, drop and configure your pages instead of hand-writing YAML.
 [![Latest release](https://img.shields.io/github/v/release/glazeforglance/glaze?color=F5B54A)](https://github.com/glazeforglance/glaze/releases/latest)
 [![CI](https://img.shields.io/github/actions/workflow/status/glazeforglance/glaze/ci.yml?branch=main&label=CI)](https://github.com/glazeforglance/glaze/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/github/license/glazeforglance/glaze?color=5BD08F)](LICENSE)
+[![Translation status](https://hosted.weblate.org/widget/glaze/svg-badge.svg)](https://hosted.weblate.org/engage/glaze/)
 
 </div>
 
@@ -159,7 +160,13 @@ The details and the reasoning behind them are in [docs/DESIGN.md](docs/DESIGN.md
 
 Ideas, bug reports and pull requests are very welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the setup and conventions, or open an issue with your use case or the widgets you'd most like to see supported next.
 
-**Translations:** Glaze speaks English so far. Help translate it into your language, see [TRANSLATING.md](TRANSLATING.md).
+## Translations
+
+Glaze is translated on [Weblate](https://hosted.weblate.org/engage/glaze/), a free platform for translating open-source projects. Anyone can help: pick your language, translate in the browser, and Weblate sends the changes here as a pull request. No Git or coding needed.
+
+[![Translation status](https://hosted.weblate.org/widget/glaze/multi-auto.svg)](https://hosted.weblate.org/engage/glaze/)
+
+Supported languages, the rules for translators and how to add a new language are in [TRANSLATING.md](TRANSLATING.md). Thanks to [Hosted Weblate](https://hosted.weblate.org/) for hosting the translations of Glaze for free.
 
 ## License
 
