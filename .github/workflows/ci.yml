@@ -22,6 +22,10 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
       - run: pnpm --filter web lint
+      # Fails on invalid JSON, broken {{placeholders}} and keys the code and
+      # en/ disagree on; a missing translation is only a warning, so Weblate
+      # pull requests never break CI.
+      - run: pnpm i18n --check
       # Glance v0.8.7 for the integration test: every widget fixture and every
       # new widget must pass `glance config:validate` (apps/server/test/glance-integration.test.ts).
       - name: Cache Glance

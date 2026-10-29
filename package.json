@@ -9,6 +9,7 @@
 	"scripts": {
 		"brand": "node scripts/brand.ts",
 		"dev": "pnpm --parallel --filter \"./apps/*\" dev",
+		"i18n": "node scripts/i18n.ts",
 		"build": "pnpm -r --if-present build",
 		"release:prepare": "node scripts/release.ts",
 		"schemas": "node scripts/generate-widget-schemas.ts",
