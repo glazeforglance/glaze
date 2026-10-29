@@ -42,18 +42,18 @@ sh docker/smoke-test.sh glaze:smoke
 
 Run these from the repository root.
 
-| Command                      | What it does                                                                                                    |
-| ---------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `pnpm dev`                   | Starts the web app (Vite, port 5173) and the API server (port 8090) with live reload.                           |
-| `pnpm build`                 | Builds every package that has a `build` script: the web app (`apps/web/dist`) and the server bundle.            |
-| `pnpm test`                  | Runs the Vitest suites of every package, then `pnpm test:scripts`.                                              |
-| `pnpm test:scripts`          | Tests for the scripts in `scripts/` (release, schema generator), with Node's own test runner.                   |
-| `pnpm typecheck`             | `tsc` for every package.                                                                                        |
-| `pnpm schemas`               | Regenerates `packages/schemas/src/generated/` from the Glance source; see [Widget schemas](#widget-schemas).    |
-| `pnpm brand`                 | Regenerates the favicon, touch icon, PNG logo and social preview from `docs/brand/glaze-logo.svg`.              |
-| `pnpm screenshots`           | Re-takes the images in `docs/screenshots/`; see [Screenshots](#screenshots).                                    |
-| `pnpm i18n --check`          | Checks the translations; `--write` also updates the table in TRANSLATING.md. See [Translations](#translations). |
-| `pnpm release:prepare X.Y.Z` | Maintainers: sets the version and dates the changelog; see [RELEASING.md](../RELEASING.md).                     |
+| Command                      | What it does                                                                                                                 |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm dev`                   | Starts the web app (Vite, port 5173) and the API server (port 8090) with live reload.                                        |
+| `pnpm build`                 | Builds every package that has a `build` script: the web app (`apps/web/dist`) and the server bundle.                         |
+| `pnpm test`                  | Runs the Vitest suites of every package, then `pnpm test:scripts`.                                                           |
+| `pnpm test:scripts`          | Tests for the scripts in `scripts/` (release, schema generator, translations), with Node's own test runner.                  |
+| `pnpm typecheck`             | `tsc` for every package.                                                                                                     |
+| `pnpm schemas`               | Regenerates `packages/schemas/src/generated/` from the Glance source; see [Widget schemas](#widget-schemas).                 |
+| `pnpm brand`                 | Regenerates the favicon, touch icon, PNG logo and social preview from `docs/brand/glaze-logo.svg`.                           |
+| `pnpm screenshots`           | Re-takes the images in `docs/screenshots/`; see [Screenshots](#screenshots).                                                 |
+| `pnpm i18n --check`          | Checks the translations; `--write` also updates the table in TRANSLATING.md. See [Translations](#translations).              |
+| `pnpm release:prepare X.Y.Z` | Maintainers: sets the version, dates the changelog and refreshes the translation table; see [RELEASING.md](../RELEASING.md). |
 
 Per package: `pnpm --filter web lint` (Oxlint), `pnpm --filter server start` (the production build) and `pnpm --filter server hash-password`. Formatting: `pnpm biome format --write .`. `pnpm brand --check` and `pnpm schemas --check` only compare, and fail when the committed files are stale; CI runs both.
 

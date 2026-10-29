@@ -246,9 +246,7 @@ export function statusTable(rows: readonly StatusRow[]): string {
 	const cells = [
 		["Language", "Code", "Translated"],
 		...rows.map((row) => {
-			const percent =
-				row.total === 0 ? 100 : Math.floor((row.translated / row.total) * 100);
-			return [row.name, `\`${row.code}\``, `${percent}%`];
+			return [row.name, `\`${row.code}\``, `${percentOf(row)}%`];
 		}),
 	];
 	// Padded like Biome formats Markdown tables, so the two never disagree.
@@ -263,6 +261,81 @@ export function statusTable(rows: readonly StatusRow[]): string {
 		`| ${widths.map((width) => "-".repeat(width)).join(" | ")} |`,
 		...body.map(line),
 	].join("\n");
+}
+
+/**
+ * A row's share of translated texts, rounded down (100% only when complete).
+ * @param row - A status row.
+ * @returns 0–100.
+ */
+export function percentOf(row: StatusRow): number {
+	return row.total === 0 ? 100 : Math.floor((row.translated / row.total) * 100);
+}
+
+/**
+ * A language's name for the table: English, plus its own name when that
+ * differs, e.g. "Dutch (Nederlands)". Unknown codes stay as they are.
+ * @param code - A language code.
+ * @returns The name.
+ */
+export function languageName(code: string): string {
+	const english = new Intl.DisplayNames(["en"], { type: "language" }).of(code);
+	let own: string | undefined;
+	try {
+		own = new Intl.DisplayNames([code], { type: "language" }).of(code);
+	} catch {
+		own = undefined;
+	}
+	if (!english || english === code) return code;
+	const native = own
+		? own.charAt(0).toLocaleUpperCase(code) + own.slice(1)
+		: english;
+	return native === english ? english : `${english} (${native})`;
+}
+
+/**
+ * Reads the percentages from the status table in a Markdown file.
+ * @param markdown - TRANSLATING.md.
+ * @returns Language code → percentage; empty when there is no table.
+ */
+export function parseStatus(markdown: string): Map<string, number> {
+	const start = markdown.indexOf(STATUS_START);
+	const end = markdown.indexOf(STATUS_END);
+	const found = new Map<string, number>();
+	if (start === -1 || end < start) return found;
+	for (const match of markdown
+		.slice(start, end)
+		.matchAll(/^\|[^|]*\|\s*`([^`]+)`\s*\|\s*(\d+)%\s*\|/gm)) {
+		found.set(match[1] ?? "", Number(match[2]));
+	}
+	return found;
+}
+
+/**
+ * What changed between the table in TRANSLATING.md and the new rows, for the
+ * release output: e.g. `fil 0% → 42%`. A new language counts as 0% before,
+ * a removed one is listed as removed.
+ * @param before - From `parseStatus`.
+ * @param rows - The new rows.
+ * @returns One line per language whose percentage changed.
+ */
+export function statusChanges(
+	before: ReadonlyMap<string, number>,
+	rows: readonly StatusRow[],
+): string[] {
+	const changes: string[] = [];
+	for (const row of rows) {
+		const old = before.get(row.code) ?? 0;
+		const now = percentOf(row);
+		if (old !== now || !before.has(row.code)) {
+			changes.push(`${row.code} ${old}% → ${now}%`);
+		}
+	}
+	const codes = new Set(rows.map((row) => row.code));
+	for (const [code, old] of before) {
+		if (!codes.has(code)) changes.push(`${code} ${old}% → removed`);
+	}
+	return changes;
 }
 
 export const STATUS_START = "<!-- i18n-status:start -->";

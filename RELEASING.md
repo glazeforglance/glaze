@@ -22,8 +22,11 @@ pre-release on GitHub.
    `docs/screenshots/` (needs `pnpm exec playwright install chromium` once; set `GLANCE_BIN` for
    the live preview shot).
 4. `pnpm release:prepare X.Y.Z`: sets the version in every `package.json`, dates the
-   CHANGELOG section and updates its links. It refuses a dirty tree, another branch than `main`,
-   a version that isn't higher, or an empty Unreleased section.
+   CHANGELOG section and updates its links. It also refreshes the translation status table in
+   [TRANSLATING.md](TRANSLATING.md), so translations merged from Weblate show up in the release,
+   and prints which languages changed (e.g. `fil 0% → 42%`). It refuses a dirty tree, another
+   branch than `main`, a version that isn't higher, an empty Unreleased section, or translation
+   files with invalid JSON or broken placeholders (an incomplete language is fine).
 5. Review the diff.
 6. `git commit -am "chore(release): vX.Y.Z"`
 7. `git push`
@@ -56,9 +59,11 @@ people may already have pulled the first image.
 
 ## Translations
 
-Before tagging, run `pnpm i18n --write` and commit the updated status table in
-[TRANSLATING.md](TRANSLATING.md) if it changed. CI doesn't check the table, so a
-Weblate pull request never fails on it.
+The status table in [TRANSLATING.md](TRANSLATING.md) is refreshed by
+`pnpm release:prepare` (step 4 above), and `git commit -am` includes it. Weblate's
+pull requests don't touch it; `pnpm i18n --check` only prints a note when it lags
+behind, so those pull requests never fail on it. To refresh it between releases,
+run `pnpm i18n --write`.
 
 ## Weblate setup
 

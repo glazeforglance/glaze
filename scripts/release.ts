@@ -1,5 +1,6 @@
 // Prepares a release: bumps every workspace version and moves the Unreleased
-// CHANGELOG section into a dated one. It never commits, pushes or tags; it
+// CHANGELOG section into a dated one, and refreshes the translation status
+// table in TRANSLATING.md. It never commits, pushes or tags; it
 // prints those commands instead. See RELEASING.md.
 //
 //   pnpm release:prepare 0.1.2
@@ -10,6 +11,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { refreshStatusTable, TRANSLATING_FILE } from "./i18n-files.ts";
 import {
 	formatDate,
 	lockfileRecordsWorkspaceVersions,
@@ -77,6 +79,18 @@ const changelog = releaseChangelog(read(CHANGELOG), {
 if (!changelog.ok) fail(changelog.error);
 writes.set(CHANGELOG, changelog.value);
 
+// Translations merged from Weblate don't update the status table; the release does.
+// Only broken files stop the release (CI already reports them); a missing or
+// incomplete language is fine.
+const translations = refreshStatusTable(ROOT);
+if (!translations.ok) {
+	fail(
+		`Can't update the translation table:\n  ${translations.errors.join("\n  ")}\nRun \`pnpm i18n --check\` for details.`,
+	);
+}
+const tableChanged = translations.after !== translations.before;
+if (tableChanged) writes.set(TRANSLATING_FILE, translations.after);
+
 // Check before the bump: afterwards package.json and the lockfile disagree.
 const lockfileNeedsUpdate = lockfileRecordsWorkspaceVersions(
 	read(LOCKFILE),
@@ -100,6 +114,12 @@ if (lockfileNeedsUpdate) {
 } else {
 	console.log(`· ${LOCKFILE} doesn't record workspace versions, skipped`);
 }
+
+console.log(
+	tableChanged
+		? `✓ ${TRANSLATING_FILE}: translation status updated (${translations.changes.join(", ") || "layout only"})`
+		: `· ${TRANSLATING_FILE}: translation status unchanged`,
+);
 
 console.log(`
 Prepared v${next} (was v${current.value}). Review the diff, then run:
