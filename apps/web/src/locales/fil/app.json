@@ -1,1 +1,8 @@
-{}
+{
+	"problems": {
+		"atLine": "Linya {{line}}: {{text}}",
+		"emptySize": "bakante",
+		"unresolved-alias": "Alyas *{{alias}} walang katugmang anchor &{{alias}}",
+		"no-pages": "Kailangan ng config ng kahit isang pahina"
+	}
+}
