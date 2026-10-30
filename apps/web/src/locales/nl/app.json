@@ -1,1 +1,24 @@
-{}
+{
+	"problems": {
+		"atLine": "Lijn {{line}}:{{text}}",
+		"emptySize": "leeg",
+		"unresolved-alias": "Alias *{{alias}} heeft geen bijbehorend anker &{{alias}}",
+		"no-pages": "De configuratie moet minimaal één pagina bevatten",
+		"no-columns": "Een pagina heeft minstens één kolom nodig",
+		"too-many-columns": "Een pagina mag op zijn meest {{max}} kolommen bevatten",
+		"invalid-column-size": "Kolomgrootte moet \"small\" of \"full\" zijn, niet {{size}}",
+		"full-column-count": "Een pagina heeft 1 of 2 \"full\"-kolommen nodig, deze heeft er {{count}}",
+		"nested-group": "Een groep kan geen {{type}} bevatten",
+		"split-in-head": "Widgets in de 'head' kunnen niet worden gesplitst; plaats de split-column in plaats daarvan in een kolom",
+		"column-needs-full": "Een pagina heeft minimaal één volledige kolom nodig, dus deze moet volledig blijven.",
+		"column-too-many-full": "Een pagina kan maximaal twee volledige kolommen hebben; maak eerst een andere klein.",
+		"slug-reserved": "\"{{slug}}\" is gereserveerd door Glance; kies een ander URL-pad.",
+		"slug-taken": "Pagina {{page}} gebruikt het URL-pad \"{{slug}}\" al; Glance toont dan slechts één van beide.",
+		"host-not-text": "Host moet een tekst zijn.",
+		"host-is-url": "Host is het adres waarop Glance luistert, geen URL. Laat dit leeg om overal te luisteren.",
+		"host-unclosed-bracket": "Host heeft een [ zonder sluitende ].",
+		"host-bad-ipv6": "Host heeft haken, maar geen geldig IPv6-adres daarbinnen.",
+		"host-ipv6-needs-brackets": "Schrijf een IPv6-adres tussen haken, bijv. [{{host}}]. Glance voegt de poort erachter toe.",
+		"port-invalid": "Port moet een heel nummer zijn van 1 tot 65535."
+	}
+}
