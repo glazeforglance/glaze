@@ -18,9 +18,8 @@ need to know Git or JavaScript to help.
 | German (Deutsch)                | `de`    | 0%         |
 | Filipino                        | `fil`   | 0%         |
 | Hebrew (Israel) (עברית (ישראל)) | `he-IL` | 0%         |
-| Dutch (Nederlands)              | `nl`    | 0%         |
+| Dutch (Nederlands)              | `nl`    | 1%         |
 | Polish (Polski)                 | `pl`    | 0%         |
-| Filipino                        | `tl`    | 0%         |
 
 <!-- i18n-status:end -->
 

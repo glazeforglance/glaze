@@ -1,6 +1,6 @@
 {
 	"name": "glaze",
-	"version": "0.3.0",
+	"version": "0.3.1",
 	"description": "A visual editor for Glance dashboards",
 	"private": true,
 	"type": "module",

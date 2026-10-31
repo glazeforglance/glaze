@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-10-31
+
 ### Changed
 
 - Updated translations from Weblate: Dutch, Filipino.
@@ -111,7 +113,8 @@ The first release: a visual editor that runs next to Glance v0.8.7 and edits its
 - **Docker image** `ghcr.io/klingesean/glaze` for `linux/amd64` and `linux/arm64`: non-root (uid 1000), with the checksum-verified Glance v0.8.7 binary for validation, a health check and a compose example.
 - CI (typecheck, lint, tests, build, Docker smoke test) and a tag-driven release workflow.
 
-[Unreleased]: https://github.com/glazeforglance/glaze/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/glazeforglance/glaze/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/glazeforglance/glaze/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/glazeforglance/glaze/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/glazeforglance/glaze/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/glazeforglance/glaze/compare/v0.1.2...v0.2.0
